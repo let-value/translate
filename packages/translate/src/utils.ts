@@ -9,6 +9,10 @@ export interface MessageId {
   values?: any[];
 }
 
+export interface PluralMessage {
+  forms: MessageId[];
+}
+
 function buildFromTemplate(strings: TemplateStringsArray): string {
   let result = '';
   for (let i = 0; i < strings.length; i++) {
@@ -49,4 +53,17 @@ export function msg(arg: any, ...values: any[]): MessageId {
 
 export function isMessageId(obj: any): obj is MessageId {
   return obj && typeof obj === 'object' && 'id' in obj && 'message' in obj;
+}
+
+export function isPluralMessage(obj: any): obj is PluralMessage {
+  return obj && typeof obj === 'object' && Array.isArray(obj.forms);
+}
+
+export function plural(
+  ...forms: Array<MessageDescriptor | MessageId | string | TemplateStringsArray>
+): PluralMessage {
+  const messages = forms.map((f) =>
+    isMessageId(f) ? f : msg(f as any)
+  );
+  return { forms: messages };
 }
