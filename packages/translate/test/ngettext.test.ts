@@ -2,41 +2,18 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { msg, plural } from '../src/utils.ts';
 import { Translator } from '../src/translator.ts';
+import fs from 'node:fs';
+import gettextParser from 'gettext-parser';
+
+function load(locale: string) {
+  const po = fs.readFileSync(new URL(`./fixtures/${locale}.po`, import.meta.url));
+  return gettextParser.po.parse(po);
+}
 
 const translations = {
-  en: {
-    translations: {
-      '': {
-        '': {
-          msgid: '',
-          msgstr: ['Plural-Forms: nplurals=2; plural=(n != 1);\n'],
-        },
-        '${0} apple': {
-          msgid: '${0} apple',
-          msgid_plural: '${0} apples',
-          msgstr: ['${0} apple', '${0} apples'],
-        },
-      },
-    },
-  },
-  ru: {
-    translations: {
-      '': {
-        '': {
-          msgid: '',
-          msgstr: [
-            'Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n',
-          ],
-        },
-        '${0} apple': {
-          msgid: '${0} apple',
-          msgid_plural: '${0} apples',
-          msgstr: ['${0} яблоко', '${0} яблока', '${0} яблок'],
-        },
-      },
-    },
-  },
-} as any;
+  en: load('en'),
+  ru: load('ru'),
+};
 
 test('ngettext handles English plurals', () => {
   const t = new Translator('en', translations);

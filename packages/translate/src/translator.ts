@@ -1,3 +1,4 @@
+import type { GetTextTranslations } from 'gettext-parser';
 import {
   msg,
   isMessageId,
@@ -6,16 +7,6 @@ import {
   MessageId,
   PluralMessage,
 } from './utils.ts';
-
-export interface TranslationEntry {
-  msgid: string;
-  msgid_plural?: string;
-  msgstr: string[];
-}
-
-export interface PoData {
-  translations: Record<string, Record<string, TranslationEntry>>;
-}
 
 function substitute(text: string, values: any[] = []): string {
   return text.replace(/\$\{(\d+)\}/g, (_, i) => String(values[Number(i)]));
@@ -49,7 +40,7 @@ export class Translator {
   private pluralFuncs: Record<string, (n: number) => number> = {};
   constructor(
     defaultLocale: string,
-    private translations: Record<string, PoData>
+    private translations: Record<string, GetTextTranslations>
   ) {
     this.locale = defaultLocale;
   }
@@ -74,7 +65,12 @@ export class Translator {
 
   private getPluralFunc(locale: string): (n: number) => number {
     if (!this.pluralFuncs[locale]) {
-      const header = this.translations[locale]?.translations?.['']?.['']?.msgstr?.[0];
+      const localeData = this.translations[locale];
+      const header =
+        (localeData?.headers?.['plural-forms']
+          ? `Plural-Forms: ${localeData.headers['plural-forms']}`
+          : localeData?.translations?.['']?.['']?.msgstr?.[0]) ??
+        '';
       this.pluralFuncs[locale] = parsePluralFunc(header);
     }
     return this.pluralFuncs[locale];
