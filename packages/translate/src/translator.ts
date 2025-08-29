@@ -10,19 +10,20 @@ import {
   ContextPluralMessage,
 } from './utils.ts';
 import {
-  getPluralFunc as getPluralFuncFromLocale,
+  getPluralFunc,
   getNPlurals,
-} from 'plural-forms/minimal-safe';
+} from 'plural-forms';
 
 function substitute(text: string, values: any[] = []): string {
-  return text.replace(/\$\{(\d+)\}/g, (_, i) => String(values[Number(i)]));
+  return text
+    .replace(/\$\{(\d+)\}/g, (_, i) => String(values[Number(i)]));
 }
 
 function parsePluralFunc(locale: string): (n: number) => number {
   const defaultFn = (n: number) => (n !== 1 ? 1 : 0);
   try {
     const nplurals = Number(getNPlurals(locale));
-    const pluralFunc = getPluralFuncFromLocale(locale);
+    const pluralFunc = getPluralFunc(locale);
     const forms = Array.from({ length: nplurals }, (_, i) => String(i));
     return (n: number) => {
       const idx = Number(pluralFunc(n, forms));

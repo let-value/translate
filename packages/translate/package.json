@@ -4,9 +4,7 @@
   "type": "module",
   "main": "src/index.ts",
   "exports": {
-    ".": "./src/index.ts",
-    "./extract": "../extract/index.js",
-    "./export": "../export/index.ts"
+    ".": "./src/index.ts"
   },
   "scripts": {
     "build": "echo building translate",
@@ -16,13 +14,13 @@
     "test": "tsx --test test/*.test.ts"
   },
   "dependencies": {
-    "plural-forms": "catalog:plural-forms"
+    "plural-forms": "catalog:"
   },
   "devDependencies": {
-    "@types/gettext-parser": "catalog:@types/gettext-parser",
-    "gettext-parser": "catalog:gettext-parser",
-    "oxlint": "catalog:oxlint",
-    "tsx": "catalog:tsx",
-    "typescript": "catalog:typescript"
+    "@types/gettext-parser": "catalog:",
+    "gettext-parser": "catalog:",
+    "oxlint": "catalog:",
+    "tsx": "catalog:",
+    "typescript": "catalog:"
   }
 }

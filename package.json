@@ -2,17 +2,17 @@
   "name": "translate",
   "version": "1.0.0",
   "private": true,
-  "workspaces": ["packages/*"],
-  "catalogs": {
-    "default": {
-      "@types/gettext-parser": "^8.0.0",
-      "gettext-parser": "^8.0.0",
-      "oxlint": "^1.13.0",
-      "plural-forms": "^0.5.5",
-      "tsx": "^4.20.5",
-      "typescript": "^5.9.2",
-      "oxc-parser": "^0.82.3",
-      "oxc-resolver": "^11.7.1"
+  "workspaces": {
+    "packages": ["packages/*"],
+    "catalog": {
+      "@types/gettext-parser": "8.0.0",
+      "gettext-parser": "8.0.0",
+      "oxlint": "1.13.0",
+      "plural-forms": "0.5.5",
+      "tsx": "4.20.5",
+      "typescript": "5.9.2",
+      "oxc-parser": "0.82.3",
+      "oxc-resolver": "11.7.1"
     }
   },
   "scripts": {
@@ -23,13 +23,13 @@
     "test": "npm run test --workspaces"
   },
   "devDependencies": {
-    "@types/gettext-parser": "catalog:@types/gettext-parser",
-    "gettext-parser": "catalog:gettext-parser",
-    "oxc-parser": "catalog:oxc-parser",
-    "oxc-resolver": "catalog:oxc-resolver",
-    "oxlint": "catalog:oxlint",
-    "plural-forms": "catalog:plural-forms",
-    "tsx": "catalog:tsx",
-    "typescript": "catalog:typescript"
+    "@types/gettext-parser": "catalog:",
+    "gettext-parser": "catalog:",
+    "oxc-parser": "catalog:",
+    "oxc-resolver": "catalog:",
+    "oxlint": "catalog:",
+    "plural-forms": "catalog:",
+    "tsx": "catalog:",
+    "typescript": "catalog:"
   }
 }

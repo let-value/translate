@@ -1,9 +1,10 @@
 {
   "compilerOptions": {
+    "noEmit": true,
     "target": "ES2020",
     "module": "ESNext",
     "moduleResolution": "Node",
-    "strict": false,
+    "strict": true,
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
     "allowImportingTsExtensions": true,

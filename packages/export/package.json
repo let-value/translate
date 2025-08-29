@@ -7,16 +7,16 @@
     "translate-export": "bin/cli.ts"
   },
   "dependencies": {
-    "gettext-parser": "catalog:gettext-parser",
-    "oxc-parser": "catalog:oxc-parser",
-    "oxc-resolver": "catalog:oxc-resolver",
-    "plural-forms": "catalog:plural-forms"
+    "gettext-parser": "catalog:",
+    "oxc-parser": "catalog:",
+    "oxc-resolver": "catalog:",
+    "plural-forms": "catalog:"
   },
   "devDependencies": {
-    "@types/gettext-parser": "catalog:@types/gettext-parser",
-    "oxlint": "catalog:oxlint",
-    "tsx": "catalog:tsx",
-    "typescript": "catalog:typescript"
+    "@types/gettext-parser": "catalog:",
+    "oxlint": "catalog:",
+    "tsx": "catalog:",
+    "typescript": "catalog:"
   },
   "scripts": {
     "build": "echo building export",
