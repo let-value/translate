@@ -9,32 +9,30 @@ import {
   ContextMessageId,
   ContextPluralMessage,
 } from './utils.ts';
+import {
+  getPluralFunc as getPluralFuncFromLocale,
+  getNPlurals,
+} from 'plural-forms/minimal-safe';
 
 function substitute(text: string, values: any[] = []): string {
   return text.replace(/\$\{(\d+)\}/g, (_, i) => String(values[Number(i)]));
 }
 
-function parsePluralFunc(header?: string): (n: number) => number {
+function parsePluralFunc(locale: string): (n: number) => number {
   const defaultFn = (n: number) => (n !== 1 ? 1 : 0);
-  if (!header) return defaultFn;
-  const match = header.match(/Plural-Forms:\s*([^\n]*)/i);
-  if (!match) return defaultFn;
-  const nplMatch = match[1].match(/nplurals\s*=\s*(\d+)/);
-  const exprMatch = match[1].match(/plural\s*=\s*([^;]+)/);
-  const nplurals = nplMatch ? parseInt(nplMatch[1], 10) : 2;
-  const expr = exprMatch ? exprMatch[1] : 'n != 1';
-  let fn: (n: number) => number;
   try {
-    fn = new Function('n', `return Number(${expr});`) as (n: number) => number;
+    const nplurals = Number(getNPlurals(locale));
+    const pluralFunc = getPluralFuncFromLocale(locale);
+    const forms = Array.from({ length: nplurals }, (_, i) => String(i));
+    return (n: number) => {
+      const idx = Number(pluralFunc(n, forms));
+      if (idx < 0) return 0;
+      if (idx >= nplurals) return nplurals - 1;
+      return idx;
+    };
   } catch {
-    fn = defaultFn;
+    return defaultFn;
   }
-  return (n: number) => {
-    const idx = fn(n);
-    if (idx < 0) return 0;
-    if (idx >= nplurals) return nplurals - 1;
-    return idx;
-  };
 }
 
 type ContextCatalog = Record<string, Record<string, string[]>>;
@@ -42,7 +40,6 @@ type ContextCatalog = Record<string, Record<string, string[]>>;
 export class Translator {
   private locale: string;
   private pluralFuncs: Record<string, (n: number) => number> = {};
-  private headers: Record<string, string> = {};
   private translations: Record<string, ContextCatalog> = {};
   constructor(
     defaultLocale: string,
@@ -59,10 +56,6 @@ export class Translator {
         }
       }
       this.translations[locale] = contexts;
-      this.headers[locale] =
-        (data.headers?.['plural-forms']
-          ? `Plural-Forms: ${data.headers['plural-forms']}`
-          : data.translations?.['']?.['']?.msgstr?.[0]) ?? '';
     }
   }
 
@@ -120,7 +113,7 @@ export class Translator {
 
   private getPluralFunc(locale: string): (n: number) => number {
     if (!this.pluralFuncs[locale]) {
-      this.pluralFuncs[locale] = parsePluralFunc(this.headers[locale]);
+      this.pluralFuncs[locale] = parsePluralFunc(locale);
     }
     return this.pluralFuncs[locale];
   }
