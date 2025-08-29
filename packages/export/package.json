@@ -7,10 +7,13 @@
     "translate-export": "bin/cli.ts"
   },
   "dependencies": {
+    "gettext-parser": "^8.0.0",
     "oxc-parser": "^0.82.3",
-    "oxc-resolver": "^11.7.1"
+    "oxc-resolver": "^11.7.1",
+    "plural-forms": "^0.5.5"
   },
   "devDependencies": {
+    "@types/gettext-parser": "^8.0.0",
     "tsx": "^4.20.5",
     "typescript": "^5.9.2"
   },
