@@ -1,0 +1,22 @@
+{
+  "name": "@let-value/translate-export",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "src/index.ts",
+  "bin": {
+    "translate-export": "bin/cli.ts"
+  },
+  "dependencies": {
+    "oxc-parser": "^0.82.3",
+    "oxc-resolver": "^11.7.1"
+  },
+  "devDependencies": {
+    "tsx": "^4.20.5",
+    "typescript": "^5.9.2"
+  },
+  "scripts": {
+    "build": "echo building export",
+    "lint": "echo linting export",
+    "test": "tsx test.ts"
+  }
+}
