@@ -1,9 +1,10 @@
 {
   "name": "@let-value/translate",
   "version": "1.0.0",
-  "main": "index.js",
+  "type": "module",
+  "main": "src/index.ts",
   "exports": {
-    ".": "./index.js",
+    ".": "./src/index.ts",
     "./extract": "../extract/index.js",
     "./export": "../export/index.ts"
   },
