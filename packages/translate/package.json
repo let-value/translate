@@ -11,7 +11,7 @@
   "scripts": {
     "build": "echo building translate",
     "lint": "echo linting translate",
-    "test": "tsx --test test/msg.test.ts"
+    "test": "tsx --test test/*.test.ts"
   }
   ,"devDependencies": {
     "tsx": "^4.20.5"
