@@ -13,6 +13,27 @@ export interface PluralMessage {
   forms: MessageId[];
 }
 
+export interface ContextMessageId extends MessageId {
+  context: string;
+}
+
+export interface ContextPluralMessage extends PluralMessage {
+  context: string;
+}
+
+export interface ContextBuilder {
+  msg(
+    descriptor: MessageDescriptor
+  ): ContextMessageId;
+  msg<T extends string>(text: string extends T ? never : T): ContextMessageId;
+  msg(strings: TemplateStringsArray, ...values: any[]): ContextMessageId;
+  plural(
+    ...forms: Array<
+      MessageDescriptor | MessageId | string | TemplateStringsArray
+    >
+  ): ContextPluralMessage;
+}
+
 function buildFromTemplate(strings: TemplateStringsArray): string {
   let result = '';
   for (let i = 0; i < strings.length; i++) {
@@ -66,4 +87,21 @@ export function plural(
     isMessageId(f) ? f : msg(f as any)
   );
   return { forms: messages };
+}
+
+const basePlural = plural;
+
+export function context(ctx: string): ContextBuilder {
+  return {
+    msg(arg: any, ...values: any[]) {
+      return { ...msg(arg as any, ...values), context: ctx };
+    },
+    plural(
+      ...forms: Array<
+        MessageDescriptor | MessageId | string | TemplateStringsArray
+      >
+    ) {
+      return { ...basePlural(...forms), context: ctx };
+    },
+  };
 }
