@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { msg, plural } from '../src/utils.ts';
+import { msg, plural, context } from '../src/utils.ts';
 import { Translator } from '../src/translator.ts';
 import fs from 'node:fs';
 import gettextParser from 'gettext-parser';
@@ -69,4 +69,35 @@ test('npgettext handles context with plurals', () => {
     t.npgettext('company', msg`${2} apple`, msg`${2} apples`, 2),
     '2 Apple устройства'
   );
+});
+
+test('ngettext handles context-aware plural helper', () => {
+  const t = new Translator('en', translations);
+  t.useLocale('ru');
+  const apples = context('company').plural('${0} apple', '${0} apples');
+  assert.equal(t.ngettext(apples, 1, 1), '1 Apple устройство');
+  assert.equal(t.ngettext(apples, 2, 2), '2 Apple устройства');
+});
+
+test('ngettext handles context-aware message pairs', () => {
+  const t = new Translator('en', translations);
+  t.useLocale('ru');
+  const company = context('company');
+  assert.equal(
+    t.ngettext(company.msg('${0} apple'), company.msg('${0} apples'), 1, 1),
+    '1 Apple устройство'
+  );
+  assert.equal(
+    t.ngettext(company.msg('${0} apple'), company.msg('${0} apples'), 2, 2),
+    '2 Apple устройства'
+  );
+});
+
+test('pgettext and npgettext accept context-aware messages', () => {
+  const t = new Translator('en', translations);
+  t.useLocale('ru');
+  const verb = context('verb');
+  assert.equal(t.pgettext(verb.msg('Open')), 'Открыть');
+  const apples = context('company').plural('${0} apple', '${0} apples');
+  assert.equal(t.npgettext(apples, 3, 3), '3 Apple устройства');
 });
