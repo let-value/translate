@@ -6,6 +6,7 @@ export interface MessageDescriptor {
 export interface MessageId {
   id: string;
   message: string;
+  values?: any[];
 }
 
 export interface TranslationEntry {
@@ -17,11 +18,11 @@ export interface PoData {
   translations: Record<string, Record<string, TranslationEntry>>;
 }
 
-function buildFromTemplate(strings: TemplateStringsArray, values: any[]): string {
+function buildFromTemplate(strings: TemplateStringsArray): string {
   let result = '';
   for (let i = 0; i < strings.length; i++) {
     result += strings[i];
-    if (i < values.length) result += values[i];
+    if (i < strings.length - 1) result += '${' + i + '}';
   }
   return result;
 }
@@ -29,9 +30,9 @@ function buildFromTemplate(strings: TemplateStringsArray, values: any[]): string
 export function msg(
   descriptor: MessageDescriptor
 ): MessageId;
-export function msg(
-  text: string
-): MessageId;
+export function msg<
+  T extends string
+>(text: string extends T ? never : T): MessageId;
 export function msg(
   strings: TemplateStringsArray,
   ...values: any[]
@@ -42,8 +43,8 @@ export function msg(arg: any, ...values: any[]): MessageId {
   }
 
   if (Array.isArray(arg) && typeof (arg as any).raw !== 'undefined') {
-    const text = buildFromTemplate(arg as TemplateStringsArray, values);
-    return { id: text, message: text };
+    const text = buildFromTemplate(arg as TemplateStringsArray);
+    return { id: text, message: text, values };
   }
 
   if (typeof arg === 'object' && arg) {
@@ -57,6 +58,10 @@ export function msg(arg: any, ...values: any[]): MessageId {
 
 function isMessageId(obj: any): obj is MessageId {
   return obj && typeof obj === 'object' && 'id' in obj && 'message' in obj;
+}
+
+function substitute(text: string, values: any[] = []): string {
+  return text.replace(/\$\{(\d+)\}/g, (_, i) => String(values[Number(i)]));
 }
 
 export class Translator {
@@ -82,7 +87,8 @@ export class Translator {
     const localeData = this.translations[this.locale];
     const translated =
       localeData?.translations?.['']?.[message.id]?.msgstr?.[0];
-    return translated && translated.length ? translated : message.message;
+    const result = translated && translated.length ? translated : message.message;
+    return message.values ? substitute(result, message.values) : result;
   }
 }
 
