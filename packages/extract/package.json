@@ -4,7 +4,13 @@
   "main": "index.js",
   "scripts": {
     "build": "echo building extract",
-    "lint": "echo linting extract",
+    "lint": "oxlint .",
+    "format": "oxlint --fix .",
+    "typecheck": "tsc --noEmit",
     "test": "echo testing extract"
+  },
+  "devDependencies": {
+    "oxlint": "catalog:oxlint",
+    "typescript": "catalog:typescript"
   }
 }

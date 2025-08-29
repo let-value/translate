@@ -1,6 +1,6 @@
 import { parseSync } from 'oxc-parser';
 import resolver from 'oxc-resolver';
-import gettextParser from 'gettext-parser';
+import * as gettextParser from 'gettext-parser';
 import { getFormula, getNPlurals } from 'plural-forms';
 import fs from 'node:fs';
 import path from 'node:path';

@@ -10,15 +10,19 @@
   },
   "scripts": {
     "build": "echo building translate",
-    "lint": "echo linting translate",
+    "lint": "oxlint .",
+    "format": "oxlint --fix .",
+    "typecheck": "tsc --noEmit",
     "test": "tsx --test test/*.test.ts"
   },
   "dependencies": {
-    "plural-forms": "^0.5.5"
+    "plural-forms": "catalog:plural-forms"
   },
   "devDependencies": {
-    "@types/gettext-parser": "^8.0.0",
-    "gettext-parser": "^8.0.0",
-    "tsx": "^4.20.5"
+    "@types/gettext-parser": "catalog:@types/gettext-parser",
+    "gettext-parser": "catalog:gettext-parser",
+    "oxlint": "catalog:oxlint",
+    "tsx": "catalog:tsx",
+    "typescript": "catalog:typescript"
   }
 }
