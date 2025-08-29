@@ -58,10 +58,10 @@ export function msg(arg: any, ...values: any[]): MessageId {
     return { id: arg, message: arg };
   }
 
-  if (Array.isArray(arg) && typeof (arg as any).raw !== 'undefined') {
-    const text = buildFromTemplate(arg as TemplateStringsArray);
-    return { id: text, message: text, values };
-  }
+    if (Array.isArray(arg) && typeof (arg as any).raw !== 'undefined') {
+      const text = buildFromTemplate(arg as unknown as TemplateStringsArray);
+      return { id: text, message: text, values };
+    }
 
   if (typeof arg === 'object' && arg) {
     const id = arg.id ?? arg.message ?? '';

@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { msg, context } from '../src/utils.ts';
 import { Translator } from '../src/translator.ts';
 import fs from 'node:fs';
-import gettextParser from 'gettext-parser';
+import * as gettextParser from 'gettext-parser';
 
 test('translator substitutes template values', () => {
   const name = 'World';

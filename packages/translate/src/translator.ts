@@ -230,6 +230,6 @@ export class Translator {
       );
     }
 
-    return this.ngettext(args[0], ...args.slice(1));
+    return (this.ngettext as any)(args[0], ...args.slice(1));
   }
 }

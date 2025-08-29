@@ -7,19 +7,22 @@
     "translate-export": "bin/cli.ts"
   },
   "dependencies": {
-    "gettext-parser": "^8.0.0",
-    "oxc-parser": "^0.82.3",
-    "oxc-resolver": "^11.7.1",
-    "plural-forms": "^0.5.5"
+    "gettext-parser": "catalog:gettext-parser",
+    "oxc-parser": "catalog:oxc-parser",
+    "oxc-resolver": "catalog:oxc-resolver",
+    "plural-forms": "catalog:plural-forms"
   },
   "devDependencies": {
-    "@types/gettext-parser": "^8.0.0",
-    "tsx": "^4.20.5",
-    "typescript": "^5.9.2"
+    "@types/gettext-parser": "catalog:@types/gettext-parser",
+    "oxlint": "catalog:oxlint",
+    "tsx": "catalog:tsx",
+    "typescript": "catalog:typescript"
   },
   "scripts": {
     "build": "echo building export",
-    "lint": "echo linting export",
+    "lint": "oxlint .",
+    "format": "oxlint --fix .",
+    "typecheck": "tsc --noEmit",
     "test": "tsx test.ts"
   }
 }

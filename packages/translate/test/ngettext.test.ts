@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { msg, plural, context } from '../src/utils.ts';
 import { Translator } from '../src/translator.ts';
 import fs from 'node:fs';
-import gettextParser from 'gettext-parser';
+import * as gettextParser from 'gettext-parser';
 
 function load(locale: string) {
   const po = fs.readFileSync(new URL(`./fixtures/${locale}.po`, import.meta.url));
