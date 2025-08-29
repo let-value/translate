@@ -1,0 +1,10 @@
+{
+  "name": "@let-value/translate-extract",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "build": "echo building extract",
+    "lint": "echo linting extract",
+    "test": "echo testing extract"
+  }
+}

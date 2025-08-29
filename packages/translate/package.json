@@ -1,0 +1,14 @@
+{
+  "name": "@let-value/translate",
+  "version": "1.0.0",
+  "main": "index.js",
+  "exports": {
+    ".": "./index.js",
+    "./extract": "../extract/index.js"
+  },
+  "scripts": {
+    "build": "echo building translate",
+    "lint": "echo linting translate",
+    "test": "echo testing translate"
+  }
+}
