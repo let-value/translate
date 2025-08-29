@@ -35,14 +35,33 @@ function parsePluralFunc(header?: string): (n: number) => number {
   };
 }
 
+type ContextCatalog = Record<string, Record<string, string[]>>;
+
 export class Translator {
   private locale: string;
   private pluralFuncs: Record<string, (n: number) => number> = {};
+  private headers: Record<string, string> = {};
+  private translations: Record<string, ContextCatalog> = {};
   constructor(
     defaultLocale: string,
-    private translations: Record<string, GetTextTranslations>
+    translations: Record<string, GetTextTranslations>
   ) {
     this.locale = defaultLocale;
+    for (const [locale, data] of Object.entries(translations)) {
+      const contexts: ContextCatalog = {};
+      for (const [ctx, msgs] of Object.entries(data.translations || {})) {
+        contexts[ctx] = {};
+        for (const [id, entry] of Object.entries(msgs)) {
+          if (id === '') continue;
+          contexts[ctx][id] = entry.msgstr || [];
+        }
+      }
+      this.translations[locale] = contexts;
+      this.headers[locale] =
+        (data.headers?.['plural-forms']
+          ? `Plural-Forms: ${data.headers['plural-forms']}`
+          : data.translations?.['']?.['']?.msgstr?.[0]) ?? '';
+    }
   }
 
   useLocale(locale: string): void {
@@ -56,22 +75,29 @@ export class Translator {
     const message = isMessageId(msgid)
       ? msgid
       : msg(msgid as any, ...values);
-    const localeData = this.translations[this.locale];
     const translated =
-      localeData?.translations?.['']?.[message.id]?.msgstr?.[0];
+      this.translations[this.locale]?.['']?.[message.id]?.[0];
+    const result = translated && translated.length ? translated : message.message;
+    return message.values ? substitute(result, message.values) : result;
+  }
+
+  pgettext(
+    context: string,
+    msgid: MessageId | MessageDescriptor | string | TemplateStringsArray,
+    ...values: any[]
+  ): string {
+    const message = isMessageId(msgid)
+      ? msgid
+      : msg(msgid as any, ...values);
+    const translated =
+      this.translations[this.locale]?.[context]?.[message.id]?.[0];
     const result = translated && translated.length ? translated : message.message;
     return message.values ? substitute(result, message.values) : result;
   }
 
   private getPluralFunc(locale: string): (n: number) => number {
     if (!this.pluralFuncs[locale]) {
-      const localeData = this.translations[locale];
-      const header =
-        (localeData?.headers?.['plural-forms']
-          ? `Plural-Forms: ${localeData.headers['plural-forms']}`
-          : localeData?.translations?.['']?.['']?.msgstr?.[0]) ??
-        '';
-      this.pluralFuncs[locale] = parsePluralFunc(header);
+      this.pluralFuncs[locale] = parsePluralFunc(this.headers[locale]);
     }
     return this.pluralFuncs[locale];
   }
@@ -108,11 +134,54 @@ export class Translator {
       vals = args.slice(3);
     }
 
-    const localeData = this.translations[this.locale];
-    const entry = localeData?.translations?.['']?.[forms[0].id];
+    const entry = this.translations[this.locale]?.['']?.[forms[0].id];
     const pluralFunc = this.getPluralFunc(this.locale);
     const index = pluralFunc(n);
-    const translated = entry?.msgstr?.[index];
+    const translated = entry?.[index];
+    const defaultForm = forms[index] ?? forms[forms.length - 1];
+    const result = translated && translated.length ? translated : defaultForm.message;
+    const usedVals = forms.find((f) => f.values)?.values ?? vals;
+    return usedVals && usedVals.length ? substitute(result, usedVals) : result;
+  }
+
+  npgettext(
+    context: string,
+    plural: PluralMessage,
+    n: number,
+    ...values: any[]
+  ): string;
+  npgettext(
+    context: string,
+    singular: MessageId | MessageDescriptor | string | TemplateStringsArray,
+    plural: MessageId | MessageDescriptor | string | TemplateStringsArray,
+    n: number,
+    ...values: any[]
+  ): string;
+  npgettext(context: string, ...args: any[]): string {
+    let forms: MessageId[];
+    let n: number;
+    let vals: any[] = [];
+
+    if (isPluralMessage(args[0])) {
+      forms = args[0].forms;
+      n = args[1];
+      vals = args.slice(2);
+    } else {
+      const sing = isMessageId(args[0])
+        ? args[0]
+        : msg(args[0] as any, ...args.slice(3));
+      const plur = isMessageId(args[1])
+        ? args[1]
+        : msg(args[1] as any, ...args.slice(3));
+      forms = [sing, plur];
+      n = args[2];
+      vals = args.slice(3);
+    }
+
+    const entry = this.translations[this.locale]?.[context]?.[forms[0].id];
+    const pluralFunc = this.getPluralFunc(this.locale);
+    const index = pluralFunc(n);
+    const translated = entry?.[index];
     const defaultForm = forms[index] ?? forms[forms.length - 1];
     const result = translated && translated.length ? translated : defaultForm.message;
     const usedVals = forms.find((f) => f.values)?.values ?? vals;

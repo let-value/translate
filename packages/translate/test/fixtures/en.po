@@ -7,3 +7,17 @@ msgid "${0} apple"
 msgid_plural "${0} apples"
 msgstr[0] "${0} apple"
 msgstr[1] "${0} apples"
+
+msgctxt "verb"
+msgid "Open"
+msgstr[0] "Open"
+
+msgctxt "adjective"
+msgid "Open"
+msgstr[0] "Open"
+
+msgctxt "company"
+msgid "${0} apple"
+msgid_plural "${0} apples"
+msgstr[0] "${0} apple"
+msgstr[1] "${0} apples"

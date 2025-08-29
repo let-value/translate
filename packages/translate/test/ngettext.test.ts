@@ -57,3 +57,16 @@ test('ngettext works with plain strings', () => {
   assert.equal(t.ngettext('${0} apple', '${0} apples', 1, 1), '1 apple');
   assert.equal(t.ngettext('${0} apple', '${0} apples', 2, 2), '2 apples');
 });
+
+test('npgettext handles context with plurals', () => {
+  const t = new Translator('en', translations);
+  t.useLocale('ru');
+  assert.equal(
+    t.npgettext('company', msg`${1} apple`, msg`${1} apples`, 1),
+    '1 Apple устройство'
+  );
+  assert.equal(
+    t.npgettext('company', msg`${2} apple`, msg`${2} apples`, 2),
+    '2 Apple устройства'
+  );
+});

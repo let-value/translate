@@ -11,3 +11,18 @@ msgstr[2] "${0} яблок"
 
 msgid "Hello, ${0}!"
 msgstr[0] "Привет, ${0}!"
+
+msgctxt "verb"
+msgid "Open"
+msgstr[0] "Открыть"
+
+msgctxt "adjective"
+msgid "Open"
+msgstr[0] "Открытый"
+
+msgctxt "company"
+msgid "${0} apple"
+msgid_plural "${0} apples"
+msgstr[0] "${0} Apple устройство"
+msgstr[1] "${0} Apple устройства"
+msgstr[2] "${0} Apple устройств"
