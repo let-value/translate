@@ -1,0 +1,52 @@
+export interface MessageDescriptor {
+  id?: string;
+  message?: string;
+}
+
+export interface MessageId {
+  id: string;
+  message: string;
+  values?: any[];
+}
+
+function buildFromTemplate(strings: TemplateStringsArray): string {
+  let result = '';
+  for (let i = 0; i < strings.length; i++) {
+    result += strings[i];
+    if (i < strings.length - 1) result += '${' + i + '}';
+  }
+  return result;
+}
+
+export function msg(
+  descriptor: MessageDescriptor
+): MessageId;
+export function msg<
+  T extends string
+>(text: string extends T ? never : T): MessageId;
+export function msg(
+  strings: TemplateStringsArray,
+  ...values: any[]
+): MessageId;
+export function msg(arg: any, ...values: any[]): MessageId {
+  if (typeof arg === 'string') {
+    return { id: arg, message: arg };
+  }
+
+  if (Array.isArray(arg) && typeof (arg as any).raw !== 'undefined') {
+    const text = buildFromTemplate(arg as TemplateStringsArray);
+    return { id: text, message: text, values };
+  }
+
+  if (typeof arg === 'object' && arg) {
+    const id = arg.id ?? arg.message ?? '';
+    const message = arg.message ?? arg.id ?? '';
+    return { id, message };
+  }
+
+  throw new Error('Invalid msg argument');
+}
+
+export function isMessageId(obj: any): obj is MessageId {
+  return obj && typeof obj === 'object' && 'id' in obj && 'message' in obj;
+}
