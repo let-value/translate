@@ -1,18 +1,18 @@
 #!/usr/bin/env node
 import fs from 'node:fs';
-import { extractToPot } from '../src/index';
+import { extractToPo } from '../src/index';
 
-const [, , entry, out] = process.argv;
+const [, , entry, locale = 'en', out] = process.argv;
 if (!entry) {
-  console.error('Usage: translate-export <entry> [out]');
+  console.error('Usage: translate-export <entry> [locale] [out]');
   process.exit(1);
 }
 
-const pot = extractToPot(entry);
+const po = extractToPo(entry, locale);
 if (out) {
-  fs.writeFileSync(out, pot);
+  fs.writeFileSync(out, po);
 } else {
-  process.stdout.write(pot);
+  process.stdout.write(po);
 }
 
 

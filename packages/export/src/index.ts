@@ -1,5 +1,7 @@
 import { parseSync } from 'oxc-parser';
 import resolver from 'oxc-resolver';
+import gettextParser from 'gettext-parser';
+import { getFormula, getNPlurals } from 'plural-forms';
 import fs from 'node:fs';
 import path from 'node:path';
 
@@ -20,18 +22,29 @@ function walk(node: Node, visitors: Visitors): void {
   }
 }
 
-interface Message {
+export interface Message {
   msgid: string;
-  file: string;
+  references: string[];
+  comments: string[];
 }
 
-function extractFromFile(filePath: string, visited: Set<string> = new Set()): Message[] {
+interface RawMessage {
+  msgid: string;
+  reference: string;
+  comment?: string;
+}
+
+function extractFromFile(
+  filePath: string,
+  visited: Set<string> = new Set()
+): RawMessage[] {
   const absPath = path.resolve(filePath);
   if (visited.has(absPath)) return [];
   visited.add(absPath);
   const source = fs.readFileSync(absPath, 'utf8');
+  const lines = source.split(/\r?\n/);
   const ast = parseSync(absPath, source).program as Node;
-  const messages: Message[] = [];
+  const messages: RawMessage[] = [];
 
   walk(ast, {
     CallExpression(node) {
@@ -43,7 +56,13 @@ function extractFromFile(filePath: string, visited: Set<string> = new Set()): Me
       ) {
         const arg = (node as any).arguments[0];
         if (arg && arg.type === 'Literal' && typeof arg.value === 'string') {
-          messages.push({ msgid: arg.value, file: absPath });
+          const loc = (node as any).loc?.start;
+          const line = loc?.line ?? 1;
+          const rel = path.relative(process.cwd(), absPath);
+          const reference = `${rel}:${line}`;
+          const prev = lines[line - 2]?.trim();
+          const comment = prev && prev.startsWith('//') ? prev.slice(2).trim() : undefined;
+          messages.push({ msgid: arg.value, reference, comment });
         }
       }
     },
@@ -60,27 +79,48 @@ function extractFromFile(filePath: string, visited: Set<string> = new Set()): Me
 }
 
 export function extract(entry: string): Message[] {
-  return extractFromFile(entry);
-}
-
-export function buildPot(messages: Message[]): string {
-  const lines = [
-    'msgid ""',
-    'msgstr ""',
-    '"Content-Type: text/plain; charset=UTF-8\\n"',
-    ''
-  ];
-  for (const m of messages) {
-    const rel = path.relative(process.cwd(), m.file);
-    lines.push(`#: ${rel}`);
-    lines.push(`msgid ${JSON.stringify(m.msgid)}`);
-    lines.push('msgstr ""', '');
+  const raw = extractFromFile(entry);
+  const map = new Map<string, Message>();
+  for (const m of raw) {
+    if (!map.has(m.msgid)) {
+      map.set(m.msgid, { msgid: m.msgid, references: [], comments: [] });
+    }
+    const entryMsg = map.get(m.msgid)!;
+    entryMsg.references.push(m.reference);
+    if (m.comment) entryMsg.comments.push(m.comment);
   }
-  return lines.join('\n');
+  return Array.from(map.values());
 }
 
-export function extractToPot(entry: string): string {
+export function buildPo(locale: string, messages: Message[]): string {
+  const headers = {
+    'content-type': 'text/plain; charset=UTF-8',
+    'plural-forms': `nplurals=${getNPlurals(locale)}; plural=${getFormula(locale)};`,
+    language: locale
+  } as Record<string, string>;
+
+  const poObj: any = {
+    charset: 'utf-8',
+    headers,
+    translations: { '': {} as Record<string, any> }
+  };
+
+  for (const m of messages) {
+    poObj.translations[''][m.msgid] = {
+      msgid: m.msgid,
+      msgstr: [''],
+      references: m.references.join('\n'),
+      comments: m.comments.length
+        ? { extracted: m.comments.join('\n') }
+        : undefined
+    };
+  }
+
+  return gettextParser.po.compile(poObj).toString();
+}
+
+export function extractToPo(entry: string, locale: string): string {
   const messages = extract(entry);
-  return buildPot(messages);
+  return buildPo(locale, messages);
 }
 
