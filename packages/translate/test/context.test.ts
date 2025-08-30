@@ -1,16 +1,16 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { context } from '../src/utils.ts';
+import { context, msg } from '../src/helpers.ts';
 
 test('context builder attaches context to msg', () => {
   const verb = context('verb');
-  assert.deepEqual(verb.msg('Open'), { id: 'Open', message: 'Open', context: 'verb' });
+  assert.deepEqual(verb.msg('Open'), { context: 'verb', id: { id: 'Open', message: 'Open' } });
 });
 
 test('context builder attaches context to plural', () => {
   const company = context('company');
-  const p = company.plural('${0} apple', '${0} apples');
+  const p = company.plural(msg`${0} apple`, msg`${0} apples`, 2);
   assert.equal(p.context, 'company');
-  assert.equal(p.forms[0].message, '${0} apple');
-  assert.equal(p.forms[1].message, '${0} apples');
+  assert.equal(p.id.forms[0].message, '${0} apple');
+  assert.equal(p.id.forms[1].message, '${0} apples');
 });

@@ -1,236 +1,104 @@
 import type { GetTextTranslations } from 'gettext-parser';
 import {
   msg,
-  isMessageId,
-  isPluralMessage,
-  MessageDescriptor,
   MessageId,
-  PluralMessage,
+  PluralMessageId,
   ContextMessageId,
-  ContextPluralMessage,
-} from './utils.ts';
-import {
-  getPluralFunc,
-  getNPlurals,
-} from 'plural-forms';
-
-function substitute(text: string, values: any[] = []): string {
-  return text
-    .replace(/\$\{(\d+)\}/g, (_, i) => String(values[Number(i)]));
-}
-
-function parsePluralFunc(locale: string): (n: number) => number {
-  const defaultFn = (n: number) => (n !== 1 ? 1 : 0);
-  try {
-    const nplurals = Number(getNPlurals(locale));
-    const pluralFunc = getPluralFunc(locale);
-    const forms = Array.from({ length: nplurals }, (_, i) => String(i));
-    return (n: number) => {
-      const idx = Number(pluralFunc(n, forms));
-      if (idx < 0) return 0;
-      if (idx >= nplurals) return nplurals - 1;
-      return idx;
-    };
-  } catch {
-    return defaultFn;
-  }
-}
-
-type ContextCatalog = Record<string, Record<string, string[]>>;
+  ContextPluralMessageId,
+  plural,
+  MessageFunction,
+  PluralFunction,
+} from './helpers.ts';
+import { pluralFunc, substitute } from './utils.ts';
 
 export class Translator {
   private locale: string;
-  private pluralFuncs: Record<string, (n: number) => number> = {};
-  private translations: Record<string, ContextCatalog> = {};
+  private translations: Record<string, GetTextTranslations> = {};
+
   constructor(
     defaultLocale: string,
     translations: Record<string, GetTextTranslations>
   ) {
     this.locale = defaultLocale;
-    for (const [locale, data] of Object.entries(translations)) {
-      const contexts: ContextCatalog = {};
-      for (const [ctx, msgs] of Object.entries(data.translations || {})) {
-        contexts[ctx] = {};
-        for (const [id, entry] of Object.entries(msgs)) {
-          if (id === '') continue;
-          contexts[ctx][id] = entry.msgstr || [];
-        }
-      }
-      this.translations[locale] = contexts;
-    }
+    this.translations = translations;
   }
+
+  msg = msg;
+  plural = plural;
 
   useLocale(locale: string): void {
     this.locale = locale;
   }
 
-  gettext(
-    msgid:
-      | MessageId
-      | ContextMessageId
-      | MessageDescriptor
-      | string
-      | TemplateStringsArray,
-    ...values: any[]
-  ): string {
-    const message = isMessageId(msgid)
-      ? (msgid as MessageId)
-      : msg(msgid as any, ...values);
-    const ctx = (message as any).context ?? '';
-    const translated =
-      this.translations[this.locale]?.[ctx]?.[message.id]?.[0];
-    const result = translated && translated.length ? translated : message.message;
-    return message.values ? substitute(result, message.values) : result;
+  getText({ id, message, values }: MessageId, context = ''): string {
+    const translated = this.translations[this.locale].translations?.[context]?.[id];
+    const result = translated && translated.msgstr ? translated.msgstr[0] : message;
+    return values ? substitute(result, values) : result;
   }
 
-  pgettext(
-    context: string,
-    msgid: MessageId | MessageDescriptor | string | TemplateStringsArray,
-    ...values: any[]
-  ): string;
-  pgettext(
-    msgid: ContextMessageId | MessageDescriptor | string | TemplateStringsArray,
-    ...values: any[]
-  ): string;
-  pgettext(...args: any[]): string {
-    let ctx: string;
-    let message: MessageId;
-    if (typeof args[0] === 'string') {
-      ctx = args[0];
-      const msgid = args[1];
-      const vals = args.slice(2);
-      message = isMessageId(msgid) ? msgid : msg(msgid as any, ...vals);
-    } else {
-      message = isMessageId(args[0])
-        ? (args[0] as MessageId)
-        : msg(args[0] as any, ...args.slice(1));
-      ctx = (message as any).context ?? '';
-    }
-    const translated =
-      this.translations[this.locale]?.[ctx]?.[message.id]?.[0];
-    const result = translated && translated.length ? translated : message.message;
-    return message.values ? substitute(result, message.values) : result;
-  }
-
-  private getPluralFunc(locale: string): (n: number) => number {
-    if (!this.pluralFuncs[locale]) {
-      this.pluralFuncs[locale] = parsePluralFunc(locale);
-    }
-    return this.pluralFuncs[locale];
-  }
-
-  ngettext(
-    plural: PluralMessage | ContextPluralMessage,
-    n: number,
-    ...values: any[]
-  ): string;
-  ngettext(
-    singular:
-      | MessageId
-      | ContextMessageId
-      | MessageDescriptor
-      | string
-      | TemplateStringsArray,
-    plural:
-      | MessageId
-      | ContextMessageId
-      | MessageDescriptor
-      | string
-      | TemplateStringsArray,
-    n: number,
-    ...values: any[]
-  ): string;
-  ngettext(...args: any[]): string {
-    let forms: MessageId[];
-    let n: number;
-    let vals: any[] = [];
-    let ctx = '';
-
-    if (isPluralMessage(args[0])) {
-      forms = (args[0] as PluralMessage).forms;
-      ctx = (args[0] as any).context ?? '';
-      n = args[1];
-      vals = args.slice(2);
-    } else {
-      const sing = isMessageId(args[0])
-        ? (args[0] as MessageId)
-        : msg(args[0] as any, ...args.slice(3));
-      const plur = isMessageId(args[1])
-        ? (args[1] as MessageId)
-        : msg(args[1] as any, ...args.slice(3));
-      forms = [sing, plur];
-      ctx =
-        (sing as any).context ?? (plur as any).context ?? '';
-      n = args[2];
-      vals = args.slice(3);
-    }
-
-    const entry = this.translations[this.locale]?.[ctx]?.[forms[0].id];
-    const pluralFunc = this.getPluralFunc(this.locale);
-    const index = pluralFunc(n);
-    const translated = entry?.[index];
+  getPluralText({ forms, n }: PluralMessageId, context = ''): string {
+    const entry = this.translations[this.locale].translations?.[context]?.[forms[0].id];
+    const index = pluralFunc(this.locale)(n);
+    const translated = entry.msgstr[index];
     const defaultForm = forms[index] ?? forms[forms.length - 1];
     const result = translated && translated.length ? translated : defaultForm.message;
-    const usedVals = forms.find((f) => f.values)?.values ?? vals;
+    const usedVals = forms.find((f) => f.values)?.values;
     return usedVals && usedVals.length ? substitute(result, usedVals) : result;
   }
 
-  npgettext(
-    context: string,
-    plural: PluralMessage,
-    n: number,
-    ...values: any[]
-  ): string;
-  npgettext(
-    context: string,
-    singular: MessageId | MessageDescriptor | string | TemplateStringsArray,
-    plural: MessageId | MessageDescriptor | string | TemplateStringsArray,
-    n: number,
-    ...values: any[]
-  ): string;
-  npgettext(
-    plural: ContextPluralMessage,
-    n: number,
-    ...values: any[]
-  ): string;
-  npgettext(
-    singular:
-      | ContextMessageId
-      | MessageId
-      | MessageDescriptor
-      | string
-      | TemplateStringsArray,
-    plural:
-      | MessageId
-      | MessageDescriptor
-      | string
-      | TemplateStringsArray,
-    n: number,
-    ...values: any[]
-  ): string;
-  npgettext(...args: any[]): string {
-    if (typeof args[0] === 'string') {
-      const ctx = args[0];
-      if (isPluralMessage(args[1])) {
-        return this.ngettext(
-          { ...(args[1] as PluralMessage), context: ctx },
-          args[2],
-          ...args.slice(3)
-        );
-      }
-      const sing = isMessageId(args[1])
-        ? (args[1] as MessageId)
-        : msg(args[1] as any, ...args.slice(4));
-      const plur = isMessageId(args[2])
-        ? (args[2] as MessageId)
-        : msg(args[2] as any, ...args.slice(4));
-      return this.ngettext(
-        { forms: [sing, plur], context: ctx },
-        args[3],
-        ...args.slice(4)
-      );
+  gettext(id: MessageId): string;
+  gettext(...args: Parameters<MessageFunction>): string;
+  gettext(...args: [MessageId] | Parameters<MessageFunction>): string {
+    const [source] = args;
+
+    if (typeof source === 'object' && 'id' in source && 'message' in source) {
+      return this.getText(source);
     }
 
-    return (this.ngettext as any)(args[0], ...args.slice(1));
+    return this.getText(msg(...args as Parameters<MessageFunction>));
+  }
+
+  pgettext(id: ContextMessageId): string;
+  pgettext(context: string, ...args: Parameters<typeof this.gettext>): string;
+  pgettext(context: ContextMessageId | string, ...args: [] | [MessageId] | Parameters<MessageFunction>): string {
+    if (typeof context === "object") {
+      return this.getText(context.id, context.context);
+    }
+
+    const [source] = args;
+
+    if (typeof source === 'object' && 'id' in source && 'message' in source) {
+      return this.getText(source);
+    }
+
+    return this.getText(msg(...args as Parameters<MessageFunction>), context);
+  }
+
+  ngettext(id: PluralMessageId): string;
+  ngettext(...args: Parameters<PluralFunction>): string;
+  ngettext(...args: [PluralMessageId] | Parameters<PluralFunction>): string {
+    const [source] = args;
+
+    if (typeof source === 'object' && 'forms' in source) {
+      return this.getPluralText(source);
+    }
+
+    return this.getPluralText(plural(...args as Parameters<PluralFunction>));
+  }
+
+  npgettext(id: ContextPluralMessageId): string;
+  npgettext(context: string, ...args: Parameters<typeof this.ngettext>): string;
+  npgettext(context: ContextPluralMessageId | string, ...args: [] | [PluralMessageId] | Parameters<PluralFunction>): string {
+    if (typeof context === "object") {
+      return this.getPluralText(context.id, context.context);
+    }
+
+    const [source] = args;
+
+    if (typeof source === 'object' && 'forms' in source) {
+      return this.getPluralText(source);
+    }
+
+    return this.getPluralText(plural(...args as Parameters<PluralFunction>));
   }
 }

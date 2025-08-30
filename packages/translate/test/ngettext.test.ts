@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { msg, plural, context } from '../src/utils.ts';
+import { msg, plural, context } from '../src/helpers.ts';
 import { Translator } from '../src/translator.ts';
 import fs from 'node:fs';
 import * as gettextParser from 'gettext-parser';
@@ -31,31 +31,15 @@ test('ngettext handles Russian plurals', () => {
 
 test('ngettext supports plural helper', () => {
   const t = new Translator('en', translations);
-  const apples = plural('${0} apple', '${0} apples');
-  assert.equal(t.ngettext(apples, 1, 1), '1 apple');
-  assert.equal(t.ngettext(apples, 2, 2), '2 apples');
+  const apples = plural(msg`${0} apple`, msg`${0} apples`, 1);
+  assert.equal(t.ngettext(apples), '1 apple');
 });
 
 test('ngettext supports plural helper with multiple forms', () => {
   const t = new Translator('en', translations);
   t.useLocale('ru');
-  const apples = plural('${0} apple', '${0} apples', '${0} many apples');
-  assert.equal(t.ngettext(apples, 1, 1), '1 яблоко');
-  assert.equal(t.ngettext(apples, 2, 2), '2 яблока');
-  assert.equal(t.ngettext(apples, 5, 5), '5 яблок');
-});
-
-test('ngettext handles deferred msg objects', () => {
-  const t = new Translator('en', translations);
-  const sing = msg('${0} apple');
-  const plur = msg('${0} apples');
-  assert.equal(t.ngettext(sing, plur, 3, 3), '3 apples');
-});
-
-test('ngettext works with plain strings', () => {
-  const t = new Translator('en', translations);
-  assert.equal(t.ngettext('${0} apple', '${0} apples', 1, 1), '1 apple');
-  assert.equal(t.ngettext('${0} apple', '${0} apples', 2, 2), '2 apples');
+  const apples = plural(msg`${0} apple`, msg`${0} apples`, msg`${0} many apples`, 5);
+  assert.equal(t.ngettext(apples), '5 яблок');
 });
 
 test('npgettext handles context with plurals', () => {
@@ -74,9 +58,8 @@ test('npgettext handles context with plurals', () => {
 test('ngettext handles context-aware plural helper', () => {
   const t = new Translator('en', translations);
   t.useLocale('ru');
-  const apples = context('company').plural('${0} apple', '${0} apples');
-  assert.equal(t.ngettext(apples, 1, 1), '1 Apple устройство');
-  assert.equal(t.ngettext(apples, 2, 2), '2 Apple устройства');
+  const apples = context('company').plural(msg`${0} apple`, msg`${0} apples`, 2);
+  assert.equal(t.npgettext(apples), '2 Apple устройства');
 });
 
 test('ngettext handles context-aware message pairs', () => {

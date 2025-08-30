@@ -1,6 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { msg } from '../src/utils.ts';
+
+import { msg } from '../src/helpers.ts';
 
 test('msg with string returns id and message', () => {
   assert.deepEqual(msg('hello'), { id: 'hello', message: 'hello' });
@@ -36,6 +37,8 @@ test('msg disallows computed strings', () => {
   msg('Computed' + variable + 'string');
 });
 
-test('msg with invalid argument throws', () => {
-  assert.throws(() => msg(123 as any), { message: 'Invalid msg argument' });
+test('msg disallows variables', () => {
+  let name = 'World';
+  // @ts-expect-error dynamic template strings are not allowed
+  msg(name);
 });

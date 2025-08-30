@@ -1,12 +1,17 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { plural } from '../src/utils.ts';
+
+import { msg, plural } from '../src/helpers.ts';
+
+test('msg with string returns id and message', () => {
+  assert.deepEqual(plural(msg("hello"), 1), { forms: [{ id: 'hello', message: 'hello' }], n: 1 });
+});
 
 test('plural supports arbitrary number of forms', () => {
-  const forms = plural('${0} apple', '${0} apples', '${0} many apples');
-  assert.equal(forms.forms.length, 3);
-  assert.equal(forms.forms[0].message, '${0} apple');
-  assert.equal(forms.forms[1].message, '${0} apples');
-  assert.equal(forms.forms[2].message, '${0} many apples');
+  const forms = plural(msg`${0} apple`, msg`${0} apples`, msg`${0} many apples`, 3);
+  assert.deepEqual(forms.forms[0], { id: '${0} apple', message: '${0} apple', values: [0] });
+  assert.deepEqual(forms.forms[1], { id: '${0} apples', message: '${0} apples', values: [0] });
+  assert.deepEqual(forms.forms[2], { id: '${0} many apples', message: '${0} many apples', values: [0] });
+  assert.equal(forms.n, 3);
 });
 
