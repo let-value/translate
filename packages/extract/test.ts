@@ -9,7 +9,7 @@ import { fileURLToPath } from 'node:url';
 const require = createRequire(import.meta.url);
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'translate-export-'));
+const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'translate-extract-'));
 fs.writeFileSync(
   path.join(tmp, 'dep.js'),
   "// World comment\n t('World');\n"
@@ -26,5 +26,5 @@ const output = execSync(`node ${tsx} ${cli} entry.js en`, {
   encoding: 'utf8'
 });
 assert(output.length > 0);
-console.log('export test passed');
+console.log('extract test passed');
 

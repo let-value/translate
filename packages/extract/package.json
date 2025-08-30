@@ -1,10 +1,10 @@
 {
-  "name": "@let-value/translate-export",
+  "name": "@let-value/translate-extract",
   "version": "1.0.0",
   "type": "module",
   "main": "src/index.ts",
   "bin": {
-    "translate-export": "bin/cli.ts"
+    "translate-extract": "bin/cli.ts"
   },
   "dependencies": {
     "gettext-parser": "catalog:",
@@ -19,7 +19,7 @@
     "typescript": "catalog:"
   },
   "scripts": {
-    "build": "echo building export",
+    "build": "echo building extract",
     "lint": "oxlint .",
     "format": "oxlint --fix .",
     "typecheck": "tsc --noEmit",
