@@ -4,6 +4,7 @@
         "source.fixAll.oxc": "explicit"
     },
     "cSpell.words": [
+        "msgctxt",
         "ngettext",
         "npgettext",
         "oxlint",

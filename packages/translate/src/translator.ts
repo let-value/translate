@@ -31,14 +31,14 @@ export class Translator {
     this.locale = locale;
   }
 
-  getText({ msgid: id, msgstr: message, values }: MessageId, context = ''): string {
-    const translated = this.translations[this.locale]?.translations?.[context]?.[id];
-    const result = translated && translated.msgstr ? translated.msgstr[0] : message;
+  getText({ msgid, msgstr, values }: MessageId, msgctxt = ''): string {
+    const translated = this.translations[this.locale]?.translations?.[msgctxt]?.[msgid];
+    const result = translated && translated.msgstr ? translated.msgstr[0] : msgstr;
     return values ? substitute(result, values) : result;
   }
 
-  getPluralText({ forms, n }: PluralMessageId, context = ''): string {
-    const entry = this.translations[this.locale].translations?.[context]?.[forms[0].msgid];
+  getPluralText({ forms, n }: PluralMessageId, msgctxt = ''): string {
+    const entry = this.translations[this.locale].translations?.[msgctxt]?.[forms[0].msgid];
     const index = pluralFunc(this.locale)(n);
     const translated = entry.msgstr[index];
     const defaultForm = forms[index] ?? forms[forms.length - 1];
@@ -98,9 +98,9 @@ export class Translator {
     const [source] = args;
 
     if (typeof source === 'object' && 'forms' in source) {
-      return this.getPluralText(source);
+      return this.getPluralText(source, context);
     }
 
-    return this.getPluralText(plural(...args as Parameters<PluralFunction>));
+    return this.getPluralText(plural(...args as Parameters<PluralFunction>), context);
   }
 }

@@ -4,7 +4,7 @@ import { context, msg } from '../src/helpers.ts';
 
 test('context builder attaches context to msg', () => {
   const verb = context('verb');
-  assert.deepEqual(verb.msg('Open'), { context: 'verb', id: { id: 'Open', message: 'Open' } });
+  assert.deepEqual(verb.msg('Open'), { context: 'verb', id: { msgid: 'Open', msgstr: 'Open' } });
 });
 
 test('context builder attaches context to plural', () => {

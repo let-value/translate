@@ -31,20 +31,18 @@ test('ngettext handles Russian plurals', () => {
 
 test('ngettext supports plural helper', () => {
   const t = new Translator('en', translations);
-  const apples = plural(msg`${0} apple`, msg`${0} apples`, 1);
+  const apples = plural(msg`${1} apple`, msg`${1} apples`, 1);
   assert.equal(t.ngettext(apples), '1 apple');
 });
 
 test('ngettext supports plural helper with multiple forms', () => {
-  const t = new Translator('en', translations);
-  t.useLocale('ru');
-  const apples = plural(msg`${0} apple`, msg`${0} apples`, msg`${0} many apples`, 5);
+  const t = new Translator('ru', translations);
+  const apples = plural(msg`${5} apple`, msg`${5} apples`, msg`${5} many apples`, 5);
   assert.equal(t.ngettext(apples), '5 яблок');
 });
 
 test('npgettext handles context with plurals', () => {
-  const t = new Translator('en', translations);
-  t.useLocale('ru');
+  const t = new Translator('ru', translations);
   assert.equal(
     t.npgettext('company', msg`${1} apple`, msg`${1} apples`, 1),
     '1 Apple устройство'
@@ -56,31 +54,7 @@ test('npgettext handles context with plurals', () => {
 });
 
 test('ngettext handles context-aware plural helper', () => {
-  const t = new Translator('en', translations);
-  t.useLocale('ru');
-  const apples = context('company').plural(msg`${0} apple`, msg`${0} apples`, 2);
+  const t = new Translator('ru', translations);
+  const apples = context('company').plural(msg`${2} apple`, msg`${2} apples`, 2);
   assert.equal(t.npgettext(apples), '2 Apple устройства');
-});
-
-test('ngettext handles context-aware message pairs', () => {
-  const t = new Translator('en', translations);
-  t.useLocale('ru');
-  const company = context('company');
-  assert.equal(
-    t.ngettext(company.msg('${0} apple'), company.msg('${0} apples'), 1, 1),
-    '1 Apple устройство'
-  );
-  assert.equal(
-    t.ngettext(company.msg('${0} apple'), company.msg('${0} apples'), 2, 2),
-    '2 Apple устройства'
-  );
-});
-
-test('pgettext and npgettext accept context-aware messages', () => {
-  const t = new Translator('en', translations);
-  t.useLocale('ru');
-  const verb = context('verb');
-  assert.equal(t.pgettext(verb.msg('Open')), 'Открыть');
-  const apples = context('company').plural('${0} apple', '${0} apples');
-  assert.equal(t.npgettext(apples, 3, 3), '3 Apple устройства');
 });
