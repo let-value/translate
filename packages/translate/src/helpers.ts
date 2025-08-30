@@ -1,4 +1,4 @@
-import { assert } from "./utils";
+import { assert, StrictStaticString } from "./utils";
 
 export interface MessageDescriptor {
   id?: string;
@@ -6,8 +6,8 @@ export interface MessageDescriptor {
 }
 
 export interface MessageId {
-  id: string;
-  message: string;
+  msgid: string;
+  msgstr: string;
   values?: any[];
 }
 
@@ -35,28 +35,22 @@ function buildFromTemplate(strings: TemplateStringsArray): string {
   return result;
 }
 
-type IsUnion<T, U = T> =
-  (T extends any ? (x: T) => 0 : never) extends (x: U) => 0 ? false : true;
-
-type StrictStaticString<T extends string> =
-  string extends T ? never : IsUnion<T> extends true ? never : T;
-
 export function msg<T extends string>(id: StrictStaticString<T>): MessageId;
 export function msg(descriptor: MessageDescriptor): MessageId;
 export function msg(strings: TemplateStringsArray, ...values: unknown[]): MessageId;
 export function msg(source: string | MessageDescriptor | TemplateStringsArray, ...values: unknown[]): MessageId {
   if (typeof source === 'string') {
-    return { id: source, message: source };
+    return { msgid: source, msgstr: source };
   }
 
   if (typeof source === 'object' && "reduce" in source) {
     const id = buildFromTemplate(source);
-    return { id, message: id, values };
+    return { msgid: id, msgstr: id, values };
   }
 
   const id = source.id ?? source.message ?? '';
   const message = source.message ?? source.id ?? '';
-  return { id, message };
+  return { msgid: id, msgstr: message };
 }
 
 export type MessageFunction = typeof msg;
