@@ -16,14 +16,12 @@
 	},
 	"devDependencies": {
 		"@types/gettext-parser": "catalog:",
-		"@biomejs/biome": "catalog:",
 		"tsx": "catalog:",
 		"typescript": "catalog:"
 	},
 	"scripts": {
 		"build": "echo building extract",
-		"lint": "biome lint .",
-		"format": "biome format --write .",
+		"check": "biome check .",
 		"typecheck": "tsc --noEmit",
 		"test": "tsx test.ts"
 	}

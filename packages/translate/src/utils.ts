@@ -20,7 +20,7 @@ export function assert<T>(value: T, message?: string): asserts value is T {
 
 export function memo<T extends (...args: any[]) => any>(fn: T): T {
 	const cache = new Map<string, ReturnType<T>>();
-	return function (...args: Parameters<T>): ReturnType<T> {
+	return ((...args: Parameters<T>): ReturnType<T> => {
 		const key = JSON.stringify(args);
 		if (cache.has(key)) {
 			return cache.get(key)!;
@@ -28,7 +28,7 @@ export function memo<T extends (...args: any[]) => any>(fn: T): T {
 		const result = fn(...args);
 		cache.set(key, result);
 		return result;
-	} as T;
+	}) as T;
 }
 
 export function substitute(text: string, values: any[] = []): string {

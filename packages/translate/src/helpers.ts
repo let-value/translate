@@ -1,4 +1,4 @@
-import { assert, StrictStaticString } from "./utils";
+import { assert, type StrictStaticString } from "./utils";
 
 export interface MessageDescriptor {
 	id?: string;

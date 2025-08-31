@@ -8,8 +8,7 @@
 	},
 	"scripts": {
 		"build": "echo building translate",
-		"lint": "biome lint .",
-		"format": "biome format --write .",
+		"check": "biome check .",
 		"typecheck": "tsc --noEmit",
 		"test": "tsx --test test/*.test.ts"
 	},
@@ -19,8 +18,6 @@
 	},
 	"devDependencies": {
 		"@types/gettext-parser": "catalog:",
-		"gettext-parser": "catalog:",
-		"@biomejs/biome": "catalog:",
 		"tsx": "catalog:",
 		"typescript": "catalog:"
 	}

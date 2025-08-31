@@ -1,7 +1,7 @@
-import { test } from "node:test";
 import assert from "node:assert/strict";
+import { test } from "node:test";
 
-import { substitute, memo, pluralFunc } from "../src/utils.ts";
+import { memo, pluralFunc, substitute } from "../src/utils.ts";
 
 // substitute replacement behavior
 test("substitute replaces placeholders with values", () => {

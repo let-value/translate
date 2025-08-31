@@ -1,15 +1,14 @@
 import assert from "node:assert";
+import { execSync } from "node:child_process";
 import fs from "node:fs";
+import { createRequire } from "node:module";
 import os from "node:os";
 import path from "node:path";
-import { execSync } from "node:child_process";
-import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
-
-import { parseFile } from "./src/parse";
-import { resolveImports } from "./src/walk";
-import { collect, buildPo } from "./src/po";
 import { extract, extractPo } from "./src";
+import { parseFile } from "./src/parse";
+import { buildPo, collect } from "./src/po";
+import { resolveImports } from "./src/walk";
 
 const require = createRequire(import.meta.url);
 const __dirname = path.dirname(fileURLToPath(import.meta.url));

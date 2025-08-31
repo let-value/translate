@@ -1,6 +1,6 @@
+import type { GetTextTranslation } from "gettext-parser";
 import * as gettextParser from "gettext-parser";
 import { getFormula, getNPlurals } from "plural-forms";
-import type { GetTextTranslation } from "gettext-parser";
 
 export interface Message {
 	msgid: string;
@@ -40,7 +40,7 @@ export function buildPo(locale: string, messages: Message[]): string {
 	const poObj: any = {
 		charset: "utf-8",
 		headers,
-		translations: { "": {} as Record<string, any> },
+		translations: { "": {} as Record<string, unknown> },
 	};
 
 	for (const m of messages) {

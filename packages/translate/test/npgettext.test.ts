@@ -1,9 +1,9 @@
-import { test } from "node:test";
 import assert from "node:assert/strict";
+import fs from "node:fs";
+import { test } from "node:test";
+import * as gettextParser from "gettext-parser";
 import { context, msg } from "../src/helpers.ts";
 import { Translator } from "../src/translator.ts";
-import fs from "node:fs";
-import * as gettextParser from "gettext-parser";
 
 function load(locale: string) {
 	const po = fs.readFileSync(

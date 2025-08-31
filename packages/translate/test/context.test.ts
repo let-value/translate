@@ -1,5 +1,5 @@
-import { test } from "node:test";
 import assert from "node:assert/strict";
+import { test } from "node:test";
 import { context, msg } from "../src/helpers.ts";
 
 test("context builder attaches context to msg", () => {

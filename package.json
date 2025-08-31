@@ -17,8 +17,7 @@
 	},
 	"scripts": {
 		"build": "npm run build --workspaces",
-		"lint": "npm run lint --workspaces",
-		"format": "npm run format --workspaces",
+		"check": "npm run lint --workspaces",
 		"typecheck": "npm run typecheck --workspaces",
 		"test": "npm run test --workspaces"
 	},

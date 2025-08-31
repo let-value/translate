@@ -1,16 +1,16 @@
 import type { GetTextTranslations } from "gettext-parser";
 import {
+	type ContextMessageId,
+	type ContextPluralMessageId,
+	type MessageDescriptor,
+	type MessageFunction,
+	type MessageId,
 	msg,
-	MessageId,
-	PluralMessageId,
-	ContextMessageId,
-	ContextPluralMessageId,
+	type PluralFunction,
+	type PluralMessageId,
 	plural,
-	MessageFunction,
-	PluralFunction,
-	MessageDescriptor,
 } from "./helpers.ts";
-import { pluralFunc, StrictStaticString, substitute } from "./utils.ts";
+import { pluralFunc, type StrictStaticString, substitute } from "./utils.ts";
 
 export class Translator {
 	private locale: string;

@@ -1,5 +1,5 @@
-import { test } from "node:test";
 import assert from "node:assert/strict";
+import { test } from "node:test";
 
 import { msg } from "../src/helpers.ts";
 
@@ -44,7 +44,7 @@ test("msg disallows computed strings", () => {
 });
 
 test("msg disallows variables", () => {
-	let name = "World";
+	const name = "World";
 	// @ts-expect-error dynamic template strings are not allowed
 	msg(name);
 });
