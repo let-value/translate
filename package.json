@@ -12,7 +12,8 @@
       "tsx": "4.20.5",
       "typescript": "5.9.2",
       "oxc-parser": "0.82.3",
-      "oxc-resolver": "11.7.1"
+      "oxc-resolver": "11.7.1",
+      "oxc-walker": "0.4.0"
     }
   },
   "scripts": {
@@ -30,6 +31,7 @@
     "oxlint": "catalog:",
     "plural-forms": "catalog:",
     "tsx": "catalog:",
-    "typescript": "catalog:"
+    "typescript": "catalog:",
+    "oxc-walker": "catalog:"
   }
 }

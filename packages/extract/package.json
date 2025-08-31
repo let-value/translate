@@ -10,6 +10,7 @@
     "gettext-parser": "catalog:",
     "oxc-parser": "catalog:",
     "oxc-resolver": "catalog:",
+    "oxc-walker": "catalog:",
     "plural-forms": "catalog:"
   },
   "devDependencies": {
