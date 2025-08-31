@@ -41,6 +41,18 @@ test('ngettext supports plural helper with multiple forms', () => {
   assert.equal(t.ngettext(apples), '5 яблок');
 });
 
+test('ngettext substitutes values from the chosen plural form', () => {
+  const t = new Translator('en', translations);
+  assert.equal(
+    t.ngettext(msg`${'Bob'} ${1} carrot`, msg`${2} carrots for ${'Bob'}`, 1),
+    'Bob 1 carrot',
+  );
+  assert.equal(
+    t.ngettext(msg`${'Bob'} ${1} carrot`, msg`${2} carrots for ${'Bob'}`, 2),
+    '2 carrots for Bob',
+  );
+});
+
 test('npgettext handles context with plurals', () => {
   const t = new Translator('ru', translations);
   assert.equal(

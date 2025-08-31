@@ -38,12 +38,12 @@ export class Translator {
   }
 
   getPluralText({ forms, n }: PluralMessageId, msgctxt = ''): string {
-    const entry = this.translations[this.locale].translations?.[msgctxt]?.[forms[0].msgid];
+    const entry = this.translations[this.locale]?.translations?.[msgctxt]?.[forms[0].msgid];
     const index = pluralFunc(this.locale)(n);
-    const translated = entry.msgstr[index];
-    const defaultForm = forms[index] ?? forms[forms.length - 1];
-    const result = translated && translated.length ? translated : defaultForm.msgstr;
-    const usedVals = forms.find((f) => f.values)?.values;
+    const form = forms[index] ?? forms[forms.length - 1];
+    const translated = entry?.msgstr?.[index];
+    const result = translated && translated.length ? translated : form.msgstr;
+    const usedVals = form.values && form.values.length ? form.values : forms[0].values;
     return usedVals && usedVals.length ? substitute(result, usedVals) : result;
   }
 
