@@ -1,21 +1,10 @@
 import fs from "node:fs";
 import path from "node:path";
+import type { GetTextTranslation } from "gettext-parser";
 import Parser from "tree-sitter";
 import JavaScript from "tree-sitter-javascript";
 import TS from "tree-sitter-typescript";
 import { messageQueries } from "./queries";
-import type { GetTextTranslation } from "gettext-parser";
-
-function cleanComment(node: Parser.SyntaxNode): string {
-	const text = node.text;
-	if (text.startsWith("/*")) {
-		return text
-			.slice(2, -2)
-			.replace(/^\s*\*?\s*/gm, "")
-			.trim();
-	}
-	return text.replace(/^\/\/\s?/, "").trim();
-}
 
 export interface ParseResult {
 	messages: GetTextTranslation[];
@@ -48,19 +37,17 @@ export function parseFile(filePath: string): ParseResult {
 	for (const spec of messageQueries) {
 		const query = new Parser.Query(language, spec.pattern);
 		for (const match of query.matches(tree.rootNode)) {
-			for (const { node, translation, comment } of spec.extract(match)) {
+			for (const { node, translation } of spec.extract(match)) {
 				if (seen.has(node.id)) continue;
 				seen.add(node.id);
 				const line = node.startPosition.row + 1;
 				const rel = path.relative(process.cwd(), absPath);
 				const reference = `${rel}:${line}`;
-				const cleaned = comment ? cleanComment(comment) : undefined;
 				const t: GetTextTranslation = {
 					...translation,
 					comments: {
 						...(translation.comments ?? {}),
 						reference,
-						...(cleaned ? { extracted: cleaned } : {}),
 					},
 				};
 				messages.push(t);

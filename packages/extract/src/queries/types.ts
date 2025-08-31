@@ -1,10 +1,13 @@
-import type Parser from "tree-sitter";
 import type { GetTextTranslation } from "gettext-parser";
+import type Parser from "tree-sitter";
 
 export interface MessageMatch {
 	node: Parser.SyntaxNode;
 	translation: GetTextTranslation;
-	comment?: Parser.SyntaxNode;
+}
+
+export interface Context {
+	file: string;
 }
 
 export interface QuerySpec {

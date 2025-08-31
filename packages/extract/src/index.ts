@@ -1,15 +1,15 @@
 import path from "node:path";
-import { parseFile } from "./parse";
-import { resolveImports } from "./walk";
-import { collect as collectImpl, buildPo as buildPoImpl } from "./po";
 import type { GetTextTranslation } from "gettext-parser";
-import type { ParseResult } from "./parse";
 
-export { parseFile } from "./parse";
+import { parseFile } from "./parse";
+import { buildPo as buildPoImpl, collect as collectImpl } from "./po";
+import { resolveImports } from "./walk";
+
 export type { ParseResult } from "./parse";
-export { resolveImports } from "./walk";
-export { collect, buildPo } from "./po";
+export { parseFile } from "./parse";
 export type { Message } from "./po";
+export { buildPo, collect } from "./po";
+export { resolveImports } from "./walk";
 
 /** Walk the dependency graph starting from entry and collect raw messages. */
 export function extract(entry: string): GetTextTranslation[] {

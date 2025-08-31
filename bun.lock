@@ -4,6 +4,7 @@
     "": {
       "name": "translate",
       "devDependencies": {
+<<<<<<< Updated upstream
         "@biomejs/biome": "catalog:",
         "@types/gettext-parser": "catalog:",
         "gettext-parser": "catalog:",
@@ -12,6 +13,8 @@
         "tree-sitter": "catalog:",
         "tree-sitter-javascript": "catalog:",
         "tree-sitter-typescript": "catalog:",
+=======
+>>>>>>> Stashed changes
         "tsx": "catalog:",
         "typescript": "catalog:",
       },
@@ -24,11 +27,11 @@
       },
       "dependencies": {
         "gettext-parser": "catalog:",
-        "oxc-resolver": "catalog:",
+        "oxc-resolver": "11.7.1",
         "plural-forms": "catalog:",
-        "tree-sitter": "catalog:",
-        "tree-sitter-javascript": "catalog:",
-        "tree-sitter-typescript": "catalog:",
+        "tree-sitter": "0.25.0",
+        "tree-sitter-javascript": "0.23.1",
+        "tree-sitter-typescript": "0.23.2",
       },
       "devDependencies": {
         "@biomejs/biome": "catalog:",
@@ -56,11 +59,12 @@
     "@biomejs/biome": "2.2.2",
     "@types/gettext-parser": "8.0.0",
     "gettext-parser": "8.0.0",
+<<<<<<< Updated upstream
     "oxc-resolver": "11.7.1",
+=======
+    "oxlint": "1.13.0",
+>>>>>>> Stashed changes
     "plural-forms": "0.5.5",
-    "tree-sitter": "0.25.0",
-    "tree-sitter-javascript": "0.23.1",
-    "tree-sitter-typescript": "0.23.2",
     "tsx": "4.20.5",
     "typescript": "5.9.2",
   },

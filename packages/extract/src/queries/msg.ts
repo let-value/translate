@@ -1,5 +1,5 @@
+import { withComment } from "./comment";
 import type { QuerySpec } from "./types";
-import { withLeadingComment } from "./helpers";
 
 const msgCall = (args: string) => `(
   (call_expression
@@ -10,41 +10,50 @@ const msgCall = (args: string) => `(
 )`;
 
 export const msgStringQuery: QuerySpec = {
-	pattern: withLeadingComment(
-		msgCall(`(arguments
+  pattern: withComment.pattern(
+    msgCall(`(arguments
     (string (string_fragment) @msgid)
   )`),
-	),
-	extract(match) {
-		const call = match.captures.find((c) => c.name === "call")!.node;
-		const msgid = match.captures.find((c) => c.name === "msgid")!.node.text;
-		const comment = match.captures.find((c) => c.name === "comment")?.node;
-		return [{ node: call, translation: { msgid, msgstr: [] }, comment }];
-	},
+  ),
+  extract(match) {
+    const call = match.captures.find((c) => c.name === "call")!.node;
+    const msgid = match.captures.find((c) => c.name === "msgid")!.node.text;
+    const comment = withComment.extract(match);
+    return [
+      {
+        node: call,
+        translation: {
+          msgid,
+          msgstr: [msgid],
+          comments: [{ extracted: comment }],
+        },
+      },
+    ];
+  },
 };
 
 export const msgStringPairQuery: QuerySpec = {
-	pattern: withLeadingComment(
-		msgCall(`(arguments
+  pattern: withComment(
+    msgCall(`(arguments
     (string (string_fragment) @msgid)
     (string (string_fragment) @msgstr)
   )`),
-	),
-	extract(match) {
-		const call = match.captures.find((c) => c.name === "call")!.node;
-		const msgid = match.captures.find((c) => c.name === "msgid")!.node.text;
-		const msgstrNode = match.captures.find((c) => c.name === "msgstr")!.node
-			.text;
-		const comment = match.captures.find((c) => c.name === "comment")?.node;
-		return [
-			{ node: call, translation: { msgid, msgstr: [msgstrNode] }, comment },
-		];
-	},
+  ),
+  extract(match) {
+    const call = match.captures.find((c) => c.name === "call")!.node;
+    const msgid = match.captures.find((c) => c.name === "msgid")!.node.text;
+    const msgstrNode = match.captures.find((c) => c.name === "msgstr")!.node
+      .text;
+    const comment = match.captures.find((c) => c.name === "comment")?.node;
+    return [
+      { node: call, translation: { msgid, msgstr: [msgstrNode] }, comment },
+    ];
+  },
 };
 
 export const msgDescriptorQuery: QuerySpec = {
-	pattern: withLeadingComment(
-		msgCall(`(arguments
+  pattern: withComment(
+    msgCall(`(arguments
     (object
       (_)*
       (pair
@@ -61,26 +70,26 @@ export const msgDescriptorQuery: QuerySpec = {
       (_)*
     )
   )`),
-	),
-	extract(match) {
-		const call = match.captures.find((c) => c.name === "call")!.node;
-		const id = match.captures.find((c) => c.name === "id")?.node.text;
-		const message = match.captures.find((c) => c.name === "message")?.node.text;
-		const msgid = id ?? message;
-		if (!msgid) return [];
-		const msgstr = id && message ? [message] : [];
-		const comment = match.captures.find((c) => c.name === "comment")?.node;
-		return [{ node: call, translation: { msgid, msgstr }, comment }];
-	},
+  ),
+  extract(match) {
+    const call = match.captures.find((c) => c.name === "call")!.node;
+    const id = match.captures.find((c) => c.name === "id")?.node.text;
+    const message = match.captures.find((c) => c.name === "message")?.node.text;
+    const msgid = id ?? message;
+    if (!msgid) return [];
+    const msgstr = id && message ? [message] : [];
+    const comment = match.captures.find((c) => c.name === "comment")?.node;
+    return [{ node: call, translation: { msgid, msgstr }, comment }];
+  },
 };
 
 export const msgTemplateQuery: QuerySpec = {
-	pattern: withLeadingComment(msgCall(`(template_string) @tpl`)),
-	extract(match) {
-		const call = match.captures.find((c) => c.name === "call")!.node;
-		const tpl = match.captures.find((c) => c.name === "tpl")!.node;
-		const text = tpl.text.slice(1, -1);
-		const comment = match.captures.find((c) => c.name === "comment")?.node;
-		return [{ node: call, translation: { msgid: text, msgstr: [] }, comment }];
-	},
+  pattern: withComment(msgCall(`(template_string) @tpl`)),
+  extract(match) {
+    const call = match.captures.find((c) => c.name === "call")!.node;
+    const tpl = match.captures.find((c) => c.name === "tpl")!.node;
+    const text = tpl.text.slice(1, -1);
+    const comment = match.captures.find((c) => c.name === "comment")?.node;
+    return [{ node: call, translation: { msgid: text, msgstr: [] }, comment }];
+  },
 };
