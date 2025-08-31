@@ -1,7 +1,7 @@
 import { relative } from "node:path";
 import type Parser from "tree-sitter";
 
-import type { Context } from "./types";
+import type { Context, QuerySpec } from "./types";
 
 export function getReference(node: Parser.SyntaxNode, { path }: Context) {
 	const line = node.startPosition.row + 1;
@@ -21,19 +21,29 @@ function getComment(node: Parser.SyntaxNode): string {
 	return text.replace(/^\/\/\s?/, "").trim();
 }
 
-export const withComment = {
-	pattern(pattern: string): string {
-		return `(
-  ((comment) @comment .)?
-  (expression_statement ${pattern})
-)`;
-	},
-	extract(match: Parser.QueryMatch): string | undefined {
-		const comment = match.captures.find((c) => c.name === "comment")?.node;
-		if (!comment) {
+export const withComment = (query: QuerySpec): QuerySpec => ({
+	pattern: `(
+	((comment) @comment .)?
+	(expression_statement ${query.pattern})
+)`,
+	extract(match) {
+		const message = query.extract(match);
+		if (!message) {
 			return undefined;
 		}
 
-		return getComment(comment);
+		const comment = match.captures.find((c) => c.name === "comment")?.node;
+		if (!comment) {
+			return message;
+		}
+
+		if (comment) {
+			message.translation.comments = {
+				...message.translation.comments,
+				extracted: getComment(comment)
+			}
+		}
+
+		return message;
 	},
-};
+});

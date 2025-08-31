@@ -1,10 +1,10 @@
 import fs from "node:fs";
 import { extname, resolve } from "node:path";
 import type { GetTextTranslation } from "gettext-parser";
+import { memo } from "radash";
 import Parser from "tree-sitter";
 import JavaScript from "tree-sitter-javascript";
 import TS from "tree-sitter-typescript";
-
 import { queries } from "./queries";
 import { getReference } from "./queries/comment";
 import type { Context } from "./queries/types";
@@ -14,10 +14,29 @@ export interface ParseResult {
 	imports: string[];
 }
 
-function getLanguage(path: string) {
-	const ext = extname(path);
-	return ext === ".ts" || ext === ".tsx" ? TS.typescript : JavaScript;
+function getLanguage(ext: string) {
+	switch (ext) {
+		case ".ts":
+			return TS.typescript;
+		case ".tsx":
+			return TS.tsx;
+		default:
+			return JavaScript;
+	}
 }
+
+const getCachedParser = memo(function getCachedParser(ext: string) {
+	const parser = new Parser();
+	const language = getLanguage(ext) as Parser.Language;
+	parser.setLanguage(language);
+
+	return { parser, language };
+});
+
+export function getParser(path: string) {
+	const ext = extname(path);
+	return getCachedParser(ext);
+};
 
 export function parseFile(filePath: string): ParseResult {
 	const path = resolve(filePath);
@@ -30,9 +49,7 @@ export function parseSource(source: string, path: string): ParseResult {
 		path,
 	};
 
-	const parser = new Parser();
-	const language = getLanguage(path) as Parser.Language;
-	parser.setLanguage(language);
+	const { parser, language } = getParser(path);
 	const tree = parser.parse(source);
 
 	const messages: GetTextTranslation[] = [];

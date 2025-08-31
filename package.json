@@ -1,29 +1,33 @@
 {
-	"name": "translate",
-	"version": "1.0.0",
-	"private": true,
-	"workspaces": {
-		"packages": [
-			"packages/*"
-		],
-		"catalog": {
-			"@types/gettext-parser": "8.0.0",
-			"gettext-parser": "8.0.0",
-			"@biomejs/biome": "2.2.2",
-			"plural-forms": "0.5.5",
-			"tsx": "4.20.5",
-			"typescript": "5.9.2"
-		}
-	},
-	"scripts": {
-		"build": "npm run build --workspaces",
-		"check": "npm run lint --workspaces",
-		"typecheck": "npm run typecheck --workspaces",
-		"test": "npm run test --workspaces"
-	},
-	"devDependencies": {
-		"@biomejs/biome": "catalog:",
-		"tsx": "catalog:",
-		"typescript": "catalog:"
-	}
+  "name": "translate",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": {
+    "packages": [
+      "packages/*"
+    ],
+    "catalog": {
+      "@types/gettext-parser": "8.0.0",
+      "gettext-parser": "8.0.0",
+      "@biomejs/biome": "2.2.2",
+      "plural-forms": "0.5.5",
+      "tsx": "4.20.5",
+      "typescript": "5.9.2"
+    }
+  },
+  "scripts": {
+    "build": "npm run build --workspaces",
+    "check": "npm run lint --workspaces",
+    "typecheck": "npm run typecheck --workspaces",
+    "test": "npm run test --workspaces"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "catalog:",
+    "tsx": "catalog:",
+    "typescript": "catalog:"
+  },
+  "trustedDependencies": [
+    "oxc-resolver",
+    "tree-sitter-javascript"
+  ]
 }
