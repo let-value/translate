@@ -1,19 +1,21 @@
 import path from 'node:path';
-import { parseFile, RawMessage } from './parse';
+import { parseFile } from './parse';
 import { resolveImports } from './walk';
 import { collect as collectImpl, buildPo as buildPoImpl } from './po';
+import type { GetTextTranslation } from 'gettext-parser';
+import type { ParseResult } from './parse';
 
 export { parseFile } from './parse';
-export type { RawMessage, ParseResult } from './parse';
+export type { ParseResult } from './parse';
 export { resolveImports } from './walk';
 export { collect, buildPo } from './po';
 export type { Message } from './po';
 
 /** Walk the dependency graph starting from entry and collect raw messages. */
-export function extract(entry: string): RawMessage[] {
+export function extract(entry: string): GetTextTranslation[] {
   const queue = [path.resolve(entry)];
   const visited = new Set<string>();
-  const all: RawMessage[] = [];
+  const all: GetTextTranslation[] = [];
 
   while (queue.length) {
     const file = queue.shift()!;
