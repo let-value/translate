@@ -3,6 +3,7 @@ import path from 'node:path';
 import Parser from 'tree-sitter';
 import JavaScript from 'tree-sitter-javascript';
 import TS from 'tree-sitter-typescript';
+import { messageQueries } from './queries';
 
 export interface RawMessage {
   msgid: string;
@@ -36,27 +37,19 @@ export function parseFile(filePath: string): ParseResult {
   const messages: RawMessage[] = [];
   const imports: string[] = [];
 
-  const msgQuery = new Parser.Query(
-    language,
-    `
-      (call_expression
-        function: (identifier) @func
-        arguments: (arguments (string (string_fragment) @msgid))
-      ) @call
-      (#match? @func "^(t|ngettext)$")
-    `,
-  );
-
-  for (const match of msgQuery.matches(tree.rootNode)) {
-    const call = match.captures.find(c => c.name === 'call')!.node;
-    const msgidNode = match.captures.find(c => c.name === 'msgid')!.node;
-    const msgid = msgidNode.text;
-    const line = call.startPosition.row + 1;
-    const rel = path.relative(process.cwd(), absPath);
-    const reference = `${rel}:${line}`;
-    const prev = lines[line - 2]?.trim();
-    const comment = prev && prev.startsWith('//') ? prev.slice(2).trim() : undefined;
-    messages.push({ msgid, reference, comment });
+  for (const spec of messageQueries) {
+    const query = new Parser.Query(language, spec.pattern);
+    for (const match of query.matches(tree.rootNode)) {
+      for (const { node, msgid } of spec.extract(match)) {
+        const line = node.startPosition.row + 1;
+        const rel = path.relative(process.cwd(), absPath);
+        const reference = `${rel}:${line}`;
+        const prev = lines[line - 2]?.trim();
+        const comment =
+          prev && prev.startsWith('//') ? prev.slice(2).trim() : undefined;
+        messages.push({ msgid, reference, comment });
+      }
+    }
   }
 
   const importQuery = new Parser.Query(
