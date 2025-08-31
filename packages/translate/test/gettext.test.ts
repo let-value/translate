@@ -19,3 +19,9 @@ test('translator applies translations with placeholders', () => {
   t.useLocale('ru');
   assert.equal(t.gettext`Hello, ${name}!`, 'Привет, World!');
 });
+
+test('gettext returns original string when translation missing', () => {
+  const t = new Translator('en', {});
+  t.useLocale('fr');
+  assert.equal(t.gettext(msg`Untranslated`), 'Untranslated');
+});

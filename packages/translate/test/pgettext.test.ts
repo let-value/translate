@@ -21,3 +21,10 @@ test('gettext handles context-aware messages', () => {
   const verb = context('verb');
   assert.equal(t.pgettext(verb.msg('Open')), 'Открыть');
 });
+
+test('pgettext returns original string when translation missing', () => {
+  const ruPo = fs.readFileSync(new URL('./fixtures/ru.po', import.meta.url));
+  const translations = { ru: gettextParser.po.parse(ruPo) };
+  const t = new Translator('ru', translations);
+  assert.equal(t.pgettext('verb', 'Close'), 'Close');
+});
