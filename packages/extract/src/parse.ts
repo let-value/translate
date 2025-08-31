@@ -4,15 +4,21 @@ import Parser from 'tree-sitter';
 import JavaScript from 'tree-sitter-javascript';
 import TS from 'tree-sitter-typescript';
 import { messageQueries } from './queries';
+import type { GetTextTranslation } from 'gettext-parser';
 
-export interface RawMessage {
-  msgid: string;
-  reference: string;
-  comment?: string;
+function cleanComment(node: Parser.SyntaxNode): string {
+  const text = node.text;
+  if (text.startsWith('/*')) {
+    return text
+      .slice(2, -2)
+      .replace(/^\s*\*?\s*/gm, '')
+      .trim();
+  }
+  return text.replace(/^\/\/\s?/, '').trim();
 }
 
 export interface ParseResult {
-  messages: RawMessage[];
+  messages: GetTextTranslation[];
   imports: string[];
 }
 
@@ -24,7 +30,6 @@ export interface ParseResult {
 export function parseFile(filePath: string): ParseResult {
   const absPath = path.resolve(filePath);
   const source = fs.readFileSync(absPath, 'utf8');
-  const lines = source.split(/\r?\n/);
 
   const parser = new Parser();
   const ext = path.extname(absPath);
@@ -34,20 +39,29 @@ export function parseFile(filePath: string): ParseResult {
   parser.setLanguage(language);
   const tree = parser.parse(source);
 
-  const messages: RawMessage[] = [];
+  const messages: GetTextTranslation[] = [];
   const imports: string[] = [];
 
+  const seen = new Set<number>();
   for (const spec of messageQueries) {
     const query = new Parser.Query(language, spec.pattern);
     for (const match of query.matches(tree.rootNode)) {
-      for (const { node, msgid } of spec.extract(match)) {
+      for (const { node, translation, comment } of spec.extract(match)) {
+        if (seen.has(node.id)) continue;
+        seen.add(node.id);
         const line = node.startPosition.row + 1;
         const rel = path.relative(process.cwd(), absPath);
         const reference = `${rel}:${line}`;
-        const prev = lines[line - 2]?.trim();
-        const comment =
-          prev && prev.startsWith('//') ? prev.slice(2).trim() : undefined;
-        messages.push({ msgid, reference, comment });
+        const cleaned = comment ? cleanComment(comment) : undefined;
+        const t: GetTextTranslation = {
+          ...translation,
+          comments: {
+            ...(translation.comments ?? {}),
+            reference,
+            ...(cleaned ? { extracted: cleaned } : {}),
+          },
+        };
+        messages.push(t);
       }
     }
   }
