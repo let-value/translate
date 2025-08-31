@@ -70,3 +70,10 @@ test('ngettext handles context-aware plural helper', () => {
   const apples = context('company').plural(msg`${2} apple`, msg`${2} apples`, 2);
   assert.equal(t.npgettext(apples), '2 Apple устройства');
 });
+
+test('ngettext returns default forms when translation missing', () => {
+  const t = new Translator('en', {});
+  t.useLocale('fr');
+  assert.equal(t.ngettext(msg`${1} apple`, msg`${1} apples`, 1), '1 apple');
+  assert.equal(t.ngettext(msg`${2} apple`, msg`${2} apples`, 2), '2 apples');
+});

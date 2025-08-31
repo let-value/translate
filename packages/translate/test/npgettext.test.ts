@@ -46,3 +46,15 @@ test('npgettext substitutes values from the chosen plural form', () => {
         '2 apples for Bob',
     );
 });
+
+test('npgettext returns default forms when translation missing', () => {
+    const t = new Translator('ru', translations);
+    assert.equal(
+        t.npgettext('company', msg`${1} pear`, msg`${1} pears`, 1),
+        '1 pear',
+    );
+    assert.equal(
+        t.npgettext('company', msg`${2} pear`, msg`${2} pears`, 2),
+        '2 pears',
+    );
+});
