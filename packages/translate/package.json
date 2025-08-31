@@ -1,26 +1,26 @@
 {
-  "name": "@let-value/translate",
-  "version": "1.0.0",
-  "type": "module",
-  "main": "src/index.ts",
-  "exports": {
-    ".": "./src/index.ts"
-  },
-  "scripts": {
-    "build": "echo building translate",
-    "lint": "oxlint .",
-    "format": "oxlint --fix .",
-    "typecheck": "tsc --noEmit",
-    "test": "tsx --test test/*.test.ts"
-  },
-  "dependencies": {
-    "plural-forms": "catalog:"
-  },
-  "devDependencies": {
-    "@types/gettext-parser": "catalog:",
-    "gettext-parser": "catalog:",
-    "oxlint": "catalog:",
-    "tsx": "catalog:",
-    "typescript": "catalog:"
-  }
+	"name": "@let-value/translate",
+	"version": "1.0.0",
+	"type": "module",
+	"main": "src/index.ts",
+	"exports": {
+		".": "./src/index.ts"
+	},
+	"scripts": {
+		"build": "echo building translate",
+		"lint": "biome lint .",
+		"format": "biome format --write .",
+		"typecheck": "tsc --noEmit",
+		"test": "tsx --test test/*.test.ts"
+	},
+	"dependencies": {
+		"plural-forms": "catalog:"
+	},
+	"devDependencies": {
+		"@types/gettext-parser": "catalog:",
+		"gettext-parser": "catalog:",
+		"@biomejs/biome": "catalog:",
+		"tsx": "catalog:",
+		"typescript": "catalog:"
+	}
 }
