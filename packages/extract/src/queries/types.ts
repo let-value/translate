@@ -7,10 +7,10 @@ export interface MessageMatch {
 }
 
 export interface Context {
-	file: string;
+	path: string;
 }
 
 export interface QuerySpec {
 	pattern: string;
-	extract(match: Parser.QueryMatch): MessageMatch[];
+	extract(match: Parser.QueryMatch): MessageMatch | undefined;
 }

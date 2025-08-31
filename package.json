@@ -23,14 +23,7 @@
 		"test": "npm run test --workspaces"
 	},
 	"devDependencies": {
-		"@types/gettext-parser": "catalog:",
-		"gettext-parser": "catalog:",
-		"oxc-resolver": "catalog:",
 		"@biomejs/biome": "catalog:",
-		"plural-forms": "catalog:",
-		"tree-sitter": "catalog:",
-		"tree-sitter-javascript": "catalog:",
-		"tree-sitter-typescript": "catalog:",
 		"tsx": "catalog:",
 		"typescript": "catalog:"
 	}

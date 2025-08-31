@@ -1,32 +1,37 @@
 import fs from "node:fs";
-import path from "node:path";
+import { extname, resolve } from "node:path";
 import type { GetTextTranslation } from "gettext-parser";
 import Parser from "tree-sitter";
 import JavaScript from "tree-sitter-javascript";
 import TS from "tree-sitter-typescript";
-import { messageQueries } from "./queries";
+
+import { queries } from "./queries";
+import { getReference } from "./queries/comment";
+import type { Context } from "./queries/types";
 
 export interface ParseResult {
 	messages: GetTextTranslation[];
 	imports: string[];
 }
 
-/**
- * Parse a single JavaScript/TypeScript file and collect translation messages
- * defined via t()/ngettext() calls. Returns the messages and the raw import
- * specifiers found in the file.
- */
+function getLanguage(path: string) {
+	const ext = extname(path);
+	return ext === ".ts" || ext === ".tsx" ? TS.typescript : JavaScript;
+}
+
 export function parseFile(filePath: string): ParseResult {
-	const absPath = path.resolve(filePath);
-	const source = fs.readFileSync(absPath, "utf8");
+	const path = resolve(filePath);
+	const source = fs.readFileSync(path, "utf8");
+	return parseSource(source, path);
+}
+
+export function parseSource(source: string, path: string): ParseResult {
+	const context: Context = {
+		path,
+	};
 
 	const parser = new Parser();
-	const ext = path.extname(absPath);
-	const language = (
-		ext === ".ts" || ext === ".tsx"
-			? (TS.typescript as unknown)
-			: (JavaScript as unknown)
-	) as Parser.Language;
+	const language = getLanguage(path) as Parser.Language;
 	parser.setLanguage(language);
 	const tree = parser.parse(source);
 
@@ -34,24 +39,29 @@ export function parseFile(filePath: string): ParseResult {
 	const imports: string[] = [];
 
 	const seen = new Set<number>();
-	for (const spec of messageQueries) {
+
+	for (const spec of queries) {
 		const query = new Parser.Query(language, spec.pattern);
 		for (const match of query.matches(tree.rootNode)) {
-			for (const { node, translation } of spec.extract(match)) {
-				if (seen.has(node.id)) continue;
-				seen.add(node.id);
-				const line = node.startPosition.row + 1;
-				const rel = path.relative(process.cwd(), absPath);
-				const reference = `${rel}:${line}`;
-				const t: GetTextTranslation = {
-					...translation,
-					comments: {
-						...(translation.comments ?? {}),
-						reference,
-					},
-				};
-				messages.push(t);
+			const message = spec.extract(match);
+			if (!message) {
+				continue;
 			}
+
+			const { node, translation } = message;
+			if (seen.has(node.id)) {
+				continue;
+			}
+			seen.add(node.id);
+			const reference = getReference(node, context);
+
+			messages.push({
+				...translation,
+				comments: {
+					...translation.comments,
+					reference,
+				},
+			});
 		}
 	}
 
@@ -64,8 +74,10 @@ export function parseFile(filePath: string): ParseResult {
 	);
 
 	for (const match of importQuery.matches(tree.rootNode)) {
-		const node = match.captures.find((c) => c.name === "import")!.node;
-		imports.push(node.text);
+		const node = match.captures.find((c) => c.name === "import")?.node;
+		if (node) {
+			imports.push(node.text);
+		}
 	}
 
 	return { messages, imports };

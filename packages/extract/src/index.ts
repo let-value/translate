@@ -18,8 +18,14 @@ export function extract(entry: string): GetTextTranslation[] {
 	const all: GetTextTranslation[] = [];
 
 	while (queue.length) {
-		const file = queue.shift()!;
-		if (visited.has(file)) continue;
+		const file = queue.shift();
+		if (!file) {
+			break;
+		}
+
+		if (visited.has(file)) {
+			continue;
+		}
 		visited.add(file);
 
 		const { messages, imports } = parseFile(file);

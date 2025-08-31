@@ -8,11 +8,11 @@
 	},
 	"dependencies": {
 		"gettext-parser": "catalog:",
-		"oxc-resolver": "catalog:",
 		"plural-forms": "catalog:",
-		"tree-sitter": "catalog:",
-		"tree-sitter-javascript": "catalog:",
-		"tree-sitter-typescript": "catalog:"
+		"oxc-resolver": "11.7.1",
+		"tree-sitter": "0.25.0",
+		"tree-sitter-javascript": "0.23.1",
+		"tree-sitter-typescript": "0.23.2"
 	},
 	"devDependencies": {
 		"@types/gettext-parser": "catalog:",
