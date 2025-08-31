@@ -34,3 +34,15 @@ test('pgettext and npgettext accept context-aware messages', () => {
     const apples = context('company').plural(msg`${3} apple`, msg`${3} apples`, 3);
     assert.equal(t.npgettext(apples), '3 Apple устройства');
 });
+
+test('npgettext substitutes values from the chosen plural form', () => {
+    const t = new Translator('en', translations);
+    assert.equal(
+        t.npgettext('ctx', msg`${1} apple`, msg`${2} apples for ${'Bob'}`, 1),
+        '1 apple',
+    );
+    assert.equal(
+        t.npgettext('ctx', msg`${1} apple`, msg`${2} apples for ${'Bob'}`, 2),
+        '2 apples for Bob',
+    );
+});
