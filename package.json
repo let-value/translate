@@ -7,7 +7,7 @@
     "catalog": {
       "@types/gettext-parser": "8.0.0",
       "gettext-parser": "8.0.0",
-      "oxlint": "1.13.0",
+      "@biomejs/biome": "2.2.2",
       "plural-forms": "0.5.5",
       "tsx": "4.20.5",
       "typescript": "5.9.2",
@@ -28,7 +28,7 @@
     "@types/gettext-parser": "catalog:",
     "gettext-parser": "catalog:",
     "oxc-resolver": "catalog:",
-    "oxlint": "catalog:",
+    "@biomejs/biome": "catalog:",
     "plural-forms": "catalog:",
     "tree-sitter": "catalog:",
     "tree-sitter-javascript": "catalog:",

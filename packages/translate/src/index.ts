@@ -1,2 +1,2 @@
-export * from './helpers.ts';
-export * from './translator.ts';
+export * from "./helpers.ts";
+export * from "./translator.ts";

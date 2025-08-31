@@ -1,30 +1,30 @@
 {
-  "name": "@let-value/translate-extract",
-  "version": "1.0.0",
-  "type": "module",
-  "main": "src/index.ts",
-  "bin": {
-    "translate-extract": "bin/cli.ts"
-  },
-  "dependencies": {
-    "gettext-parser": "catalog:",
-    "oxc-resolver": "catalog:",
-    "plural-forms": "catalog:",
-    "tree-sitter": "catalog:",
-    "tree-sitter-javascript": "catalog:",
-    "tree-sitter-typescript": "catalog:"
-  },
-  "devDependencies": {
-    "@types/gettext-parser": "catalog:",
-    "oxlint": "catalog:",
-    "tsx": "catalog:",
-    "typescript": "catalog:"
-  },
-  "scripts": {
-    "build": "echo building extract",
-    "lint": "oxlint .",
-    "format": "oxlint --fix .",
-    "typecheck": "tsc --noEmit",
-    "test": "tsx test.ts"
-  }
+	"name": "@let-value/translate-extract",
+	"version": "1.0.0",
+	"type": "module",
+	"main": "src/index.ts",
+	"bin": {
+		"translate-extract": "bin/cli.ts"
+	},
+	"dependencies": {
+		"gettext-parser": "catalog:",
+		"oxc-resolver": "catalog:",
+		"plural-forms": "catalog:",
+		"tree-sitter": "catalog:",
+		"tree-sitter-javascript": "catalog:",
+		"tree-sitter-typescript": "catalog:"
+	},
+	"devDependencies": {
+		"@types/gettext-parser": "catalog:",
+		"@biomejs/biome": "catalog:",
+		"tsx": "catalog:",
+		"typescript": "catalog:"
+	},
+	"scripts": {
+		"build": "echo building extract",
+		"lint": "biome lint .",
+		"format": "biome format --write .",
+		"typecheck": "tsc --noEmit",
+		"test": "tsx test.ts"
+	}
 }

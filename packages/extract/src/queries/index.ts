@@ -1,13 +1,18 @@
-import { tQuery } from './t';
-import { msgStringQuery, msgStringPairQuery, msgDescriptorQuery, msgTemplateQuery } from './msg';
-import type { QuerySpec } from './types';
+import { tQuery } from "./t";
+import {
+	msgStringQuery,
+	msgStringPairQuery,
+	msgDescriptorQuery,
+	msgTemplateQuery,
+} from "./msg";
+import type { QuerySpec } from "./types";
 
-export type { QuerySpec, MessageMatch } from './types';
+export type { QuerySpec, MessageMatch } from "./types";
 
 export const messageQueries: QuerySpec[] = [
-  msgStringPairQuery,
-  msgStringQuery,
-  msgDescriptorQuery,
-  msgTemplateQuery,
-  tQuery,
+	msgStringPairQuery,
+	msgStringQuery,
+	msgDescriptorQuery,
+	msgTemplateQuery,
+	tQuery,
 ];
