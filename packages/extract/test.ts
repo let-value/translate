@@ -56,4 +56,25 @@ const output = execSync(`node ${tsx} ${cli} entry.js en`, {
 assert(output.includes('Hello'));
 assert(output.includes('World'));
 
+// msg query should extract various message forms
+const tmpMsg = fs.mkdtempSync(path.join(os.tmpdir(), 'translate-msg-'));
+fs.writeFileSync(
+  path.join(tmpMsg, 'entry.js'),
+  `
+msg('hello');
+msg({ id: 'greeting', message: 'Hello world' });
+msg({ id: 'onlyId' });
+msg({ message: 'onlyMessage' });
+msg\`Hello!\`;
+const name = "World";
+msg\`Hello, \${name}!\`;
+`,
+);
+
+const parsedMsg = parseFile(path.join(tmpMsg, 'entry.js'));
+assert.deepStrictEqual(
+  parsedMsg.messages.map(m => m.msgid).sort(),
+  ['hello', 'greeting', 'onlyId', 'onlyMessage', 'Hello!', 'Hello, ${name}!'].sort(),
+);
+
 console.log('extract tests passed');
