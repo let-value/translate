@@ -34,7 +34,7 @@ export const msgStringQuery: QuerySpec = withComment({
 	},
 });
 
-export const msgDescriptorQuery: QuerySpec = {
+export const msgDescriptorQuery: QuerySpec = withComment({
 	pattern: msgCall(`(arguments
 	(object
 		(_)*
@@ -75,10 +75,12 @@ export const msgDescriptorQuery: QuerySpec = {
 			},
 		};
 	},
-};
+});
 
-export const msgTemplateQuery: QuerySpec = {
-	pattern: msgCall(`(template_string) @tpl`),
+export const msgTemplateQuery: QuerySpec = withComment({
+	pattern: msgCall(`(arguments
+	(template_string) @tpl
+)`),
 	extract(match) {
 		const call = match.captures.find((c) => c.name === "call")?.node;
 		if (!call) {
@@ -97,4 +99,4 @@ export const msgTemplateQuery: QuerySpec = {
 			translation: { msgid: text, msgstr: [text] },
 		};
 	},
-};
+});
