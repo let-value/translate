@@ -1,4 +1,4 @@
-import type { GetTextTranslation } from "gettext-parser";
+import type { GetTextTranslation, GetTextTranslations } from "gettext-parser";
 import * as gettextParser from "gettext-parser";
 import { getFormula, getNPlurals } from "plural-forms";
 
@@ -9,7 +9,6 @@ export interface Message {
     comments: string[];
 }
 
-/** Combine raw messages into unique translation messages. */
 export function collect(raw: GetTextTranslation[]): Message[] {
     const map = new Map<string, Message>();
     for (const m of raw) {
@@ -21,6 +20,7 @@ export function collect(raw: GetTextTranslation[]): Message[] {
                 comments: [],
             });
         }
+        // biome-ignore lint/style/noNonNullAssertion: true
         const entry = map.get(m.msgid)!;
         if (entry.msgstr.length === 0 && m.msgstr.length)
             entry.msgstr = m.msgstr;
@@ -30,7 +30,6 @@ export function collect(raw: GetTextTranslation[]): Message[] {
     return Array.from(map.values());
 }
 
-/** Build a PO file string from messages and locale. */
 export function buildPo(locale: string, messages: Message[]): string {
     const headers = {
         "content-type": "text/plain; charset=UTF-8",
@@ -38,20 +37,16 @@ export function buildPo(locale: string, messages: Message[]): string {
         language: locale,
     } as Record<string, string>;
 
-    const poObj: any = {
+    const poObj: GetTextTranslations = {
         charset: "utf-8",
         headers,
-        translations: { "": {} as Record<string, unknown> },
+        translations: { "": {} },
     };
 
     for (const m of messages) {
         poObj.translations[""][m.msgid] = {
             msgid: m.msgid,
             msgstr: m.msgstr.length ? m.msgstr : [""],
-            references: m.references.join("\n"),
-            comments: m.comments.length
-                ? { extracted: m.comments.join("\n") }
-                : undefined,
         };
     }
 

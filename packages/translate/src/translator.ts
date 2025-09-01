@@ -34,8 +34,7 @@ export class Translator {
     getText({ msgid, msgstr, values }: MessageId, msgctxt = ""): string {
         const translated =
             this.translations[this.locale]?.translations?.[msgctxt]?.[msgid];
-        const result =
-            translated && translated.msgstr ? translated.msgstr[0] : msgstr;
+        const result = translated?.msgstr ? translated.msgstr[0] : msgstr;
         return values ? substitute(result, values) : result;
     }
 
@@ -47,13 +46,9 @@ export class Translator {
         const index = pluralFunc(this.locale)(n);
         const form = forms[index] ?? forms[forms.length - 1];
         const translated = entry?.msgstr?.[index];
-        const result =
-            translated && translated.length ? translated : form.msgstr;
-        const usedVals =
-            form.values && form.values.length ? form.values : forms[0].values;
-        return usedVals && usedVals.length
-            ? substitute(result, usedVals)
-            : result;
+        const result = translated?.length ? translated : form.msgstr;
+        const usedVals = form.values?.length ? form.values : forms[0].values;
+        return usedVals?.length ? substitute(result, usedVals) : result;
     }
 
     gettext(id: MessageId): string;

@@ -9,7 +9,7 @@
     "scripts": {
         "build": "echo building translate",
         "check": "biome check .",
-        "typecheck": "tsc --noEmit",
+        "typecheck": "tsc",
         "test": "node --test"
     },
     "dependencies": {

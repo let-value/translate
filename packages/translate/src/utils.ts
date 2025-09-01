@@ -1,5 +1,6 @@
 import { getNPlurals, getPluralFunc } from "plural-forms";
 
+// biome-ignore lint/suspicious/noExplicitAny: true
 export type IsUnion<T, U = T> = (T extends any ? (x: T) => 0 : never) extends (
     x: U,
 ) => 0
@@ -18,11 +19,13 @@ export function assert<T>(value: T, message?: string): asserts value is T {
     }
 }
 
+// biome-ignore lint/suspicious/noExplicitAny: true
 export function memo<T extends (...args: any[]) => any>(fn: T): T {
     const cache = new Map<string, ReturnType<T>>();
     return ((...args: Parameters<T>): ReturnType<T> => {
         const key = JSON.stringify(args);
         if (cache.has(key)) {
+            // biome-ignore lint/style/noNonNullAssertion: true
             return cache.get(key)!;
         }
         const result = fn(...args);
@@ -31,7 +34,7 @@ export function memo<T extends (...args: any[]) => any>(fn: T): T {
     }) as T;
 }
 
-export function substitute(text: string, values: any[] = []): string {
+export function substitute(text: string, values: unknown[] = []): string {
     return text.replace(/\$\{(\d+)\}/g, (_, i) => String(values[Number(i)]));
 }
 

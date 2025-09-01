@@ -8,6 +8,7 @@ export interface MessageDescriptor {
 export interface MessageId {
     msgid: string;
     msgstr: string;
+    // biome-ignore lint/suspicious/noExplicitAny: true
     values?: any[];
 }
 
@@ -30,7 +31,7 @@ function buildFromTemplate(strings: TemplateStringsArray): string {
     let result = "";
     for (let i = 0; i < strings.length; i++) {
         result += strings[i];
-        if (i < strings.length - 1) result += "${" + i + "}";
+        if (i < strings.length - 1) result += `\${${i}}`;
     }
     return result;
 }
@@ -42,7 +43,7 @@ export function msg(
     ...values: unknown[]
 ): MessageId;
 export function msg(
-    source: string | MessageDescriptor | TemplateStringsArray,
+    source: MessageDescriptor | TemplateStringsArray,
     ...values: unknown[]
 ): MessageId {
     if (typeof source === "string") {

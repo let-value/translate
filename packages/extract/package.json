@@ -7,6 +7,7 @@
         "translate-extract": "bin/cli.ts"
     },
     "dependencies": {
+        "@let-value/translate": "^1.0.0",
         "gettext-parser": "8.0.0",
         "oxc-resolver": "11.7.1",
         "plural-forms": "0.5.5",
@@ -22,7 +23,7 @@
     "scripts": {
         "build": "echo building extract",
         "check": "biome check .",
-        "typecheck": "tsc --noEmit",
+        "typecheck": "tsc",
         "test": "node --test \"**/*.test.ts\""
     }
 }
