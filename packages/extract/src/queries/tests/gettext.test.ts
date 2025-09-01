@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { suite, test } from "node:test";
 import { gettextDescriptorQuery, gettextInvalidQuery, gettextStringQuery, gettextTemplateQuery } from "../gettext.ts";
-import { msgTemplateQuery } from "../msg.ts";
+import { msgQuery } from "../msg.ts";
 import { getMatches } from "./utils.ts";
 
 const fixture = readFileSync(new URL("./fixtures/gettext.ts", import.meta.url)).toString();
@@ -120,7 +120,7 @@ suite("should handle combined usage with msg", () =>
     paths.forEach((path) => {
         test(path, () => {
             const source = `import { msg } from "@let-value/translate";\nconst t = { gettext: (v) => v };\nconst name = "World";\nt.gettext(msg\`Hello, \${name}!\`);`;
-            const msgMatches = getMatches(source, path, msgTemplateQuery);
+            const msgMatches = getMatches(source, path, msgQuery);
             const gettextMatches = getMatches(source, path, gettextTemplateQuery);
             const invalidMatches = getMatches(source, path, gettextInvalidQuery);
             assert.equal(msgMatches.length, 0);
