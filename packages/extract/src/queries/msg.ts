@@ -6,7 +6,7 @@ const msgCall = (args: string) => `(
     function: (identifier) @func
     arguments: ${args}
   ) @call
-  (#match? @func "^msg$")
+  (#eq? @func "msg")
 )`;
 
 export const msgStringQuery: QuerySpec = withComment({
@@ -14,8 +14,8 @@ export const msgStringQuery: QuerySpec = withComment({
     (string (string_fragment) @msgid)
 )`),
     extract(match) {
-        const call = match.captures.find((c) => c.name === "call")?.node;
-        if (!call) {
+        const node = match.captures.find((c) => c.name === "call")?.node;
+        if (!node) {
             return undefined;
         }
 
@@ -25,7 +25,7 @@ export const msgStringQuery: QuerySpec = withComment({
         }
 
         return {
-            node: call,
+            node,
             translation: {
                 msgid,
                 msgstr: [msgid],
@@ -53,8 +53,8 @@ export const msgDescriptorQuery: QuerySpec = withComment({
 	)
 )`),
     extract(match) {
-        const call = match.captures.find((c) => c.name === "call")?.node;
-        if (!call) {
+        const node = match.captures.find((c) => c.name === "call")?.node;
+        if (!node) {
             return undefined;
         }
 
@@ -69,7 +69,7 @@ export const msgDescriptorQuery: QuerySpec = withComment({
         const msgstr = message ?? id ?? "";
 
         return {
-            node: call,
+            node,
             translation: {
                 msgid,
                 msgstr: [msgstr],
@@ -81,8 +81,8 @@ export const msgDescriptorQuery: QuerySpec = withComment({
 export const msgTemplateQuery: QuerySpec = withComment({
     pattern: msgCall(`(template_string) @tpl`),
     extract(match) {
-        const call = match.captures.find((c) => c.name === "call")?.node;
-        if (!call) {
+        const node = match.captures.find((c) => c.name === "call")?.node;
+        if (!node) {
             return undefined;
         }
 
@@ -91,11 +91,48 @@ export const msgTemplateQuery: QuerySpec = withComment({
             return undefined;
         }
 
+        for (const child of tpl.children) {
+            if (child.type !== "template_substitution") {
+                continue;
+            }
+
+            const expr = child.namedChildren[0];
+            if (!expr || expr.type !== "identifier") {
+                return {
+                    node,
+                    error: "msg() template expressions must be simple identifiers",
+                };
+            }
+        }
+
         const text = tpl.text.slice(1, -1);
 
         return {
-            node: call,
+            node,
             translation: { msgid: text, msgstr: [text] },
         };
     },
 });
+
+const allowed = new Set(["string", "object", "template_string"]);
+
+export const msgInvalidQuery: QuerySpec = {
+    pattern: msgCall(`(arguments (_) @arg)`),
+    extract(match) {
+        const call = match.captures.find((c) => c.name === "call")?.node;
+        const node = match.captures.find((c) => c.name === "arg")?.node;
+
+        if (!call || !node) {
+            return undefined;
+        }
+
+        if (allowed.has(node.type)) {
+            return undefined;
+        }
+
+        return {
+            node,
+            error: "msg() argument must be a string literal, object literal, or template literal",
+        };
+    },
+};

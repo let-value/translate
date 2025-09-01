@@ -3,7 +3,8 @@ import type Parser from "tree-sitter";
 
 export interface MessageMatch {
     node: Parser.SyntaxNode;
-    translation: GetTextTranslation;
+    translation?: GetTextTranslation;
+    error?: string;
 }
 
 export interface Context {

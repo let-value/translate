@@ -23,27 +23,28 @@ function getComment(node: Parser.SyntaxNode): string {
 
 export const withComment = (query: QuerySpec): QuerySpec => ({
     pattern: `(
-	((comment) @comment .)?
+	((comment) @comment)?
+    .
 	(expression_statement ${query.pattern})
 )`,
     extract(match) {
-        const message = query.extract(match);
-        if (!message) {
-            return undefined;
+        const result = query.extract(match);
+        if (!result?.translation) {
+            return result;
         }
 
         const comment = match.captures.find((c) => c.name === "comment")?.node;
         if (!comment) {
-            return message;
+            return result;
         }
 
         if (comment) {
-            message.translation.comments = {
-                ...message.translation.comments,
+            result.translation.comments = {
+                ...result.translation.comments,
                 extracted: getComment(comment),
             };
         }
 
-        return message;
+        return result;
     },
 });
