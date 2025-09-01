@@ -10,6 +10,18 @@ const msgCall = (args: string) => `(
   (#eq? @func "msg")
 )`;
 
+const notInPlural = (query: QuerySpec): QuerySpec => ({
+    pattern: `(
+        ${query.pattern}
+        ((call_expression
+            function: (identifier) @pfunc
+            arguments: (arguments (_)* @call (_)* )
+        ))?
+        (#not-eq? @pfunc "plural")
+    )`,
+    extract: query.extract,
+});
+
 export const msgArgs = `
     (arguments
         [
@@ -93,29 +105,16 @@ export const extractMessage = (name: string) => (match: Parser.QueryMatch): Mess
     };
 };
 
-export const msgQuery: QuerySpec = withComment({
-    pattern: msgCall(`[${msgArgs}]`),
-    extract(match) {
-        const node = match.captures.find((c) => c.name === "call")?.node;
-        if (!node) {
-            return undefined;
-        }
-
-        const parentCall = node.parent?.parent;
-        if (parentCall?.type === "call_expression") {
-            const func = parentCall.childForFieldName("function");
-            if (func?.text === "plural") {
-                return undefined;
-            }
-        }
-
-        return extractMessage("msg")(match);
-    },
-});
+export const msgQuery: QuerySpec = notInPlural(
+    withComment({
+        pattern: msgCall(`[${msgArgs}]`),
+        extract: extractMessage("msg"),
+    }),
+);
 
 const allowed = new Set(["string", "object", "template_string"]);
 
-export const msgInvalidQuery: QuerySpec = {
+export const msgInvalidQuery: QuerySpec = notInPlural({
     pattern: msgCall(`(arguments (_) @arg)`),
     extract(match) {
         const call = match.captures.find((c) => c.name === "call")?.node;
@@ -134,4 +133,4 @@ export const msgInvalidQuery: QuerySpec = {
             error: "msg() argument must be a string literal, object literal, or template literal",
         };
     },
-};
+});
