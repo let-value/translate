@@ -1,7 +1,7 @@
 import { relative } from "node:path";
 import type Parser from "tree-sitter";
 
-import type { Context, QuerySpec } from "./types";
+import type { Context, QuerySpec } from "./types.ts";
 
 export function getReference(node: Parser.SyntaxNode, { path }: Context) {
 	const line = node.startPosition.row + 1;

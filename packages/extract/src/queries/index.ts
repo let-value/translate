@@ -1,7 +1,7 @@
-import { msgDescriptorQuery, msgStringQuery, msgTemplateQuery } from "./msg";
-import type { QuerySpec } from "./types";
+import { msgDescriptorQuery, msgStringQuery, msgTemplateQuery } from "./msg.ts";
+import type { QuerySpec } from "./types.ts";
 
-export type { MessageMatch, QuerySpec } from "./types";
+export type { MessageMatch, QuerySpec } from "./types.ts";
 
 export const queries: QuerySpec[] = [
 	msgStringQuery,

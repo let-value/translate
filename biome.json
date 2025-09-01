@@ -3,13 +3,16 @@
 	"formatter": {
 		"enabled": true
 	},
-	"linter": {
-		"enabled": true,
-		"rules": {
-			"recommended": true,
-			"suspicious": {
-				"noTemplateCurlyInString": "off"
-			}
-		}
-	}
+       "linter": {
+               "enabled": true,
+               "rules": {
+                       "recommended": true,
+                       "suspicious": {
+                               "noTemplateCurlyInString": "off"
+                       },
+                       "correctness": {
+                               "useImportExtensions": "error"
+                       }
+               }
+       }
 }

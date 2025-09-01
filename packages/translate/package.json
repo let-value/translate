@@ -6,19 +6,18 @@
 	"exports": {
 		".": "./src/index.ts"
 	},
-	"scripts": {
-		"build": "echo building translate",
-		"check": "biome check .",
-		"typecheck": "tsc --noEmit",
-		"test": "tsx --test test/*.test.ts"
-	},
-	"dependencies": {
-		"glob": "^11.0.3",
-		"plural-forms": "catalog:"
-	},
-	"devDependencies": {
-		"@types/gettext-parser": "catalog:",
-		"tsx": "catalog:",
-		"typescript": "catalog:"
-	}
+        "scripts": {
+                "build": "echo building translate",
+                "check": "biome check .",
+                "typecheck": "tsc --noEmit",
+                "test": "node --test --experimental-strip-types"
+        },
+        "dependencies": {
+                "glob": "^11.0.3",
+                "plural-forms": "0.5.5"
+        },
+        "devDependencies": {
+                "@types/gettext-parser": "8.0.0",
+                "typescript": "5.9.2"
+        }
 }

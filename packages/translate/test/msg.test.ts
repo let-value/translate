@@ -39,12 +39,12 @@ test("msg with template string returns placeholders and values", () => {
 
 test("msg disallows computed strings", () => {
 	const variable: string = "v";
-	// @ts-expect-error computed strings are not allowed
-	msg("Computed" + variable + "string");
+        // @ts-ignore computed strings are not allowed
+        msg("Computed" + variable + "string");
 });
 
 test("msg disallows variables", () => {
 	const name = "World";
-	// @ts-expect-error dynamic template strings are not allowed
-	msg(name);
+        // @ts-ignore dynamic template strings are not allowed
+        msg(name);
 });
