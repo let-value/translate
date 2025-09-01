@@ -95,7 +95,22 @@ export const extractMessage = (name: string) => (match: Parser.QueryMatch): Mess
 
 export const msgQuery: QuerySpec = withComment({
     pattern: msgCall(`[${msgArgs}]`),
-    extract: extractMessage("msg"),
+    extract(match) {
+        const node = match.captures.find((c) => c.name === "call")?.node;
+        if (!node) {
+            return undefined;
+        }
+
+        const parentCall = node.parent?.parent;
+        if (parentCall?.type === "call_expression") {
+            const func = parentCall.childForFieldName("function");
+            if (func?.text === "plural") {
+                return undefined;
+            }
+        }
+
+        return extractMessage("msg")(match);
+    },
 });
 
 const allowed = new Set(["string", "object", "template_string"]);
