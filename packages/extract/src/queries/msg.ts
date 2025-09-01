@@ -9,10 +9,30 @@ const msgCall = (args: string) => `(
   (#eq? @func "msg")
 )`;
 
-export const msgStringQuery: QuerySpec = withComment({
-    pattern: msgCall(`(arguments
-    (string (string_fragment) @msgid)
-)`),
+export const msgQuery: QuerySpec = withComment({
+    pattern: msgCall(`[
+        (arguments
+            [
+                (string (string_fragment) @msgid)
+                (object
+                        (_)* 
+                        (pair
+                        key: (property_identifier) @id_key
+                        value: (string (string_fragment) @id)
+                        (#eq? @id_key "id")
+                        )?
+                        (_)* 
+                        (pair
+                        key: (property_identifier) @msg_key
+                        value: (string (string_fragment) @message)
+                        (#eq? @msg_key "message")
+                        )?
+                        (_)* 
+                )
+            ]
+        )
+        (template_string) @tpl
+    ]`),
     extract(match) {
         const node = match.captures.find((c) => c.name === "call")?.node;
         if (!node) {
@@ -20,48 +40,44 @@ export const msgStringQuery: QuerySpec = withComment({
         }
 
         const msgid = match.captures.find((c) => c.name === "msgid")?.node.text;
-        if (!msgid) {
-            return undefined;
+        if (msgid) {
+            return {
+                node,
+                translation: {
+                    msgid,
+                    msgstr: [msgid],
+                },
+            };
         }
 
-        return {
-            node,
-            translation: {
-                msgid,
-                msgstr: [msgid],
-            },
-        };
-    },
-});
+        const tpl = match.captures.find((c) => c.name === "tpl")?.node;
+        if (tpl) {
+            for (const child of tpl.children) {
+                if (child.type !== "template_substitution") {
+                    continue;
+                }
 
-export const msgDescriptorQuery: QuerySpec = withComment({
-    pattern: msgCall(`(arguments
-	(object
-		(_)*
-		(pair
-		key: (property_identifier) @id_key
-		value: (string (string_fragment) @id)
-		(#eq? @id_key "id")
-		)?
-		(_)*
-		(pair
-		key: (property_identifier) @msg_key
-		value: (string (string_fragment) @message)
-		(#eq? @msg_key "message")
-		)?
-		(_)*
-	)
-)`),
-    extract(match) {
-        const node = match.captures.find((c) => c.name === "call")?.node;
-        if (!node) {
-            return undefined;
+                const expr = child.namedChildren[0];
+                if (!expr || expr.type !== "identifier") {
+                    return {
+                        node,
+                        error: "msg() template expressions must be simple identifiers",
+                    };
+                }
+            }
+
+            const text = tpl.text.slice(1, -1);
+
+            return {
+                node,
+                translation: { msgid: text, msgstr: [text] },
+            };
         }
 
         const id = match.captures.find((c) => c.name === "id")?.node.text;
         const message = match.captures.find((c) => c.name === "message")?.node.text;
-        const msgid = id ?? message;
-        if (!msgid) {
+        const msgId = id ?? message;
+        if (!msgId) {
             return undefined;
         }
 
@@ -70,45 +86,9 @@ export const msgDescriptorQuery: QuerySpec = withComment({
         return {
             node,
             translation: {
-                msgid,
+                msgid: msgId,
                 msgstr: [msgstr],
             },
-        };
-    },
-});
-
-export const msgTemplateQuery: QuerySpec = withComment({
-    pattern: msgCall(`(template_string) @tpl`),
-    extract(match) {
-        const node = match.captures.find((c) => c.name === "call")?.node;
-        if (!node) {
-            return undefined;
-        }
-
-        const tpl = match.captures.find((c) => c.name === "tpl")?.node;
-        if (!tpl) {
-            return undefined;
-        }
-
-        for (const child of tpl.children) {
-            if (child.type !== "template_substitution") {
-                continue;
-            }
-
-            const expr = child.namedChildren[0];
-            if (!expr || expr.type !== "identifier") {
-                return {
-                    node,
-                    error: "msg() template expressions must be simple identifiers",
-                };
-            }
-        }
-
-        const text = tpl.text.slice(1, -1);
-
-        return {
-            node,
-            translation: { msgid: text, msgstr: [text] },
         };
     },
 });
