@@ -79,9 +79,7 @@ export const msgDescriptorQuery: QuerySpec = withComment({
 });
 
 export const msgTemplateQuery: QuerySpec = withComment({
-    pattern: msgCall(`(arguments
-	(template_string) @tpl
-)`),
+    pattern: msgCall(`(template_string) @tpl`),
     extract(match) {
         const call = match.captures.find((c) => c.name === "call")?.node;
         if (!call) {

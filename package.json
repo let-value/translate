@@ -5,6 +5,9 @@
     "workspaces": [
         "packages/*"
     ],
+    "engines": {
+        "node": ">=22"
+    },
     "scripts": {
         "biome": "biome",
         "build": "npm run build --workspaces",
