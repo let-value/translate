@@ -1,23 +1,23 @@
 {
-	"name": "@let-value/translate",
-	"version": "1.0.0",
-	"type": "module",
-	"main": "src/index.ts",
-	"exports": {
-		".": "./src/index.ts"
-	},
-        "scripts": {
-                "build": "echo building translate",
-                "check": "biome check .",
-                "typecheck": "tsc --noEmit",
-                "test": "node --test --experimental-strip-types"
-        },
-        "dependencies": {
-                "glob": "^11.0.3",
-                "plural-forms": "0.5.5"
-        },
-        "devDependencies": {
-                "@types/gettext-parser": "8.0.0",
-                "typescript": "5.9.2"
-        }
+    "name": "@let-value/translate",
+    "version": "1.0.0",
+    "type": "module",
+    "main": "src/index.ts",
+    "exports": {
+        ".": "./src/index.ts"
+    },
+    "scripts": {
+        "build": "echo building translate",
+        "check": "biome check .",
+        "typecheck": "tsc --noEmit",
+        "test": "node --test"
+    },
+    "dependencies": {
+        "glob": "^11.0.3",
+        "plural-forms": "0.5.5"
+    },
+    "devDependencies": {
+        "@types/gettext-parser": "8.0.0",
+        "typescript": "5.9.2"
+    }
 }

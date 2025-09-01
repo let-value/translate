@@ -2,15 +2,15 @@ import type { GetTextTranslation } from "gettext-parser";
 import type Parser from "tree-sitter";
 
 export interface MessageMatch {
-	node: Parser.SyntaxNode;
-	translation: GetTextTranslation;
+    node: Parser.SyntaxNode;
+    translation: GetTextTranslation;
 }
 
 export interface Context {
-	path: string;
+    path: string;
 }
 
 export interface QuerySpec {
-	pattern: string;
-	extract(match: Parser.QueryMatch): MessageMatch | undefined;
+    pattern: string;
+    extract(match: Parser.QueryMatch): MessageMatch | undefined;
 }

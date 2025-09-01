@@ -9,13 +9,13 @@ import resolver from "oxc-resolver";
  * @returns Absolute paths to resolved modules.
  */
 export function resolveImports(file: string, imports: string[]): string[] {
-	const dir = path.dirname(path.resolve(file));
-	const resolved: string[] = [];
-	for (const spec of imports) {
-		const res = resolver.sync(dir, spec) as { path?: string };
-		if (res.path) {
-			resolved.push(res.path);
-		}
-	}
-	return resolved;
+    const dir = path.dirname(path.resolve(file));
+    const resolved: string[] = [];
+    for (const spec of imports) {
+        const res = resolver.sync(dir, spec) as { path?: string };
+        if (res.path) {
+            resolved.push(res.path);
+        }
+    }
+    return resolved;
 }

@@ -10,32 +10,32 @@ const msgCall = (args: string) => `(
 )`;
 
 export const msgStringQuery: QuerySpec = withComment({
-	pattern: msgCall(`(arguments
+    pattern: msgCall(`(arguments
     (string (string_fragment) @msgid)
 )`),
-	extract(match) {
-		const call = match.captures.find((c) => c.name === "call")?.node;
-		if (!call) {
-			return undefined;
-		}
+    extract(match) {
+        const call = match.captures.find((c) => c.name === "call")?.node;
+        if (!call) {
+            return undefined;
+        }
 
-		const msgid = match.captures.find((c) => c.name === "msgid")?.node.text;
-		if (!msgid) {
-			return undefined;
-		}
+        const msgid = match.captures.find((c) => c.name === "msgid")?.node.text;
+        if (!msgid) {
+            return undefined;
+        }
 
-		return {
-			node: call,
-			translation: {
-				msgid,
-				msgstr: [msgid],
-			},
-		};
-	},
+        return {
+            node: call,
+            translation: {
+                msgid,
+                msgstr: [msgid],
+            },
+        };
+    },
 });
 
 export const msgDescriptorQuery: QuerySpec = withComment({
-	pattern: msgCall(`(arguments
+    pattern: msgCall(`(arguments
 	(object
 		(_)*
 		(pair
@@ -52,51 +52,52 @@ export const msgDescriptorQuery: QuerySpec = withComment({
 		(_)*
 	)
 )`),
-	extract(match) {
-		const call = match.captures.find((c) => c.name === "call")?.node;
-		if (!call) {
-			return undefined;
-		}
+    extract(match) {
+        const call = match.captures.find((c) => c.name === "call")?.node;
+        if (!call) {
+            return undefined;
+        }
 
-		const id = match.captures.find((c) => c.name === "id")?.node.text;
-		const message = match.captures.find((c) => c.name === "message")?.node.text;
-		const msgid = id ?? message;
-		if (!msgid) {
-			return undefined;
-		}
+        const id = match.captures.find((c) => c.name === "id")?.node.text;
+        const message = match.captures.find((c) => c.name === "message")?.node
+            .text;
+        const msgid = id ?? message;
+        if (!msgid) {
+            return undefined;
+        }
 
-		const msgstr = message ?? id ?? "";
+        const msgstr = message ?? id ?? "";
 
-		return {
-			node: call,
-			translation: {
-				msgid,
-				msgstr: [msgstr],
-			},
-		};
-	},
+        return {
+            node: call,
+            translation: {
+                msgid,
+                msgstr: [msgstr],
+            },
+        };
+    },
 });
 
 export const msgTemplateQuery: QuerySpec = withComment({
-	pattern: msgCall(`(arguments
+    pattern: msgCall(`(arguments
 	(template_string) @tpl
 )`),
-	extract(match) {
-		const call = match.captures.find((c) => c.name === "call")?.node;
-		if (!call) {
-			return undefined;
-		}
+    extract(match) {
+        const call = match.captures.find((c) => c.name === "call")?.node;
+        if (!call) {
+            return undefined;
+        }
 
-		const tpl = match.captures.find((c) => c.name === "tpl")?.node;
-		if (!tpl) {
-			return undefined;
-		}
+        const tpl = match.captures.find((c) => c.name === "tpl")?.node;
+        if (!tpl) {
+            return undefined;
+        }
 
-		const text = tpl.text.slice(1, -1);
+        const text = tpl.text.slice(1, -1);
 
-		return {
-			node: call,
-			translation: { msgid: text, msgstr: [text] },
-		};
-	},
+        return {
+            node: call,
+            translation: { msgid: text, msgstr: [text] },
+        };
+    },
 });

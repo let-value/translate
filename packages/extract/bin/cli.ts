@@ -4,13 +4,13 @@ import { extractPo } from "../src/index.ts";
 
 const [, , entry, locale = "en", out] = process.argv;
 if (!entry) {
-	console.error("Usage: translate-extract <entry> [locale] [out]");
-	process.exit(1);
+    console.error("Usage: translate-extract <entry> [locale] [out]");
+    process.exit(1);
 }
 
 const po = extractPo(entry, locale);
 if (out) {
-	fs.writeFileSync(out, po);
+    fs.writeFileSync(out, po);
 } else {
-	process.stdout.write(po);
+    process.stdout.write(po);
 }

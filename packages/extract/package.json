@@ -1,28 +1,28 @@
 {
-	"name": "@let-value/translate-extract",
-	"version": "1.0.0",
-	"type": "module",
-	"main": "src/index.ts",
-	"bin": {
-		"translate-extract": "bin/cli.ts"
-	},
-        "dependencies": {
-                "gettext-parser": "8.0.0",
-                "oxc-resolver": "11.7.1",
-                "plural-forms": "0.5.5",
-                "radash": "12.1.1",
-                "tree-sitter": "^0.25.0",
-                "tree-sitter-javascript": "0.23.1",
-                "tree-sitter-typescript": "0.23.2"
-        },
-        "devDependencies": {
-                "@types/gettext-parser": "8.0.0",
-                "typescript": "5.9.2"
-        },
-        "scripts": {
-                "build": "echo building extract",
-                "check": "biome check .",
-                "typecheck": "tsc --noEmit",
-                "test": "node --test --experimental-strip-types \"**/*.test.ts\""
-        }
+    "name": "@let-value/translate-extract",
+    "version": "1.0.0",
+    "type": "module",
+    "main": "src/index.ts",
+    "bin": {
+        "translate-extract": "bin/cli.ts"
+    },
+    "dependencies": {
+        "gettext-parser": "8.0.0",
+        "oxc-resolver": "11.7.1",
+        "plural-forms": "0.5.5",
+        "radash": "12.1.1",
+        "tree-sitter": "^0.25.0",
+        "tree-sitter-javascript": "0.23.1",
+        "tree-sitter-typescript": "0.23.2"
+    },
+    "devDependencies": {
+        "@types/gettext-parser": "8.0.0",
+        "typescript": "5.9.2"
+    },
+    "scripts": {
+        "build": "echo building extract",
+        "check": "biome check .",
+        "typecheck": "tsc --noEmit",
+        "test": "node --test \"**/*.test.ts\""
+    }
 }

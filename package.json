@@ -1,22 +1,23 @@
 {
-  "name": "translate",
-  "version": "1.0.0",
-  "private": true,
-  "workspaces": [
-    "packages/*"
-  ],
-  "scripts": {
-    "build": "npm run build --workspaces",
-    "check": "npm run check --workspaces",
-    "typecheck": "npm run typecheck --workspaces",
-    "test": "npm run test --workspaces"
-  },
-  "devDependencies": {
-    "@biomejs/biome": "2.2.2",
-    "typescript": "5.9.2"
-  },
-  "trustedDependencies": [
-    "oxc-resolver",
-    "tree-sitter-javascript"
-  ]
+    "name": "translate",
+    "version": "1.0.0",
+    "private": true,
+    "workspaces": [
+        "packages/*"
+    ],
+    "scripts": {
+        "biome": "biome",
+        "build": "npm run build --workspaces",
+        "check": "npm run check --workspaces",
+        "typecheck": "npm run typecheck --workspaces",
+        "test": "npm run test --workspaces"
+    },
+    "devDependencies": {
+        "@biomejs/biome": "2.2.2",
+        "typescript": "5.9.2"
+    },
+    "trustedDependencies": [
+        "oxc-resolver",
+        "tree-sitter-javascript"
+    ]
 }

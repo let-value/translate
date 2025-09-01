@@ -1,7 +1,13 @@
 {
-	"editor.codeActionsOnSave": {
-		"source.fixAll.biome": "explicit",
-		"source.organizeImports.biome": "explicit"
-	},
-	"cSpell.words": ["msgctxt", "ngettext", "npgettext", "oxlint", "pgettext"]
+    "editor.codeActionsOnSave": {
+        "source.fixAll.biome": "explicit",
+        "source.organizeImports.biome": "explicit"
+    },
+    "nodejs-testing.extensions": [
+        {
+            "extensions": ["ts"],
+            "parameters": []
+        }
+    ],
+    "cSpell.words": ["msgctxt", "ngettext", "npgettext", "oxlint", "pgettext"]
 }
