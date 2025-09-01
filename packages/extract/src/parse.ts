@@ -5,9 +5,9 @@ import { memo } from "radash";
 import Parser from "tree-sitter";
 import JavaScript from "tree-sitter-javascript";
 import TS from "tree-sitter-typescript";
-import { queries } from "./queries";
-import { getReference } from "./queries/comment";
-import type { Context } from "./queries/types";
+import { queries } from "./queries/index.ts";
+import { getReference } from "./queries/comment.ts";
+import type { Context } from "./queries/types.ts";
 
 export interface ParseResult {
 	messages: GetTextTranslation[];

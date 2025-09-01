@@ -1,10 +1,8 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { msgDescriptorQuery, msgStringQuery, msgTemplateQuery } from "../msg";
-import { getMatches } from "./utils";
-
-
+import { msgDescriptorQuery, msgStringQuery, msgTemplateQuery } from "../msg.ts";
+import { getMatches } from "./utils.ts";
 
 test("should extract string message", () => {
     const matches = getMatches(`msg('hello')`, msgStringQuery);
@@ -24,7 +22,6 @@ test("should extract descriptor message", () => {
         msgid: "greeting",
         msgstr: ["Hello, world!"],
     }]);
-
 });
 
 test("should extract template message", () => {

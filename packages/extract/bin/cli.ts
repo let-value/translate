@@ -1,6 +1,6 @@
-#!/usr/bin/env node
+#!/usr/bin/env -S node --experimental-strip-types
 import fs from "node:fs";
-import { extractPo } from "../src/index";
+import { extractPo } from "../src/index.ts";
 
 const [, , entry, locale = "en", out] = process.argv;
 if (!entry) {

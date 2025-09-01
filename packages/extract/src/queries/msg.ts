@@ -1,5 +1,5 @@
-import { withComment } from "./comment";
-import type { QuerySpec } from "./types";
+import { withComment } from "./comment.ts";
+import type { QuerySpec } from "./types.ts";
 
 const msgCall = (args: string) => `(
   (call_expression
