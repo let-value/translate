@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { suite, test } from "node:test";
-import { gettextDescriptorQuery, gettextInvalidQuery, gettextStringQuery, gettextTemplateQuery } from "../gettext.ts";
+import { gettextInvalidQuery, gettextQuery } from "../gettext.ts";
 import { msgQuery } from "../msg.ts";
 import { getMatches } from "./utils.ts";
 
@@ -9,71 +9,51 @@ const fixture = readFileSync(new URL("./fixtures/gettext.ts", import.meta.url)).
 
 const paths = ["test.js", "test.jsx", "test.ts", "test.tsx"];
 
-suite("should extract string message", () =>
+suite("should extract messages", () =>
     paths.forEach((path) => {
         test(path, () => {
-            const matches = getMatches(fixture, path, gettextStringQuery);
-            const translations = matches.map(({ translation }) => translation);
+            const matches = getMatches(fixture, path, gettextQuery);
 
-            assert.equal(translations.length, 2);
-            assert.deepEqual(translations, [
-                {
-                    msgid: "hello",
-                    msgstr: ["hello"],
-                },
-                {
-                    msgid: "hello comment",
-                    msgstr: ["hello comment"],
-                    comments: {
-                        extracted: "comment",
-                    },
-                },
-            ]);
-        });
-    }),
-);
-
-suite("should extract descriptor message", () =>
-    paths.forEach((path) => {
-        test(path, () => {
-            const matches = getMatches(fixture, path, gettextDescriptorQuery);
-
-            assert.equal(matches.length, 2);
             assert.deepEqual(
-                matches.map(({ translation }) => translation),
+                matches.map(({ translation, error }) => ({ translation, error })),
                 [
                     {
-                        msgid: "greeting",
-                        msgstr: ["Hello, world!"],
-                        comments: {
-                            extracted: "descriptor",
+                        error: undefined,
+                        translation: {
+                            msgid: "hello",
+                            msgstr: ["hello"],
                         },
                     },
                     {
-                        msgid: "greeting",
-                        msgstr: ["Hello, world!"],
-                        comments: {
-                            extracted: "multiline\ncomment",
+                        error: undefined,
+                        translation: {
+                            msgid: "hello comment",
+                            msgstr: ["hello comment"],
+                            comments: {
+                                extracted: "comment",
+                            },
                         },
                     },
-                ],
-            );
-        });
-    }),
-);
-
-suite("should extract template message", () =>
-    paths.forEach((path) => {
-        test(path, () => {
-            const matches = getMatches(fixture, path, gettextTemplateQuery);
-
-            assert.equal(matches.length, 3);
-            assert.deepEqual(
-                matches.map(({ translation, error }) => ({
-                    error,
-                    translation,
-                })),
-                [
+                    {
+                        error: undefined,
+                        translation: {
+                            msgid: "greeting",
+                            msgstr: ["Hello, world!"],
+                            comments: {
+                                extracted: "descriptor",
+                            },
+                        },
+                    },
+                    {
+                        error: undefined,
+                        translation: {
+                            msgid: "greeting",
+                            msgstr: ["Hello, world!"],
+                            comments: {
+                                extracted: "multiline\ncomment",
+                            },
+                        },
+                    },
                     {
                         error: undefined,
                         translation: {
@@ -121,7 +101,7 @@ suite("should handle combined usage with msg", () =>
         test(path, () => {
             const source = `import { msg } from "@let-value/translate";\nconst t = { gettext: (v) => v };\nconst name = "World";\nt.gettext(msg\`Hello, \${name}!\`);`;
             const msgMatches = getMatches(source, path, msgQuery);
-            const gettextMatches = getMatches(source, path, gettextTemplateQuery);
+            const gettextMatches = getMatches(source, path, gettextQuery);
             const invalidMatches = getMatches(source, path, gettextInvalidQuery);
             assert.equal(msgMatches.length, 0);
             assert.equal(gettextMatches.length, 1);
@@ -129,3 +109,4 @@ suite("should handle combined usage with msg", () =>
         });
     }),
 );
+
