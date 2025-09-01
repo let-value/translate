@@ -11,12 +11,7 @@ test("msg with string returns id and message", () => {
 });
 
 test("plural supports arbitrary number of forms", () => {
-    const forms = plural(
-        msg`${0} apple`,
-        msg`${0} apples`,
-        msg`${0} many apples`,
-        3,
-    );
+    const forms = plural(msg`${0} apple`, msg`${0} apples`, msg`${0} many apples`, 3);
     assert.deepEqual(forms.forms[0], {
         msgid: "${0} apple",
         msgstr: "${0} apple",

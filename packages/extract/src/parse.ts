@@ -10,7 +10,7 @@ import { queries } from "./queries/index.ts";
 import type { Context } from "./queries/types.ts";
 
 export interface ParseResult {
-    messages: GetTextTranslation[];
+    translations: GetTextTranslation[];
     imports: string[];
 }
 
@@ -52,7 +52,7 @@ export function parseSource(source: string, path: string): ParseResult {
     const { parser, language } = getParser(path);
     const tree = parser.parse(source);
 
-    const messages: GetTextTranslation[] = [];
+    const translations: GetTextTranslation[] = [];
     const imports: string[] = [];
 
     const seen = new Set<number>();
@@ -65,20 +65,26 @@ export function parseSource(source: string, path: string): ParseResult {
                 continue;
             }
 
-            const { node, translation } = message;
+            const { node, translation, error } = message;
             if (seen.has(node.id)) {
                 continue;
             }
             seen.add(node.id);
             const reference = getReference(node, context);
 
-            messages.push({
-                ...translation,
-                comments: {
-                    ...translation.comments,
-                    reference,
-                },
-            });
+            if (translation) {
+                translations.push({
+                    ...translation,
+                    comments: {
+                        ...translation.comments,
+                        reference,
+                    },
+                });
+            }
+
+            if (error) {
+                console.warn(`Parsing error at ${reference}: ${error}`);
+            }
         }
     }
 
@@ -97,5 +103,5 @@ export function parseSource(source: string, path: string): ParseResult {
         }
     }
 
-    return { messages, imports };
+    return { translations, imports };
 }

@@ -7,7 +7,5 @@ declare module "plural-forms" {
     export declare function hasLang(language: string): boolean;
     export declare function getPluralFormsHeader(language: string): string;
     export declare function getAvailLangs(): string[];
-    export declare function getExamples(
-        language: string,
-    ): Array<{ plural: number; sample: number }>;
+    export declare function getExamples(language: string): Array<{ plural: number; sample: number }>;
 }

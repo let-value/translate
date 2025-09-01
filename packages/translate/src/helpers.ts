@@ -38,14 +38,8 @@ function buildFromTemplate(strings: TemplateStringsArray): string {
 
 export function msg<T extends string>(id: StrictStaticString<T>): MessageId;
 export function msg(descriptor: MessageDescriptor): MessageId;
-export function msg(
-    strings: TemplateStringsArray,
-    ...values: unknown[]
-): MessageId;
-export function msg(
-    source: MessageDescriptor | TemplateStringsArray,
-    ...values: unknown[]
-): MessageId {
+export function msg(strings: TemplateStringsArray, ...values: unknown[]): MessageId;
+export function msg(source: MessageDescriptor | TemplateStringsArray, ...values: unknown[]): MessageId {
     if (typeof source === "string") {
         return { msgid: source, msgstr: source };
     }
@@ -62,9 +56,7 @@ export function msg(
 
 export type MessageFunction = typeof msg;
 
-export function plural(
-    ...args: [...forms: MessageId[], n: number]
-): PluralMessageId {
+export function plural(...args: [...forms: MessageId[], n: number]): PluralMessageId {
     assert(args.length > 1, "At least one plural form and n are required");
 
     const n = args[args.length - 1] as number;

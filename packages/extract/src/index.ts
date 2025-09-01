@@ -28,8 +28,8 @@ export function extract(entry: string): GetTextTranslation[] {
         }
         visited.add(file);
 
-        const { messages, imports } = parseFile(file);
-        all.push(...messages);
+        const { translations, imports } = parseFile(file);
+        all.push(...translations);
 
         const resolved = resolveImports(file, imports);
         for (const next of resolved) {

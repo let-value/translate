@@ -22,8 +22,7 @@ export function collect(raw: GetTextTranslation[]): Message[] {
         }
         // biome-ignore lint/style/noNonNullAssertion: true
         const entry = map.get(m.msgid)!;
-        if (entry.msgstr.length === 0 && m.msgstr.length)
-            entry.msgstr = m.msgstr;
+        if (entry.msgstr.length === 0 && m.msgstr.length) entry.msgstr = m.msgstr;
         if (m.comments?.reference) entry.references.push(m.comments.reference);
         if (m.comments?.extracted) entry.comments.push(m.comments.extracted);
     }

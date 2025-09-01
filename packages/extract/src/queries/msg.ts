@@ -59,8 +59,7 @@ export const msgDescriptorQuery: QuerySpec = withComment({
         }
 
         const id = match.captures.find((c) => c.name === "id")?.node.text;
-        const message = match.captures.find((c) => c.name === "message")?.node
-            .text;
+        const message = match.captures.find((c) => c.name === "message")?.node.text;
         const msgid = id ?? message;
         if (!msgid) {
             return undefined;

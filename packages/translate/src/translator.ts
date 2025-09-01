@@ -16,10 +16,7 @@ export class Translator {
     private locale: string;
     private translations: Record<string, GetTextTranslations> = {};
 
-    constructor(
-        defaultLocale: string,
-        translations: Record<string, GetTextTranslations>,
-    ) {
+    constructor(defaultLocale: string, translations: Record<string, GetTextTranslations>) {
         this.locale = defaultLocale;
         this.translations = translations;
     }
@@ -32,17 +29,13 @@ export class Translator {
     }
 
     getText({ msgid, msgstr, values }: MessageId, msgctxt = ""): string {
-        const translated =
-            this.translations[this.locale]?.translations?.[msgctxt]?.[msgid];
+        const translated = this.translations[this.locale]?.translations?.[msgctxt]?.[msgid];
         const result = translated?.msgstr ? translated.msgstr[0] : msgstr;
         return values ? substitute(result, values) : result;
     }
 
     getPluralText({ forms, n }: PluralMessageId, msgctxt = ""): string {
-        const entry =
-            this.translations[this.locale]?.translations?.[msgctxt]?.[
-                forms[0].msgid
-            ];
+        const entry = this.translations[this.locale]?.translations?.[msgctxt]?.[forms[0].msgid];
         const index = pluralFunc(this.locale)(n);
         const form = forms[index] ?? forms[forms.length - 1];
         const translated = entry?.msgstr?.[index];
@@ -65,16 +58,10 @@ export class Translator {
     }
 
     pgettext(id: ContextMessageId): string;
-    pgettext<T extends string>(
-        context: string,
-        id: StrictStaticString<T>,
-    ): string;
+    pgettext<T extends string>(context: string, id: StrictStaticString<T>): string;
     pgettext(context: string, descriptor: MessageDescriptor): string;
     pgettext(context: string, id: MessageId): string;
-    pgettext(
-        context: ContextMessageId | string,
-        second?: string | MessageDescriptor | MessageId,
-    ): string {
+    pgettext(context: ContextMessageId | string, second?: string | MessageDescriptor | MessageId): string {
         if (typeof context === "object") {
             return this.getText(context.id, context.context);
         }
@@ -95,16 +82,11 @@ export class Translator {
             return this.getPluralText(source);
         }
 
-        return this.getPluralText(
-            plural(...(args as Parameters<PluralFunction>)),
-        );
+        return this.getPluralText(plural(...(args as Parameters<PluralFunction>)));
     }
 
     npgettext(id: ContextPluralMessageId): string;
-    npgettext(
-        context: string,
-        ...args: Parameters<typeof this.ngettext>
-    ): string;
+    npgettext(context: string, ...args: Parameters<typeof this.ngettext>): string;
     npgettext(
         context: ContextPluralMessageId | string,
         ...args: [] | [PluralMessageId] | Parameters<PluralFunction>
@@ -119,9 +101,6 @@ export class Translator {
             return this.getPluralText(source, context);
         }
 
-        return this.getPluralText(
-            plural(...(args as Parameters<PluralFunction>)),
-            context,
-        );
+        return this.getPluralText(plural(...(args as Parameters<PluralFunction>)), context);
     }
 }

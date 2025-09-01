@@ -1,17 +1,9 @@
 import { getNPlurals, getPluralFunc } from "plural-forms";
 
 // biome-ignore lint/suspicious/noExplicitAny: true
-export type IsUnion<T, U = T> = (T extends any ? (x: T) => 0 : never) extends (
-    x: U,
-) => 0
-    ? false
-    : true;
+export type IsUnion<T, U = T> = (T extends any ? (x: T) => 0 : never) extends (x: U) => 0 ? false : true;
 
-export type StrictStaticString<T extends string> = string extends T
-    ? never
-    : IsUnion<T> extends true
-      ? never
-      : T;
+export type StrictStaticString<T extends string> = string extends T ? never : IsUnion<T> extends true ? never : T;
 
 export function assert<T>(value: T, message?: string): asserts value is T {
     if (!value) {

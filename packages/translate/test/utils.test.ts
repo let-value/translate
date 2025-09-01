@@ -5,10 +5,7 @@ import { memo, pluralFunc, substitute } from "../src/utils.ts";
 
 // substitute replacement behavior
 test("substitute replaces placeholders with values", () => {
-    assert.equal(
-        substitute("Hello ${0}, ${1}!", ["World", "Friend"]),
-        "Hello World, Friend!",
-    );
+    assert.equal(substitute("Hello ${0}, ${1}!", ["World", "Friend"]), "Hello World, Friend!");
 });
 
 // memo caching behavior
