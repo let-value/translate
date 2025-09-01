@@ -23,7 +23,7 @@
     "scripts": {
         "build": "echo building extract",
         "check": "biome check .",
-        "typecheck": "tsc",
+        "typecheck": "tsc --build",
         "test": "node --test \"**/*.test.ts\""
     }
 }
