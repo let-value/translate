@@ -1,6 +1,6 @@
-import { msg } from "@let-value/translate";
+import { msg, Translator } from "@let-value/translate";
 
-const t = { gettext: (v) => v };
+const t = new Translator("en", {});
 
 t.gettext("hello");
 

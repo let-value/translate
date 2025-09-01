@@ -124,13 +124,7 @@ export const gettextTemplateQuery: QuerySpec = withComment({
     },
 });
 
-const allowed = new Set([
-    "string",
-    "object",
-    "template_string",
-    "identifier",
-    "call_expression",
-]);
+const allowed = new Set(["string", "object", "template_string", "identifier", "call_expression"]);
 
 export const gettextInvalidQuery: QuerySpec = {
     pattern: gettextCall(`(arguments (_) @arg)`),
@@ -152,4 +146,3 @@ export const gettextInvalidQuery: QuerySpec = {
         };
     },
 };
-

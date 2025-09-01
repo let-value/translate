@@ -46,8 +46,9 @@ export class Translator {
 
     gettext(id: MessageId): string;
     gettext<T extends string>(id: StrictStaticString<T>): string;
-    gettext(...args: Parameters<MessageFunction>): string;
-    gettext(...args: [MessageId] | Parameters<MessageFunction>): string {
+    gettext(descriptor: MessageDescriptor): string;
+    gettext(strings: TemplateStringsArray, ...values: unknown[]): string;
+    gettext(...args: [MessageId | MessageDescriptor] | Parameters<MessageFunction>): string {
         const [source] = args;
 
         if (typeof source === "object" && "msgid" in source) {

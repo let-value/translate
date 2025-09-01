@@ -1,12 +1,7 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { suite, test } from "node:test";
-import {
-    gettextDescriptorQuery,
-    gettextInvalidQuery,
-    gettextStringQuery,
-    gettextTemplateQuery,
-} from "../gettext.ts";
+import { gettextDescriptorQuery, gettextInvalidQuery, gettextStringQuery, gettextTemplateQuery } from "../gettext.ts";
 import { msgTemplateQuery } from "../msg.ts";
 import { getMatches } from "./utils.ts";
 
