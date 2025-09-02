@@ -7,6 +7,7 @@ import JavaScript from "tree-sitter-javascript";
 import TS from "tree-sitter-typescript";
 import { getReference } from "./queries/comment.ts";
 import { queries } from "./queries/index.ts";
+import { importQuery } from "./queries/import.ts";
 import type { Context } from "./queries/types.ts";
 
 export interface ParseResult {
@@ -88,18 +89,11 @@ export function parseSource(source: string, path: string): ParseResult {
         }
     }
 
-    const importQuery = new Parser.Query(
-        language,
-        `
-      (import_statement
-        source: (string (string_fragment) @import))
-    `,
-    );
-
-    for (const match of importQuery.matches(tree.rootNode)) {
-        const node = match.captures.find((c) => c.name === "import")?.node;
-        if (node) {
-            imports.push(node.text);
+    const importTreeQuery = new Parser.Query(language, importQuery.pattern);
+    for (const match of importTreeQuery.matches(tree.rootNode)) {
+        const imp = importQuery.extract(match);
+        if (imp) {
+            imports.push(imp);
         }
     }
 
