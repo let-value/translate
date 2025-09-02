@@ -4,7 +4,10 @@ import type { MessageMatch, QuerySpec } from "./types.ts";
 
 const msgCall = (args: string) => `(
   (call_expression
-    function: (identifier) @func
+    function: [
+        (identifier) @func
+        (member_expression property: (property_identifier) @func)
+    ]
     arguments: ${args}
   ) @call
   (#eq? @func "msg")

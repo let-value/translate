@@ -14,14 +14,7 @@ const gettextCall = (args: string) => `(
 )`;
 
 export const gettextQuery: QuerySpec = withComment({
-    pattern: gettextCall(`[${msgArgs}
-        (arguments (
-            call_expression
-                function: (identifier) @msgfn
-                arguments: (template_string) @tpl
-                (#eq? @msgfn "msg")
-        ))
-    ]`),
+    pattern: gettextCall(`[${msgArgs}]`),
     extract: extractMessage("gettext"),
 });
 

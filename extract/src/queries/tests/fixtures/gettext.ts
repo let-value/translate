@@ -32,3 +32,5 @@ t.gettext("Hi, " + name);
 t.gettext`Hi, ${getGreeting()}!`;
 
 t.gettext`Hi, ${name.length}!`;
+
+t.gettext(msg`Hi, nested`);

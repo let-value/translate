@@ -68,6 +68,13 @@ suite("should extract messages", () =>
                         error: "msg() template expressions must be simple identifiers",
                         translation: undefined,
                     },
+                    {
+                        error: undefined,
+                        translation: {
+                            msgid: "Hi, nested",
+                            msgstr: ["Hi, nested"],
+                        },
+                    },
                 ],
             );
         });

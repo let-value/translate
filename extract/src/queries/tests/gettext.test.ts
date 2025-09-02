@@ -2,7 +2,6 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { suite, test } from "node:test";
 import { gettextInvalidQuery, gettextQuery } from "../gettext.ts";
-import { msgQuery } from "../msg.ts";
 import { getMatches } from "./utils.ts";
 
 const fixture = readFileSync(new URL("./fixtures/gettext.ts", import.meta.url)).toString();
@@ -10,8 +9,7 @@ const fixture = readFileSync(new URL("./fixtures/gettext.ts", import.meta.url)).
 const paths = ["test.js", "test.jsx", "test.ts", "test.tsx"];
 
 test("should match snapshot", (t) => {
-    const query = gettextQuery.pattern;
-    t.assert.snapshot(query);
+    t.assert.snapshot(gettextQuery.pattern);
 });
 
 suite("should extract messages", () =>
@@ -97,20 +95,6 @@ suite("should extract errors", () =>
                     },
                 ],
             );
-        });
-    }),
-);
-
-suite("should handle combined usage with msg", () =>
-    paths.forEach((path) => {
-        test(path, () => {
-            const source = `import { msg } from "@let-value/translate";\nconst t = { gettext: (v) => v };\nconst name = "World";\nt.gettext(msg\`Hello, \${name}!\`);`;
-            const msgMatches = getMatches(source, path, msgQuery);
-            const gettextMatches = getMatches(source, path, gettextQuery);
-            const invalidMatches = getMatches(source, path, gettextInvalidQuery);
-            assert.equal(msgMatches.length, 0);
-            assert.equal(gettextMatches.length, 1);
-            assert.equal(invalidMatches.length, 0);
         });
     }),
 );

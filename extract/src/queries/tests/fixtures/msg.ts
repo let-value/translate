@@ -1,9 +1,11 @@
-import { msg } from "@let-value/translate";
+import { msg, Translator } from "@let-value/translate";
+
+const t = new Translator("en", {});
 
 msg("hello");
 
 // comment
-msg("hello comment");
+t.msg("hello comment");
 
 // descriptor
 msg({ id: "greeting", message: "Hello, world!" });
@@ -32,3 +34,5 @@ msg("Hi, " + greeting);
 msg`Hi, ${getGreeting()}!`;
 
 msg`Hi, ${greeting.length}!`;
+
+t.gettext(msg`Hi, nested`);
