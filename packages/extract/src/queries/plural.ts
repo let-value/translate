@@ -1,7 +1,7 @@
+import type Parser from "tree-sitter";
 import { withComment } from "./comment.ts";
 import { extractMessage, msgArgs } from "./msg.ts";
 import type { QuerySpec } from "./types.ts";
-import type Parser from "tree-sitter";
 
 const pluralCall = (args: string) => `(
   (call_expression
@@ -44,8 +44,8 @@ export const pluralQuery: QuerySpec = withComment({
         const strs: string[] = [];
 
         for (const node of msgNodes) {
-            const relevant = match.captures.filter((c) =>
-                ["msgid", "id", "message", "tpl"].includes(c.name) && isDescendant(c.node, node)
+            const relevant = match.captures.filter(
+                (c) => ["msgid", "id", "message", "tpl"].includes(c.name) && isDescendant(c.node, node),
             );
 
             const subMatch: Parser.QueryMatch = {
@@ -77,4 +77,3 @@ export const pluralQuery: QuerySpec = withComment({
         return { node: call, translation };
     },
 });
-

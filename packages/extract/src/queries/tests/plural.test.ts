@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { suite, test } from "node:test";
-import { pluralQuery } from "../plural.ts";
 import { msgQuery } from "../msg.ts";
+import { pluralQuery } from "../plural.ts";
 import { getMatches } from "./utils.ts";
 
 const fixture = readFileSync(new URL("./fixtures/plural.ts", import.meta.url)).toString();

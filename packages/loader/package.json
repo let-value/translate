@@ -55,13 +55,16 @@
     },
     "devDependencies": {
         "@types/gettext-parser": "8.0.0",
-        "tsup": "8.5.0",
+        "tsdown": "^0.14.2",
         "typescript": "5.9.2"
     },
     "scripts": {
-        "build": "tsup src/index.ts src/rollup.ts src/vite.ts src/webpack.ts src/esbuild.ts src/rspack.ts src/bun.ts --format esm,cjs --dts --out-dir dist --clean",
+        "build": "tsdown src/index.ts src/rollup.ts src/vite.ts src/webpack.ts src/esbuild.ts src/rspack.ts src/bun.ts --format esm,cjs --dts --out-dir dist --clean",
         "check": "biome check .",
         "typecheck": "tsc --build",
         "test": "node --test \"**/*.test.ts\""
+    },
+    "peerDependencies": {
+        "@types/bun": "^1.2.21"
     }
 }

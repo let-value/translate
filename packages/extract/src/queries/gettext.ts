@@ -1,6 +1,6 @@
 import { withComment } from "./comment.ts";
-import type { QuerySpec } from "./types.ts";
 import { extractMessage, msgArgs } from "./msg.ts";
+import type { QuerySpec } from "./types.ts";
 
 const gettextCall = (args: string) => `(
   (call_expression

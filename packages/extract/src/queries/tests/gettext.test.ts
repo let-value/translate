@@ -109,4 +109,3 @@ suite("should handle combined usage with msg", () =>
         });
     }),
 );
-
