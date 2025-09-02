@@ -18,7 +18,6 @@ const name = "World";
 t.pgettext("ctx", `Hello, ${name}!`);
 
 // @ts-expect-error invalid call
-// biome-ignore lint/style/useTemplate: true
 t.pgettext("ctx", "Hi, " + name);
 
 function getGreeting() {

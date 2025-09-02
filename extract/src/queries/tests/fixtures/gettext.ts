@@ -25,8 +25,8 @@ function getGreeting() {
 }
 // deferred message via function call
 t.gettext(getGreeting());
+
 // @ts-expect-error invalid call
-// biome-ignore lint/style/useTemplate: true
 t.gettext("Hi, " + name);
 
 t.gettext`Hi, ${getGreeting()}!`;

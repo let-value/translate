@@ -1,10 +1,10 @@
 {
-  "compilerOptions": {
-    "baseUrl": ".",
-    "paths": {
-      "@app/*": ["src/*"],
-      "@lib/*": ["../lib/src/*"],
-      "base-module": ["src/base-module.ts"]
+    "compilerOptions": {
+        "baseUrl": ".",
+        "paths": {
+            "@app/*": ["src/*"],
+            "@lib/*": ["../lib/src/*"],
+            "base-module": ["src/base-module.ts"]
+        }
     }
-  }
 }

@@ -9,7 +9,7 @@ export type { ParseResult } from "./parse.ts";
 export { parseFile } from "./parse.ts";
 export type { Message } from "./po.ts";
 export { buildPo, collect } from "./po.ts";
-export { resolveImports, resolveImport } from "./walk.ts";
+export { resolveImport, resolveImports } from "./walk.ts";
 
 /** Walk the dependency graph starting from entry and collect raw messages. */
 export function extract(entry: string): GetTextTranslation[] {

@@ -1,6 +1,4 @@
 // @ts-nocheck
-/** biome-ignore-all lint/correctness/noUnusedVariables: true */
-/** biome-ignore-all lint/correctness/noUnusedImports: true */
 
 import defaultExport from "default-export";
 import { named } from "named-export";

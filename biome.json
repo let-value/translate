@@ -22,5 +22,6 @@
                 "useImportExtensions": "error"
             }
         }
-    }
+    },
+    "overrides": [{ "includes": ["**/fixtures/**/*"], "linter": { "enabled": false } }]
 }

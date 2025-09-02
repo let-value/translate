@@ -17,7 +17,6 @@ msg({ id: "greeting", message: "Hello, world!" });
 const name = "World";
 msg`Hello, ${name}!`;
 
-// biome-ignore lint/style/useConst: true
 let greeting = "Hello";
 function getGreeting() {
     return greeting;
@@ -28,7 +27,6 @@ msg(greeting);
 // @ts-expect-error invalid call
 msg(getGreeting());
 // @ts-expect-error invalid call
-// biome-ignore lint/style/useTemplate: true
 msg("Hi, " + greeting);
 
 msg`Hi, ${getGreeting()}!`;
