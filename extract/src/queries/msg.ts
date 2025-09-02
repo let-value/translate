@@ -1,17 +1,7 @@
 import type Parser from "tree-sitter";
 import { withComment } from "./comment.ts";
+import { callPattern } from "./utils.ts";
 import type { MessageMatch, QuerySpec } from "./types.ts";
-
-const msgCall = (args: string) => `(
-  (call_expression
-    function: [
-        (identifier) @func
-        (member_expression property: (property_identifier) @func)
-    ]
-    arguments: ${args}
-  ) @call
-  (#eq? @func "msg")
-)`;
 
 const notInPlural = (query: QuerySpec): QuerySpec => ({
     pattern: query.pattern,
@@ -48,29 +38,27 @@ const notInPlural = (query: QuerySpec): QuerySpec => ({
     },
 });
 
-export const msgArgs = `
-    (arguments
-        [
-            (string (string_fragment) @msgid)
-            (object
-                    (_)*
-                    (pair
-                    key: (property_identifier) @id_key
-                    value: (string (string_fragment) @id)
-                    (#eq? @id_key "id")
-                    )?
-                    (_)*
-                    (pair
-                    key: (property_identifier) @msg_key
-                    value: (string (string_fragment) @message)
-                    (#eq? @msg_key "message")
-                    )?
-                    (_)*
-            )
-        ]
+export const msgArg = `[
+    (string (string_fragment) @msgid)
+    (object
+            (_)*
+            (pair
+                key: (property_identifier) @id_key
+                value: (string (string_fragment) @id)
+                (#eq? @id_key "id")
+            )?
+            (_)*
+            (pair
+                key: (property_identifier) @msg_key
+                value: (string (string_fragment) @message)
+                (#eq? @msg_key "message")
+            )?
+            (_)*
     )
     (template_string) @tpl
-`;
+]`;
+
+export const msgArgs = `[ (arguments ${msgArg}) (template_string) @tpl ]`;
 
 export const extractMessage =
     (name: string) =>
@@ -135,7 +123,7 @@ export const extractMessage =
 
 export const msgQuery: QuerySpec = notInPlural(
     withComment({
-        pattern: msgCall(`[${msgArgs}]`),
+        pattern: callPattern("msg", msgArgs),
         extract: extractMessage("msg"),
     }),
 );
@@ -143,7 +131,7 @@ export const msgQuery: QuerySpec = notInPlural(
 const allowed = new Set(["string", "object", "template_string"]);
 
 export const msgInvalidQuery: QuerySpec = notInPlural({
-    pattern: msgCall(`(arguments (_) @arg)`),
+    pattern: callPattern("msg", "(arguments (_) @arg)"),
     extract(match) {
         const call = match.captures.find((c) => c.name === "call")?.node;
         const node = match.captures.find((c) => c.name === "arg")?.node;
