@@ -1,27 +1,17 @@
 import { withComment } from "./comment.ts";
 import { extractMessage, msgArgs } from "./msg.ts";
+import { callPattern } from "./utils.ts";
 import type { QuerySpec } from "./types.ts";
 
-const gettextCall = (args: string) => `(
-  (call_expression
-    function: [
-      (identifier) @func
-      (member_expression property: (property_identifier) @func)
-    ]
-    arguments: ${args}
-  ) @call
-  (#eq? @func "gettext")
-)`;
-
 export const gettextQuery: QuerySpec = withComment({
-    pattern: gettextCall(`[${msgArgs}]`),
+    pattern: callPattern("gettext", msgArgs),
     extract: extractMessage("gettext"),
 });
 
 const allowed = new Set(["string", "object", "template_string", "identifier", "call_expression"]);
 
 export const gettextInvalidQuery: QuerySpec = {
-    pattern: gettextCall(`(arguments (_) @arg)`),
+    pattern: callPattern("gettext", "(arguments (_) @arg)"),
     extract(match) {
         const call = match.captures.find((c) => c.name === "call")?.node;
         const node = match.captures.find((c) => c.name === "arg")?.node;
