@@ -6,8 +6,8 @@ import Parser from "tree-sitter";
 import JavaScript from "tree-sitter-javascript";
 import TS from "tree-sitter-typescript";
 import { getReference } from "./queries/comment.ts";
-import { queries } from "./queries/index.ts";
 import { importQuery } from "./queries/import.ts";
+import { queries } from "./queries/index.ts";
 import type { Context } from "./queries/types.ts";
 
 export interface ParseResult {

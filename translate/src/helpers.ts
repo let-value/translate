@@ -71,19 +71,25 @@ export type PluralFunction = typeof plural;
 
 export interface ContextBuilder {
     msg<T extends string>(id: StrictStaticString<T>): ContextMessageId;
-    msg(...args: Parameters<MessageFunction>): ContextMessageId;
+    msg(descriptor: MessageDescriptor): ContextMessageId;
+    msg(strings: TemplateStringsArray, ...values: unknown[]): MessageId;
     plural(...args: Parameters<PluralFunction>): ContextPluralMessageId;
 }
 
+const baseMsg = msg;
 const basePlural = plural;
 
 export function context(context: string): ContextBuilder {
+    function msg(...args: Parameters<MessageFunction>): ContextMessageId {
+        return { id: baseMsg(...args), context };
+    }
+
+    function plural(...forms: Parameters<PluralFunction>) {
+        return { id: basePlural(...forms), context };
+    }
+
     return {
-        msg: (...args: Parameters<MessageFunction>) => {
-            return { id: msg(...args), context };
-        },
-        plural(...forms: Parameters<PluralFunction>) {
-            return { id: basePlural(...forms), context };
-        },
+        msg: msg as ContextBuilder["msg"],
+        plural: plural as ContextBuilder["plural"],
     };
 }

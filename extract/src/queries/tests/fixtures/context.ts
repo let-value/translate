@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { context } from "@let-value/translate";
 
 context("ctx").msg("hello");

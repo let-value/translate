@@ -1,7 +1,7 @@
 import type Parser from "tree-sitter";
 import { withComment } from "./comment.ts";
-import { callPattern } from "./utils.ts";
 import type { MessageMatch, QuerySpec } from "./types.ts";
+import { callPattern } from "./utils.ts";
 
 const notInPlural = (query: QuerySpec): QuerySpec => ({
     pattern: query.pattern,

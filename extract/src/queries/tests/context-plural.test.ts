@@ -52,7 +52,7 @@ suite("should extract context builder plural messages", () =>
                             msgctxt: "ctx",
                             msgid: "Hello, ${name}!",
                             msgid_plural: "Hello, ${name}!",
-                            msgstr: ["Hello, ${name}!", "Hello, ${name}!"]
+                            msgstr: ["Hello, ${name}!", "Hello, ${name}!"],
                         },
                     },
                     {

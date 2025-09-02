@@ -61,8 +61,8 @@ suite("should extract context builder messages", () =>
                         translation: {
                             msgctxt: "ctx",
                             msgid: "Hello, ${name}!",
-                            msgstr: ["Hello, ${name}!"]
-                        }
+                            msgstr: ["Hello, ${name}!"],
+                        },
                     },
                     {
                         error: "context.msg() template expressions must be simple identifiers",
