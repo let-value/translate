@@ -14,15 +14,30 @@ const msgCall = (args: string) => `(
 )`;
 
 const notInPlural = (query: QuerySpec): QuerySpec => ({
-    pattern: `(
-        ${query.pattern}
-        ((call_expression
-            function: (identifier) @pfunc
-            arguments: (arguments (_)* @call (_)* )
-        ))?
-        (#not-eq? @pfunc "plural")
-    )`,
-    extract: query.extract,
+    pattern: query.pattern,
+    extract(match) {
+        const result = query.extract(match);
+        if (!result?.node) {
+            return result;
+        }
+
+        let parent = result.node.parent;
+
+        if (parent && parent.type === "arguments") {
+            parent = parent.parent;
+        }
+
+        if (
+            parent &&
+            parent.type === "call_expression" &&
+            parent.childForFieldName("function")?.type === "identifier" &&
+            parent.childForFieldName("function")?.text === "plural"
+        ) {
+            return undefined;
+        }
+
+        return result;
+    },
 });
 
 export const msgArgs = `

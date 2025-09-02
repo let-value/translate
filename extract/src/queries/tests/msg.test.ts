@@ -8,6 +8,10 @@ const fixture = readFileSync(new URL("./fixtures/msg.ts", import.meta.url)).toSt
 
 const paths = ["test.js", "test.jsx", "test.ts", "test.tsx"];
 
+test("should match snapshot", (t) => {
+    t.assert.snapshot(msgQuery.pattern);
+});
+
 suite("should extract messages", () =>
     paths.forEach((path) => {
         test(path, () => {

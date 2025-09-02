@@ -25,7 +25,7 @@ export const withComment = (query: QuerySpec): QuerySpec => ({
     pattern: `(
 	((comment) @comment)?
     .
-	(expression_statement ${query.pattern})
+	(_ ${query.pattern})
 )`,
     extract(match) {
         const result = query.extract(match);

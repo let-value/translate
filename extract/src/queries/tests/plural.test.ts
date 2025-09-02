@@ -9,6 +9,10 @@ const fixture = readFileSync(new URL("./fixtures/plural.ts", import.meta.url)).t
 
 const paths = ["test.js", "test.jsx", "test.ts", "test.tsx"];
 
+test("should match snapshot", (t) => {
+    t.assert.snapshot(pluralQuery.pattern);
+});
+
 suite("should extract plural messages", () =>
     paths.forEach((path) => {
         test(path, () => {

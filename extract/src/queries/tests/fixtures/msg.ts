@@ -1,4 +1,4 @@
-import { msg, Translator } from "@let-value/translate";
+import { msg, plural, Translator } from "@let-value/translate";
 
 const t = new Translator("en", {});
 
@@ -36,3 +36,5 @@ msg`Hi, ${getGreeting()}!`;
 msg`Hi, ${greeting.length}!`;
 
 t.gettext(msg`Hi, nested`);
+
+plural(msg("hello"), msg("hellos"), 1);

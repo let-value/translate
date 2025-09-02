@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { suite, test } from "node:test";
+
 import { gettextInvalidQuery, gettextQuery } from "../gettext.ts";
 import { getMatches } from "./utils.ts";
 
