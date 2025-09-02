@@ -15,3 +15,8 @@ export interface QuerySpec {
     pattern: string;
     extract(match: Parser.QueryMatch): MessageMatch | undefined;
 }
+
+export interface ImportQuerySpec {
+    pattern: string;
+    extract(match: Parser.QueryMatch): string | undefined;
+}
