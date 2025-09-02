@@ -27,7 +27,9 @@ const notInPlural = (query: QuerySpec): QuerySpec => ({
                             fn.text === "pgettext" ||
                             fn.text === "npgettext")) ||
                     (fn.type === "member_expression" &&
-                        ["ngettext", "pgettext", "npgettext"].includes(fn.childForFieldName("property")?.text ?? ""))
+                        ["plural", "ngettext", "pgettext", "npgettext"].includes(
+                            fn.childForFieldName("property")?.text ?? "",
+                        ))
                 ) {
                     return undefined;
                 }
