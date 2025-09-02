@@ -27,13 +27,18 @@ const notInPlural = (query: QuerySpec): QuerySpec => ({
             parent = parent.parent;
         }
 
-        if (
-            parent &&
-            parent.type === "call_expression" &&
-            parent.childForFieldName("function")?.type === "identifier" &&
-            parent.childForFieldName("function")?.text === "plural"
-        ) {
-            return undefined;
+        if (parent && parent.type === "call_expression") {
+            const fn = parent.childForFieldName("function");
+            if (fn) {
+                if (
+                    (fn.type === "identifier" &&
+                        (fn.text === "plural" || fn.text === "ngettext")) ||
+                    (fn.type === "member_expression" &&
+                        fn.childForFieldName("property")?.text === "ngettext")
+                ) {
+                    return undefined;
+                }
+            }
         }
 
         return result;
