@@ -83,4 +83,3 @@ export const ngettextQuery: QuerySpec = withComment({
         return { node: call, translation };
     },
 });
-

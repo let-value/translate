@@ -49,7 +49,7 @@ suite("should extract plural messages", () =>
                         translation: {
                             msgid: "Hello, ${name}!",
                             msgid_plural: "Hello, ${name}!",
-                            msgstr: ["Hello, ${name}!", "Hello, ${name}!"]
+                            msgstr: ["Hello, ${name}!", "Hello, ${name}!"],
                         },
                     },
                     {
