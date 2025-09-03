@@ -93,13 +93,26 @@ export interface ContextBuilder {
 const baseMessage = message;
 const basePlural = plural;
 
-export function context(context: string): ContextBuilder {
+export function context<T extends string>(
+    context: StrictStaticString<T>,
+): ContextBuilder;
+export function context(
+    strings: TemplateStringsArray,
+    ...values: never[]
+): ContextBuilder;
+export function context<T extends string>(
+    ...args: [StrictStaticString<T>] | [TemplateStringsArray, ...never[]]
+): ContextBuilder {
+    const [source] = args as [StrictStaticString<T> | TemplateStringsArray];
+
+    const ctx = typeof source === "string" ? source : source[0];
+
     function message<T extends string>(...args: MessageArgs<T>): ContextMessage {
-        return { id: baseMessage(...args), context };
+        return { id: baseMessage(...args), context: ctx };
     }
 
     function plural(...forms: PluralArgs): ContextPluralMessage {
-        return { id: basePlural(...forms), context };
+        return { id: basePlural(...forms), context: ctx };
     }
 
     return {

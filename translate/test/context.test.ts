@@ -17,3 +17,17 @@ test("context builder attaches context to plural", () => {
     assert.equal(p.id.forms[0].msgstr, "${0} apple");
     assert.equal(p.id.forms[1].msgstr, "${0} apples");
 });
+
+test("context builder accepts template literals", () => {
+    const fruit = context`fruit`;
+    assert.deepEqual(fruit.message`apple`, {
+        context: "fruit",
+        id: { msgid: "apple", msgstr: "apple", values: [] },
+    });
+});
+
+test("context builder rejects interpolations", () => {
+    const category = "citrus";
+    // @ts-expect-error context cannot contain expressions
+    void context`fruit${category}`;
+});

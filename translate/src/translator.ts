@@ -11,10 +11,13 @@ import {
     type PluralMessage,
     plural as buildPlural,
 } from "./messages.ts";
-import { pluralFunc, substitute } from "./utils.ts";
+import { type StrictStaticString, pluralFunc, substitute } from "./utils.ts";
 
 type TranslationLoader = () => Promise<GetTextTranslations>;
 type TranslationEntry = GetTextTranslations | TranslationLoader;
+
+type ContextMessageInput<T extends string> = [ContextMessage] | MessageInput<T>;
+type ContextPluralInput = [ContextPluralMessage] | PluralInput;
 
 export class Translator {
     private locale: string;
@@ -79,34 +82,51 @@ export class Translator {
         return this.translatePlural(buildPlural(...(args as PluralArgs)));
     };
 
-    context(context: string) {
+    context<T extends string>(context: StrictStaticString<T>): {
+        message: <T extends string>(...args: ContextMessageInput<T>) => string;
+        plural: (...args: ContextPluralInput) => string;
+    };
+    context(
+        strings: TemplateStringsArray,
+        ...values: never[]
+    ): {
+        message: <T extends string>(...args: ContextMessageInput<T>) => string;
+        plural: (...args: ContextPluralInput) => string;
+    };
+    context<T extends string>(
+        ...args: [StrictStaticString<T>] | [TemplateStringsArray, ...never[]]
+    ) {
+        const [source] = args as [StrictStaticString<T> | TemplateStringsArray];
+
+        const ctx = typeof source === "string" ? source : source[0];
+
         return {
-            message: <T extends string>(...args: MessageInput<T>): string => {
-                const [source] = args;
-                if (typeof source === "object") {
-                    if ("id" in source && "context" in source) {
-                        return this.translateMessage(source.id, source.context);
+            message: <T extends string>(...args: ContextMessageInput<T>): string => {
+                const [src] = args;
+                if (typeof src === "object") {
+                    if ("id" in src && "context" in src) {
+                        return this.translateMessage(src.id, src.context);
                     }
-                    if ("msgid" in source) {
-                        return this.translateMessage(source, context);
+                    if ("msgid" in src) {
+                        return this.translateMessage(src, ctx);
                     }
                 }
                 return this.translateMessage(
                     buildMessage(...(args as MessageArgs<T>)),
-                    context,
+                    ctx,
                 );
             },
-            plural: (...args: PluralInput): string => {
-                const [source] = args;
-                if (typeof source === "object") {
-                    if ("id" in source && "context" in source) {
-                        return this.translatePlural(source.id, source.context);
+            plural: (...args: ContextPluralInput): string => {
+                const [src] = args;
+                if (typeof src === "object") {
+                    if ("id" in src && "context" in src) {
+                        return this.translatePlural(src.id, src.context);
                     }
-                    if ("forms" in source) {
-                        return this.translatePlural(source, context);
+                    if ("forms" in src) {
+                        return this.translatePlural(src, ctx);
                     }
                 }
-                return this.translatePlural(buildPlural(...(args as PluralArgs)), context);
+                return this.translatePlural(buildPlural(...(args as PluralArgs)), ctx);
             },
         };
     }
@@ -119,23 +139,23 @@ export class Translator {
         return this.plural(...args);
     }
 
-    pgettext<T extends string>(
-        context: ContextMessage | string,
+    pgettext<C extends string, T extends string>(
+        context: ContextMessage | StrictStaticString<C>,
         ...args: MessageInput<T> | []
     ): string {
         if (typeof context === "object") {
             return this.translateMessage(context.id, context.context);
         }
-        return this.context(context).message(...(args as MessageInput<T>));
+        return this.context(context).message(...(args as ContextMessageInput<T>));
     }
 
-    npgettext(
-        context: ContextPluralMessage | string,
+    npgettext<C extends string>(
+        context: ContextPluralMessage | StrictStaticString<C>,
         ...args: PluralInput | []
     ): string {
         if (typeof context === "object") {
             return this.translatePlural(context.id, context.context);
         }
-        return this.context(context).plural(...(args as PluralInput));
+        return this.context(context).plural(...(args as ContextPluralInput));
     }
 }
