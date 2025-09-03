@@ -1,10 +1,10 @@
 import { withComment } from "./comment.ts";
-import { extractMessage, msgArgs } from "./msg.ts";
+import { extractMessage, messageArgs } from "./message.ts";
 import type { QuerySpec } from "./types.ts";
 import { callPattern } from "./utils.ts";
 
 export const gettextQuery: QuerySpec = withComment({
-    pattern: callPattern("gettext", msgArgs),
+    pattern: callPattern("gettext", messageArgs),
     extract: extractMessage("gettext"),
 });
 

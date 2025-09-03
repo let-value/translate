@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { suite, test } from "node:test";
-import { msgQuery } from "../msg.ts";
+import { messageQuery } from "../message.ts";
 import { ngettextQuery } from "../ngettext.ts";
 import { getMatches } from "./utils.ts";
 
@@ -62,10 +62,10 @@ suite("should extract plural messages", () =>
     }),
 );
 
-suite("msg query should ignore ngettext arguments", () =>
+suite("message query should ignore ngettext arguments", () =>
     paths.forEach((path) => {
         test(path, () => {
-            const matches = getMatches(fixture, path, msgQuery);
+            const matches = getMatches(fixture, path, messageQuery);
             assert.equal(matches.length, 0);
         });
     }),

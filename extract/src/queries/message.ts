@@ -40,7 +40,7 @@ const notInPlural = (query: QuerySpec): QuerySpec => ({
     },
 });
 
-export const msgArg = `[
+export const messageArg = `[
     (string (string_fragment) @msgid)
     (object
             (_)*
@@ -60,7 +60,7 @@ export const msgArg = `[
     (template_string) @tpl
 ]`;
 
-export const msgArgs = `[ (arguments ${msgArg}) (template_string) @tpl ]`;
+export const messageArgs = `[ (arguments ${messageArg}) (template_string) @tpl ]`;
 
 export const extractMessage =
     (name: string) =>
@@ -123,17 +123,17 @@ export const extractMessage =
         };
     };
 
-export const msgQuery: QuerySpec = notInPlural(
+export const messageQuery: QuerySpec = notInPlural(
     withComment({
-        pattern: callPattern("msg", msgArgs),
-        extract: extractMessage("msg"),
+        pattern: callPattern("message", messageArgs),
+        extract: extractMessage("message"),
     }),
 );
 
 const allowed = new Set(["string", "object", "template_string"]);
 
-export const msgInvalidQuery: QuerySpec = notInPlural({
-    pattern: callPattern("msg", "(arguments (_) @arg)"),
+export const messageInvalidQuery: QuerySpec = notInPlural({
+    pattern: callPattern("message", "(arguments (_) @arg)"),
     extract(match) {
         const call = match.captures.find((c) => c.name === "call")?.node;
         const node = match.captures.find((c) => c.name === "arg")?.node;
@@ -148,7 +148,7 @@ export const msgInvalidQuery: QuerySpec = notInPlural({
 
         return {
             node,
-            error: "msg() argument must be a string literal, object literal, or template literal",
+            error: "message() argument must be a string literal, object literal, or template literal",
         };
     },
 });

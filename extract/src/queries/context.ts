@@ -1,5 +1,5 @@
 import { withComment } from "./comment.ts";
-import { extractMessage, msgArgs } from "./msg.ts";
+import { extractMessage, messageArgs } from "./message.ts";
 import { extractPluralForms } from "./plural-utils.ts";
 import type { QuerySpec } from "./types.ts";
 import { callPattern } from "./utils.ts";
@@ -15,12 +15,12 @@ export const contextMsgQuery: QuerySpec = withComment({
       object: ${ctxCall}
       property: (property_identifier) @func
     )
-    arguments: ${msgArgs}
+    arguments: ${messageArgs}
   ) @call
-  (#eq? @func "msg")
+  (#eq? @func "message")
 )`,
     extract(match) {
-        const result = extractMessage("context.msg")(match);
+        const result = extractMessage("context.message")(match);
         const contextNode = match.captures.find((c) => c.name === "msgctxt")?.node;
         if (!result || !result.translation || !contextNode) {
             return result;
@@ -35,7 +35,9 @@ export const contextMsgQuery: QuerySpec = withComment({
     },
 });
 
-const msgCall = callPattern("msg", msgArgs, false).replace(/@call/g, "@msg").replace(/@func/g, "@msgfn");
+const msgCall = callPattern("message", messageArgs, false)
+    .replace(/@call/g, "@msg")
+    .replace(/@func/g, "@msgfn");
 
 export const contextPluralQuery: QuerySpec = withComment({
     pattern: `(

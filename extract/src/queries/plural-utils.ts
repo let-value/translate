@@ -1,6 +1,6 @@
 import type { GetTextTranslation } from "gettext-parser";
 import type Parser from "tree-sitter";
-import { extractMessage } from "./msg.ts";
+import { extractMessage } from "./message.ts";
 import type { MessageMatch } from "./types.ts";
 import { isDescendant } from "./utils.ts";
 

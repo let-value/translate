@@ -1,4 +1,4 @@
-import { msg, Translator } from "@let-value/translate";
+import { message, Translator } from "@let-value/translate";
 
 const t = new Translator("en", {});
 
@@ -17,7 +17,7 @@ t.gettext({ id: "greeting", message: "Hello, world!" });
 const name = "World";
 t.gettext`Hello, ${name}!`;
 
-const helloMsg = msg`Hi, ${name}!`;
+const helloMsg = message`Hi, ${name}!`;
 t.gettext(helloMsg);
 
 function getGreeting() {
@@ -33,4 +33,4 @@ t.gettext`Hi, ${getGreeting()}!`;
 
 t.gettext`Hi, ${name.length}!`;
 
-t.gettext(msg`Hi, nested`);
+t.gettext(message`Hi, nested`);

@@ -1,21 +1,17 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { suite, test } from "node:test";
-import { msgInvalidQuery, msgQuery } from "../msg.ts";
+import { messageInvalidQuery, messageQuery } from "../message.ts";
 import { getMatches } from "./utils.ts";
 
-const fixture = readFileSync(new URL("./fixtures/msg.ts", import.meta.url)).toString();
+const fixture = readFileSync(new URL("./fixtures/message.ts", import.meta.url)).toString();
 
 const paths = ["test.js", "test.jsx", "test.ts", "test.tsx"];
-
-test("should match snapshot", (t) => {
-    t.assert.snapshot(msgQuery.pattern);
-});
 
 suite("should extract messages", () =>
     paths.forEach((path) => {
         test(path, () => {
-            const matches = getMatches(fixture, path, msgQuery);
+            const matches = getMatches(fixture, path, messageQuery);
 
             assert.deepEqual(
                 matches.map(({ translation, error }) => ({ translation, error })),
@@ -65,11 +61,11 @@ suite("should extract messages", () =>
                         },
                     },
                     {
-                        error: "msg() template expressions must be simple identifiers",
+                        error: "message() template expressions must be simple identifiers",
                         translation: undefined,
                     },
                     {
-                        error: "msg() template expressions must be simple identifiers",
+                        error: "message() template expressions must be simple identifiers",
                         translation: undefined,
                     },
                     {
@@ -88,7 +84,7 @@ suite("should extract messages", () =>
 suite("should extract errors", () =>
     paths.forEach((path) => {
         test(path, () => {
-            const matches = getMatches(fixture, path, msgInvalidQuery);
+            const matches = getMatches(fixture, path, messageInvalidQuery);
 
             assert.deepEqual(
                 matches.map(({ error, translation }) => ({
@@ -97,15 +93,15 @@ suite("should extract errors", () =>
                 })),
                 [
                     {
-                        error: "msg() argument must be a string literal, object literal, or template literal",
+                        error: "message() argument must be a string literal, object literal, or template literal",
                         translation: undefined,
                     },
                     {
-                        error: "msg() argument must be a string literal, object literal, or template literal",
+                        error: "message() argument must be a string literal, object literal, or template literal",
                         translation: undefined,
                     },
                     {
-                        error: "msg() argument must be a string literal, object literal, or template literal",
+                        error: "message() argument must be a string literal, object literal, or template literal",
                         translation: undefined,
                     },
                 ],

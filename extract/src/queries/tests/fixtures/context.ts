@@ -1,19 +1,19 @@
 import { context } from "@let-value/translate";
 
-context("ctx").msg("hello");
+context("ctx").message("hello");
 
 // comment
-context("ctx").msg("hello comment");
+context("ctx").message("hello comment");
 
 // descriptor
-context("ctx").msg({ id: "greeting", message: "Hello, world!" });
+context("ctx").message({ id: "greeting", message: "Hello, world!" });
 
 /* multiline
  * comment */
-context("ctx").msg({ id: "greeting", message: "Hello, world!" });
+context("ctx").message({ id: "greeting", message: "Hello, world!" });
 
 const name = "World";
-context("ctx").msg`Hello, ${name}!`;
+context("ctx").message`Hello, ${name}!`;
 
-context("ctx").msg`Hi, ${name.toUpperCase()}!`;
-context("ctx").msg`Hi, ${name.length}!`;
+context("ctx").message`Hi, ${name.toUpperCase()}!`;
+context("ctx").message`Hi, ${name.length}!`;

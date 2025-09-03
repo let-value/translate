@@ -5,26 +5,26 @@ export interface MessageDescriptor {
     message?: string;
 }
 
-export interface MessageId {
+export interface Message {
     msgid: string;
     msgstr: string;
     // biome-ignore lint/suspicious/noExplicitAny: true
     values?: any[];
 }
 
-export interface PluralMessageId {
-    forms: MessageId[];
+export interface PluralMessage {
+    forms: Message[];
     n: number;
 }
 
-export interface ContextMessageId {
+export interface ContextMessage {
     context: string;
-    id: MessageId;
+    id: Message;
 }
 
-export interface ContextPluralMessageId {
+export interface ContextPluralMessage {
     context: string;
-    id: PluralMessageId;
+    id: PluralMessage;
 }
 
 function buildFromTemplate(strings: TemplateStringsArray): string {
@@ -41,9 +41,9 @@ export type MessageArgs<T extends string> =
     | [descriptor: MessageDescriptor]
     | [strings: TemplateStringsArray, ...values: unknown[]];
 
-export type MessageFunction = <T extends string>(...args: MessageArgs<T>) => MessageId;
+export type MessageFunction = <T extends string>(...args: MessageArgs<T>) => Message;
 
-export function msg<T extends string>(...args: MessageArgs<T>): MessageId {
+export function message<T extends string>(...args: MessageArgs<T>): Message {
     const [source, ...values] = args as [MessageDescriptor | TemplateStringsArray, ...unknown[]];
 
     if (typeof source === "string") {
@@ -60,50 +60,50 @@ export function msg<T extends string>(...args: MessageArgs<T>): MessageId {
     return { msgid: id, msgstr: message };
 }
 
-export type PluralArgs = [...forms: MessageId[], n: number];
+export type PluralArgs = [...forms: Message[], n: number];
 
-export function plural(...args: PluralArgs): PluralMessageId {
+export function plural(...args: PluralArgs): PluralMessage {
     assert(args.length > 1, "At least one plural form and n are required");
 
     const n = args[args.length - 1] as number;
     assert(typeof n === "number", "The last argument must be a number");
 
-    const forms = args.slice(0, -1) as MessageId[];
+    const forms = args.slice(0, -1) as Message[];
 
     return { forms, n };
 }
 
-export type PluralFunction = (...args: PluralArgs) => PluralMessageId;
-export type MessageInit<T extends string = string> = [MessageId] | MessageArgs<T>;
-export type PluralInit = [PluralMessageId] | PluralArgs;
+export type PluralFunction = (...args: PluralArgs) => PluralMessage;
+export type MessageInput<T extends string = string> = [Message] | MessageArgs<T>;
+export type PluralInput = [PluralMessage] | PluralArgs;
 
 export type ContextMessageFunction = <T extends string>(
     ...args: MessageArgs<T>
-) => ContextMessageId;
+) => ContextMessage;
 
 export type ContextPluralFunction = (
     ...args: PluralArgs
-) => ContextPluralMessageId;
+) => ContextPluralMessage;
 
 export interface ContextBuilder {
-    msg: ContextMessageFunction;
+    message: ContextMessageFunction;
     plural: ContextPluralFunction;
 }
 
-const baseMsg = msg;
+const baseMessage = message;
 const basePlural = plural;
 
 export function context(context: string): ContextBuilder {
-    function msg<T extends string>(...args: MessageArgs<T>): ContextMessageId {
-        return { id: baseMsg(...args), context };
+    function message<T extends string>(...args: MessageArgs<T>): ContextMessage {
+        return { id: baseMessage(...args), context };
     }
 
-    function plural(...forms: PluralArgs): ContextPluralMessageId {
+    function plural(...forms: PluralArgs): ContextPluralMessage {
         return { id: basePlural(...forms), context };
     }
 
     return {
-        msg,
+        message,
         plural,
     };
 }
