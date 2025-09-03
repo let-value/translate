@@ -1,7 +1,7 @@
 import type { GetTextTranslation } from "gettext-parser";
 
-import { runPipeline } from "../../packages/extract/src/plugin.ts";
-import { corePlugin } from "./corePlugin.ts";
+import { runPipeline } from "./plugin.ts";
+import { corePlugin } from "./core.ts";
 
 export type { ParseResult } from "./parse.ts";
 export { parseFile } from "./parse.ts";
