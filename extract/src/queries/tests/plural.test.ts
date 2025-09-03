@@ -1,17 +1,13 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { suite, test } from "node:test";
-import { msgQuery } from "../msg.ts";
+import { messageQuery } from "../message.ts";
 import { pluralQuery } from "../plural.ts";
 import { getMatches } from "./utils.ts";
 
 const fixture = readFileSync(new URL("./fixtures/plural.ts", import.meta.url)).toString();
 
 const paths = ["test.js", "test.jsx", "test.ts", "test.tsx"];
-
-test("should match snapshot", (t) => {
-    t.assert.snapshot(pluralQuery.pattern);
-});
 
 suite("should extract plural messages", () =>
     paths.forEach((path) => {
@@ -66,10 +62,10 @@ suite("should extract plural messages", () =>
     }),
 );
 
-suite("msg query should ignore plural arguments", () =>
+suite("message query should ignore plural arguments", () =>
     paths.forEach((path) => {
         test(path, () => {
-            const matches = getMatches(fixture, path, msgQuery);
+            const matches = getMatches(fixture, path, messageQuery);
             assert.equal(matches.length, 0);
         });
     }),

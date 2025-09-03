@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { suite, test } from "node:test";
 import { contextPluralQuery } from "../context.ts";
-import { msgQuery } from "../msg.ts";
+import { messageQuery } from "../message.ts";
 import { getMatches } from "./utils.ts";
 
 const fixture = readFileSync(new URL("./fixtures/context-plural.ts", import.meta.url)).toString();
@@ -65,10 +65,10 @@ suite("should extract context builder plural messages", () =>
     }),
 );
 
-suite("msg query should ignore context plural arguments", () =>
+suite("message query should ignore context plural arguments", () =>
     paths.forEach((path) => {
         test(path, () => {
-            const matches = getMatches(fixture, path, msgQuery);
+            const matches = getMatches(fixture, path, messageQuery);
             assert.equal(matches.length, 0);
         });
     }),

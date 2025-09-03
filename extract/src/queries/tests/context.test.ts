@@ -65,11 +65,11 @@ suite("should extract context builder messages", () =>
                         },
                     },
                     {
-                        error: "context.msg() template expressions must be simple identifiers",
+                        error: "context.message() template expressions must be simple identifiers",
                         translation: undefined,
                     },
                     {
-                        error: "context.msg() template expressions must be simple identifiers",
+                        error: "context.message() template expressions must be simple identifiers",
                         translation: undefined,
                     },
                 ],
