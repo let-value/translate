@@ -21,9 +21,9 @@ test("ngettext handles English plurals", () => {
     assert.equal(t.ngettext(msg`${2} apple`, msg`${2} apples`, 2), "2 apples");
 });
 
-test("ngettext handles Russian plurals", () => {
+test("ngettext handles Russian plurals", async () => {
     const t = new Translator("en", translations);
-    t.useLocale("ru");
+    await t.useLocale("ru");
     assert.equal(t.ngettext(msg`${1} apple`, msg`${1} apples`, 1), "1 яблоко");
     assert.equal(t.ngettext(msg`${2} apple`, msg`${2} apples`, 2), "2 яблока");
     assert.equal(t.ngettext(msg`${5} apple`, msg`${5} apples`, 5), "5 яблок");
@@ -59,9 +59,9 @@ test("ngettext handles context-aware plural helper", () => {
     assert.equal(t.npgettext(apples), "2 Apple устройства");
 });
 
-test("ngettext returns default forms when translation missing", () => {
+test("ngettext returns default forms when translation missing", async () => {
     const t = new Translator("en", {});
-    t.useLocale("fr");
+    await t.useLocale("fr");
     assert.equal(t.ngettext(msg`${1} apple`, msg`${1} apples`, 1), "1 apple");
     assert.equal(t.ngettext(msg`${2} apple`, msg`${2} apples`, 2), "2 apples");
 });

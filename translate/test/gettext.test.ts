@@ -11,17 +11,28 @@ test("translator substitutes template values", () => {
     assert.equal(t.gettext(msg`Hello, ${name}!`), "Hello, World!");
 });
 
-test("translator applies translations with placeholders", () => {
+test("translator applies translations with placeholders", async () => {
     const name = "World";
-    const ruPo = fs.readFileSync(new URL("./fixtures/ru.po", import.meta.url));
-    const translations = { ru: gettextParser.po.parse(ruPo) };
+    const ruUrl = new URL("./fixtures/ru.po", import.meta.url);
+    const translations = {
+        ru: async () => gettextParser.po.parse(await fs.promises.readFile(ruUrl)),
+    };
     const t = new Translator("en", translations);
-    t.useLocale("ru");
+    await t.useLocale("ru");
     assert.equal(t.gettext`Hello, ${name}!`, "Привет, World!");
 });
 
-test("gettext returns original string when translation missing", () => {
+test("translator loads translations on demand", async () => {
+    const name = "World";
+    const ruUrl = new URL("./fixtures/ru.po", import.meta.url);
     const t = new Translator("en", {});
-    t.useLocale("fr");
+    await t.load("ru", async () => gettextParser.po.parse(await fs.promises.readFile(ruUrl)));
+    await t.useLocale("ru");
+    assert.equal(t.gettext`Hello, ${name}!`, "Привет, World!");
+});
+
+test("gettext returns original string when translation missing", async () => {
+    const t = new Translator("en", {});
+    await t.useLocale("fr");
     assert.equal(t.gettext(msg`Untranslated`), "Untranslated");
 });
