@@ -1,17 +1,17 @@
 import type { GetTextTranslations } from "gettext-parser";
 import {
+    message as buildMessage,
+    plural as buildPlural,
     type ContextMessage,
     type ContextPluralMessage,
     type Message,
     type MessageArgs,
     type MessageInput,
-    message as buildMessage,
     type PluralArgs,
     type PluralInput,
     type PluralMessage,
-    plural as buildPlural,
 } from "./messages.ts";
-import { type StrictStaticString, pluralFunc, substitute } from "./utils.ts";
+import { pluralFunc, type StrictStaticString, substitute } from "./utils.ts";
 
 type TranslationLoader = () => Promise<GetTextTranslations>;
 type TranslationEntry = GetTextTranslations | TranslationLoader;
@@ -82,7 +82,9 @@ export class Translator {
         return this.translatePlural(buildPlural(...(args as PluralArgs)));
     };
 
-    context<T extends string>(context: StrictStaticString<T>): {
+    context<T extends string>(
+        context: StrictStaticString<T>,
+    ): {
         message: <T extends string>(...args: ContextMessageInput<T>) => string;
         plural: (...args: ContextPluralInput) => string;
     };
@@ -93,9 +95,7 @@ export class Translator {
         message: <T extends string>(...args: ContextMessageInput<T>) => string;
         plural: (...args: ContextPluralInput) => string;
     };
-    context<T extends string>(
-        ...args: [StrictStaticString<T>] | [TemplateStringsArray, ...never[]]
-    ) {
+    context<T extends string>(...args: [StrictStaticString<T>] | [TemplateStringsArray, ...never[]]) {
         const [source] = args as [StrictStaticString<T> | TemplateStringsArray];
 
         const ctx = typeof source === "string" ? source : source[0];
@@ -111,10 +111,7 @@ export class Translator {
                         return this.translateMessage(src, ctx);
                     }
                 }
-                return this.translateMessage(
-                    buildMessage(...(args as MessageArgs<T>)),
-                    ctx,
-                );
+                return this.translateMessage(buildMessage(...(args as MessageArgs<T>)), ctx);
             },
             plural: (...args: ContextPluralInput): string => {
                 const [src] = args;

@@ -17,14 +17,8 @@ const translations = {
 
 test("context plural handles context-aware message pairs", () => {
     const t = new Translator("ru", translations);
-    assert.equal(
-        t.context("company").plural(message`${1} apple`, message`${1} apples`, 1),
-        "1 Apple устройство",
-    );
-    assert.equal(
-        t.context("company").plural(message`${2} apple`, message`${2} apples`, 2),
-        "2 Apple устройства",
-    );
+    assert.equal(t.context("company").plural(message`${1} apple`, message`${1} apples`, 1), "1 Apple устройство");
+    assert.equal(t.context("company").plural(message`${2} apple`, message`${2} apples`, 2), "2 Apple устройства");
 });
 
 test("context builders accept context-aware messages", () => {
@@ -37,10 +31,7 @@ test("context builders accept context-aware messages", () => {
 
 test("context plural substitutes values from the chosen plural form", () => {
     const t = new Translator("en", translations);
-    assert.equal(
-        t.context("ctx").plural(message`${1} apple`, message`${2} apples for ${"Bob"}`, 1),
-        "1 apple",
-    );
+    assert.equal(t.context("ctx").plural(message`${1} apple`, message`${2} apples for ${"Bob"}`, 1), "1 apple");
     assert.equal(
         t.context("ctx").plural(message`${1} apple`, message`${2} apples for ${"Bob"}`, 2),
         "2 apples for Bob",
@@ -49,14 +40,8 @@ test("context plural substitutes values from the chosen plural form", () => {
 
 test("context plural returns default forms when translation missing", () => {
     const t = new Translator("ru", translations);
-    assert.equal(
-        t.context("company").plural(message`${1} pear`, message`${1} pears`, 1),
-        "1 pear",
-    );
-    assert.equal(
-        t.context("company").plural(message`${2} pear`, message`${2} pears`, 2),
-        "2 pears",
-    );
+    assert.equal(t.context("company").plural(message`${1} pear`, message`${1} pears`, 1), "1 pear");
+    assert.equal(t.context("company").plural(message`${2} pear`, message`${2} pears`, 2), "2 pears");
 });
 
 test("npgettext alias works", () => {
@@ -66,8 +51,5 @@ test("npgettext alias works", () => {
 
 test("translator context accepts template literals for plurals", () => {
     const t = new Translator("en", translations);
-    assert.equal(
-        t.context`company`.plural(message`${1} apple`, message`${1} apples`, 1),
-        "1 apple",
-    );
+    assert.equal(t.context`company`.plural(message`${1} apple`, message`${1} apples`, 1), "1 apple");
 });

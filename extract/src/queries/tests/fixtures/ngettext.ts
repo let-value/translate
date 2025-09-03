@@ -8,7 +8,11 @@ const count = 0;
 // comment
 t.ngettext(message`${count} apple`, message`${count} apples`, 2);
 
-t.ngettext(message({ id: "greeting", message: "Hello, world!" }), message({ id: "greetings", message: "Hello, worlds!" }), 3);
+t.ngettext(
+    message({ id: "greeting", message: "Hello, world!" }),
+    message({ id: "greetings", message: "Hello, worlds!" }),
+    3,
+);
 
 const name = "World";
 t.ngettext(message`Hello, ${name}!`, message`Hello, ${name}!`, 1);

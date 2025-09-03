@@ -49,14 +49,8 @@ test("plural substitutes values from the chosen plural form", () => {
 
 test("context handles plurals", () => {
     const t = new Translator("ru", translations);
-    assert.equal(
-        t.context("company").plural(message`${1} apple`, message`${1} apples`, 1),
-        "1 Apple устройство",
-    );
-    assert.equal(
-        t.context("company").plural(message`${2} apple`, message`${2} apples`, 2),
-        "2 Apple устройства",
-    );
+    assert.equal(t.context("company").plural(message`${1} apple`, message`${1} apples`, 1), "1 Apple устройство");
+    assert.equal(t.context("company").plural(message`${2} apple`, message`${2} apples`, 2), "2 Apple устройства");
 });
 
 test("context-aware plural helper works", () => {

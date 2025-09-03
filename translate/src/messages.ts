@@ -77,13 +77,9 @@ export type PluralFunction = (...args: PluralArgs) => PluralMessage;
 export type MessageInput<T extends string = string> = [Message] | MessageArgs<T>;
 export type PluralInput = [PluralMessage] | PluralArgs;
 
-export type ContextMessageFunction = <T extends string>(
-    ...args: MessageArgs<T>
-) => ContextMessage;
+export type ContextMessageFunction = <T extends string>(...args: MessageArgs<T>) => ContextMessage;
 
-export type ContextPluralFunction = (
-    ...args: PluralArgs
-) => ContextPluralMessage;
+export type ContextPluralFunction = (...args: PluralArgs) => ContextPluralMessage;
 
 export interface ContextBuilder {
     message: ContextMessageFunction;
@@ -93,13 +89,8 @@ export interface ContextBuilder {
 const baseMessage = message;
 const basePlural = plural;
 
-export function context<T extends string>(
-    context: StrictStaticString<T>,
-): ContextBuilder;
-export function context(
-    strings: TemplateStringsArray,
-    ...values: never[]
-): ContextBuilder;
+export function context<T extends string>(context: StrictStaticString<T>): ContextBuilder;
+export function context(strings: TemplateStringsArray, ...values: never[]): ContextBuilder;
 export function context<T extends string>(
     ...args: [StrictStaticString<T>] | [TemplateStringsArray, ...never[]]
 ): ContextBuilder {

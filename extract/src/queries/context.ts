@@ -35,9 +35,7 @@ export const contextMsgQuery: QuerySpec = withComment({
     },
 });
 
-const msgCall = callPattern("message", messageArgs, false)
-    .replace(/@call/g, "@msg")
-    .replace(/@func/g, "@msgfn");
+const msgCall = callPattern("message", messageArgs, false).replace(/@call/g, "@msg").replace(/@func/g, "@msgfn");
 
 export const contextPluralQuery: QuerySpec = withComment({
     pattern: `(
