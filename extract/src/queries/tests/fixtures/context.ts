@@ -17,3 +17,6 @@ context("ctx").message`Hello, ${name}!`;
 
 context("ctx").message`Hi, ${name.toUpperCase()}!`;
 context("ctx").message`Hi, ${name.length}!`;
+
+const ctx = context("fruit");
+ctx.message("apple");

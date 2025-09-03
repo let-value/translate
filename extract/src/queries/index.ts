@@ -1,4 +1,4 @@
-import { contextMsgQuery, contextPluralQuery } from "./context.ts";
+import { contextInvalidQuery, contextMsgQuery, contextPluralQuery } from "./context.ts";
 import { gettextInvalidQuery, gettextQuery } from "./gettext.ts";
 import { messageInvalidQuery, messageQuery } from "./message.ts";
 import { ngettextQuery } from "./ngettext.ts";
@@ -20,4 +20,5 @@ export const queries: QuerySpec[] = [
     npgettextQuery,
     contextMsgQuery,
     contextPluralQuery,
+    contextInvalidQuery,
 ];
