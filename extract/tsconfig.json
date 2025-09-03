@@ -5,9 +5,10 @@
         "declaration": true,
         "emitDeclarationOnly": true,
         "declarationMap": true,
-        "outDir": "dist"
+        "outDir": "dist",
+        "rootDir": ".."
     },
-    "include": ["src/**/*.ts", "bin/**/*.ts", "index.ts"],
+    "include": ["src/**/*.ts", "bin/**/*.ts", "index.ts", "../packages/extract/src/**/*.ts"],
     "exclude": ["src/tests/fixtures"],
     "references": [{ "path": "../translate" }]
 }
