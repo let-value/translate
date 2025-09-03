@@ -8,7 +8,7 @@ if (!entry) {
     process.exit(1);
 }
 
-const po = extractPo(entry, locale);
+const po = await extractPo(entry, locale);
 if (out) {
     fs.writeFileSync(out, po);
 } else {
