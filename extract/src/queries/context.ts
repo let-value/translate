@@ -55,3 +55,32 @@ export const contextPluralQuery: QuerySpec = withComment({
 )`,
     extract: extractPluralForms("context.plural"),
 });
+
+export const contextInvalidQuery: QuerySpec = withComment({
+    pattern: ctxCall,
+    extract(match) {
+        const call = match.captures.find((c) => c.name === "ctx")?.node;
+        if (!call) {
+            return undefined;
+        }
+
+        const parent = call.parent;
+        if (parent && parent.type === "member_expression" && parent.childForFieldName("object")?.id === call.id) {
+            const property = parent.childForFieldName("property")?.text;
+            const grandparent = parent.parent;
+            if (
+                grandparent &&
+                grandparent.type === "call_expression" &&
+                grandparent.childForFieldName("function")?.id === parent.id &&
+                (property === "message" || property === "plural")
+            ) {
+                return undefined;
+            }
+        }
+
+        return {
+            node: call,
+            error: "context() must be used with message() or plural() in the same expression",
+        };
+    },
+});

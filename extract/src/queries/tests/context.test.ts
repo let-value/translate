@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { suite, test } from "node:test";
-import { contextMsgQuery } from "../context.ts";
+import { contextInvalidQuery, contextMsgQuery } from "../context.ts";
 import { getMatches } from "./utils.ts";
 
 const fixture = readFileSync(new URL("./fixtures/context.ts", import.meta.url)).toString();
@@ -70,6 +70,23 @@ suite("should extract context builder messages", () =>
                     },
                     {
                         error: "context.message() template expressions must be simple identifiers",
+                        translation: undefined,
+                    },
+                ],
+            );
+        });
+    }),
+);
+
+suite("should extract context builder errors", () =>
+    paths.forEach((path) => {
+        test(path, () => {
+            const matches = getMatches(fixture, path, contextInvalidQuery);
+            assert.deepEqual(
+                matches.map(({ error, translation }) => ({ error, translation })),
+                [
+                    {
+                        error: "context() must be used with message() or plural() in the same expression",
                         translation: undefined,
                     },
                 ],
