@@ -33,3 +33,15 @@ test("pgettext alias works", () => {
     const t = new Translator("en", {});
     assert.equal(t.pgettext("ctx", "X"), "X");
 });
+
+test("translator context accepts template literals", () => {
+    const t = new Translator("en", {});
+    assert.equal(t.context`verb`.message`Open`, "Open");
+});
+
+test("translator context rejects interpolations", () => {
+    const t = new Translator("en", {});
+    const category = "test";
+    // @ts-expect-error context cannot contain expressions
+    void t.context`fruit${category}`;
+});

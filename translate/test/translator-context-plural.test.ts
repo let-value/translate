@@ -63,3 +63,11 @@ test("npgettext alias works", () => {
     const t = new Translator("en", translations);
     assert.equal(t.npgettext("ctx", message`${1} apple`, message`${1} apples`, 1), "1 apple");
 });
+
+test("translator context accepts template literals for plurals", () => {
+    const t = new Translator("en", translations);
+    assert.equal(
+        t.context`company`.plural(message`${1} apple`, message`${1} apples`, 1),
+        "1 apple",
+    );
+});
