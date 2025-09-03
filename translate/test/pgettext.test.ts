@@ -13,11 +13,11 @@ test("pgettext handles context-specific translations", () => {
     assert.equal(t.pgettext("adjective", "Open"), "Открытый");
 });
 
-test("gettext handles context-aware messages", () => {
+test("gettext handles context-aware messages", async () => {
     const ruPo = fs.readFileSync(new URL("./fixtures/ru.po", import.meta.url));
     const translations = { ru: gettextParser.po.parse(ruPo) };
     const t = new Translator("en", translations);
-    t.useLocale("ru");
+    await t.useLocale("ru");
     const verb = context("verb");
     assert.equal(t.pgettext(verb.msg("Open")), "Открыть");
 });

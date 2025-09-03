@@ -14,19 +14,40 @@ import {
 } from "./helpers.ts";
 import { pluralFunc, substitute } from "./utils.ts";
 
+type TranslationLoader = () => Promise<GetTextTranslations>;
+type TranslationEntry = GetTextTranslations | TranslationLoader;
+
 export class Translator {
     private locale: string;
     private translations: Record<string, GetTextTranslations> = {};
+    private loaders: Record<string, TranslationLoader> = {};
 
-    constructor(defaultLocale: string, translations: Record<string, GetTextTranslations>) {
+    constructor(defaultLocale: string, translations: Record<string, TranslationEntry>) {
         this.locale = defaultLocale;
-        this.translations = translations;
+        for (const [locale, value] of Object.entries(translations)) {
+            if (typeof value === "function") {
+                this.loaders[locale] = value as TranslationLoader;
+            } else {
+                this.translations[locale] = value;
+            }
+        }
     }
 
     msg = msg;
     plural = plural;
 
-    useLocale(locale: string): void {
+    async load(locale: string, loader?: TranslationLoader): Promise<void> {
+        if (!this.translations[locale]) {
+            const fn = loader ?? this.loaders[locale];
+            if (fn) {
+                this.translations[locale] = await fn();
+                delete this.loaders[locale];
+            }
+        }
+    }
+
+    async useLocale(locale: string): Promise<void> {
+        await this.load(locale);
         this.locale = locale;
     }
 
