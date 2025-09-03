@@ -1,13 +1,7 @@
 import type { GetTextTranslation, GetTextTranslations } from "gettext-parser";
 import * as gettextParser from "gettext-parser";
 import { getFormula, getNPlurals } from "plural-forms";
-
-export interface Message {
-    msgid: string;
-    msgstr: string[];
-    references: string[];
-    comments: string[];
-}
+import type { Message } from "./messages.ts";
 
 export function collect(raw: GetTextTranslation[]): Message[] {
     const map = new Map<string, Message>();
