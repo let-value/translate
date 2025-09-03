@@ -36,10 +36,16 @@ function buildFromTemplate(strings: TemplateStringsArray): string {
     return result;
 }
 
-export function msg<T extends string>(id: StrictStaticString<T>): MessageId;
-export function msg(descriptor: MessageDescriptor): MessageId;
-export function msg(strings: TemplateStringsArray, ...values: unknown[]): MessageId;
-export function msg(source: MessageDescriptor | TemplateStringsArray, ...values: unknown[]): MessageId {
+export type MessageArgs<T extends string> =
+    | [id: StrictStaticString<T>]
+    | [descriptor: MessageDescriptor]
+    | [strings: TemplateStringsArray, ...values: unknown[]];
+
+export type MessageFunction = <T extends string>(...args: MessageArgs<T>) => MessageId;
+
+export function msg<T extends string>(...args: MessageArgs<T>): MessageId {
+    const [source, ...values] = args as [MessageDescriptor | TemplateStringsArray, ...unknown[]];
+
     if (typeof source === "string") {
         return { msgid: source, msgstr: source };
     }
@@ -54,9 +60,9 @@ export function msg(source: MessageDescriptor | TemplateStringsArray, ...values:
     return { msgid: id, msgstr: message };
 }
 
-export type MessageFunction = typeof msg;
+export type PluralArgs = [...forms: MessageId[], n: number];
 
-export function plural(...args: [...forms: MessageId[], n: number]): PluralMessageId {
+export function plural(...args: PluralArgs): PluralMessageId {
     assert(args.length > 1, "At least one plural form and n are required");
 
     const n = args[args.length - 1] as number;
@@ -67,29 +73,37 @@ export function plural(...args: [...forms: MessageId[], n: number]): PluralMessa
     return { forms, n };
 }
 
-export type PluralFunction = typeof plural;
+export type PluralFunction = (...args: PluralArgs) => PluralMessageId;
+export type MessageInit<T extends string = string> = [MessageId] | MessageArgs<T>;
+export type PluralInit = [PluralMessageId] | PluralArgs;
+
+export type ContextMessageFunction = <T extends string>(
+    ...args: MessageArgs<T>
+) => ContextMessageId;
+
+export type ContextPluralFunction = (
+    ...args: PluralArgs
+) => ContextPluralMessageId;
 
 export interface ContextBuilder {
-    msg<T extends string>(id: StrictStaticString<T>): ContextMessageId;
-    msg(descriptor: MessageDescriptor): ContextMessageId;
-    msg(strings: TemplateStringsArray, ...values: unknown[]): MessageId;
-    plural(...args: Parameters<PluralFunction>): ContextPluralMessageId;
+    msg: ContextMessageFunction;
+    plural: ContextPluralFunction;
 }
 
 const baseMsg = msg;
 const basePlural = plural;
 
 export function context(context: string): ContextBuilder {
-    function msg(...args: Parameters<MessageFunction>): ContextMessageId {
+    function msg<T extends string>(...args: MessageArgs<T>): ContextMessageId {
         return { id: baseMsg(...args), context };
     }
 
-    function plural(...forms: Parameters<PluralFunction>) {
+    function plural(...forms: PluralArgs): ContextPluralMessageId {
         return { id: basePlural(...forms), context };
     }
 
     return {
-        msg: msg as ContextBuilder["msg"],
-        plural: plural as ContextBuilder["plural"],
+        msg,
+        plural,
     };
 }
