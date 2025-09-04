@@ -4,7 +4,6 @@ import { ResolverFactory } from "oxc-resolver";
 
 function findTsconfig(dir: string): string | undefined {
     let current = dir;
-    // Walk up directories to find nearest tsconfig.json
     while (true) {
         const config = path.join(current, "tsconfig.json");
         if (fs.existsSync(config)) {
@@ -41,19 +40,11 @@ function resolveFromDir(dir: string, spec: string): string | undefined {
     return res.path;
 }
 
-/** Resolve a single import specifier relative to a file. */
 export function resolveImport(file: string, spec: string): string | undefined {
     const dir = path.dirname(path.resolve(file));
     return resolveFromDir(dir, spec);
 }
 
-/**
- * Resolve a list of import specifiers relative to a file.
- *
- * @param file - Absolute or relative path to the importing file.
- * @param imports - Raw import specifiers collected from that file.
- * @returns Absolute paths to resolved modules.
- */
 export function resolveImports(file: string, imports: string[]): string[] {
     const dir = path.dirname(path.resolve(file));
     const resolver = getResolver(dir);

@@ -1,9 +1,25 @@
-import type { GetTextTranslation } from "gettext-parser";
 import type Parser from "tree-sitter";
+
+export interface Comments {
+    translator?: string;
+    reference?: string;
+    extracted?: string;
+    flag?: string;
+    previous?: string;
+}
+
+export interface Translation {
+    context: string;
+    id: string;
+    plural?: string;
+    message: string[];
+    comments?: Comments;
+    obsolete?: boolean;
+}
 
 export interface MessageMatch {
     node: Parser.SyntaxNode;
-    translation?: GetTextTranslation;
+    translation?: Translation;
     error?: string;
 }
 

@@ -4,7 +4,7 @@ import { suite, test } from "node:test";
 import { fileURLToPath } from "node:url";
 
 import { parseFile } from "../parse.ts";
-import { resolveImport, resolveImports } from "../walk.ts";
+import { resolveImport, resolveImports } from "../resolve.ts";
 
 const appEntryUrl = new URL("./fixtures/project/packages/app/src/index.ts", import.meta.url);
 const appEntryPath = fileURLToPath(appEntryUrl);

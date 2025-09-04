@@ -1,17 +1,18 @@
 import fs from "node:fs";
 import { extname, resolve } from "node:path";
-import type { GetTextTranslation } from "gettext-parser";
+
 import { memo } from "radash";
 import Parser from "tree-sitter";
 import JavaScript from "tree-sitter-javascript";
 import TS from "tree-sitter-typescript";
+
 import { getReference } from "./queries/comment.ts";
 import { importQuery } from "./queries/import.ts";
 import { queries } from "./queries/index.ts";
-import type { Context } from "./queries/types.ts";
+import type { Context, Translation } from "./queries/types.ts";
 
 export interface ParseResult {
-    translations: GetTextTranslation[];
+    translations: Translation[];
     imports: string[];
 }
 
@@ -53,7 +54,7 @@ export function parseSource(source: string, path: string): ParseResult {
     const { parser, language } = getParser(path);
     const tree = parser.parse(source);
 
-    const translations: GetTextTranslation[] = [];
+    const translations: Translation[] = [];
     const imports: string[] = [];
 
     const seen = new Set<number>();
