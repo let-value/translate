@@ -1,4 +1,5 @@
 import type { GetTextTranslation } from "gettext-parser";
+import type { Message } from "./messages.ts";
 
 /** Utility type allowing a hook to return a value or a promise. */
 type MaybePromise<T> = T | Promise<T>;
@@ -45,8 +46,13 @@ export interface ExtractResult {
 }
 export type ExtractHook = (args: ExtractArgs, ctx: ExtractContext) => MaybePromise<ExtractResult | undefined>;
 
-export type CollectHook = (messages: GetTextTranslation[], ctx: ExtractContext) => MaybePromise<void>;
-export type GenerateHook = (locale: string, messages: GetTextTranslation[], ctx: ExtractContext) => MaybePromise<void>;
+export interface GenerateArgs {
+    locale: string;
+    messages: Message[];
+}
+
+export type CollectHook = (messages: GetTextTranslation[], ctx: ExtractContext) => MaybePromise<Message[] | undefined>;
+export type GenerateHook = (args: GenerateArgs, ctx: ExtractContext) => MaybePromise<void>;
 
 export interface ExtractBuild {
     onResolve(options: { filter: RegExp }, hook: ResolveHook): void;
@@ -117,6 +123,7 @@ export async function runPipeline(
 
     const visited = new Set<string>();
     const messages: GetTextTranslation[] = [];
+    let collected: Message[] = [];
 
     async function applyResolve(path: string, importer?: string): Promise<string | undefined> {
         for (const { filter, hook } of resolves) {
@@ -146,6 +153,7 @@ export async function runPipeline(
     }
 
     while (queue.length) {
+        // biome-ignore lint/style/noNonNullAssertion: queue is checked above
         const { path, importer } = queue.shift()!;
         const resolved = await applyResolve(path, importer);
         if (!resolved || visited.has(resolved)) continue;
@@ -164,13 +172,13 @@ export async function runPipeline(
     }
 
     for (const hook of collects) {
-        await hook(messages, context);
+        const result = await hook(messages, context);
+        if (result) collected = result;
     }
 
     for (const hook of generates) {
-        await hook(locale, messages, context);
+        await hook({ locale, messages: collected }, context);
     }
 
     return messages;
 }
-
