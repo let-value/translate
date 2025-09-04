@@ -46,16 +46,12 @@ export interface ExtractResult {
 }
 export type ExtractHook = (args: ExtractArgs, ctx: ExtractContext) => MaybePromise<ExtractResult | undefined>;
 
-export type CollectHook = (
-    messages: GetTextTranslation[],
-    ctx: ExtractContext,
-) => MaybePromise<Message[] | void>;
-
 export interface GenerateArgs {
     locale: string;
     messages: Message[];
 }
 
+export type CollectHook = (messages: GetTextTranslation[], ctx: ExtractContext) => MaybePromise<Message[] | undefined>;
 export type GenerateHook = (args: GenerateArgs, ctx: ExtractContext) => MaybePromise<void>;
 
 export interface ExtractBuild {
@@ -157,6 +153,7 @@ export async function runPipeline(
     }
 
     while (queue.length) {
+        // biome-ignore lint/style/noNonNullAssertion: queue is checked above
         const { path, importer } = queue.shift()!;
         const resolved = await applyResolve(path, importer);
         if (!resolved || visited.has(resolved)) continue;
@@ -185,4 +182,3 @@ export async function runPipeline(
 
     return messages;
 }
-

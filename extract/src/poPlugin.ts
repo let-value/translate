@@ -1,8 +1,8 @@
 import fs from "node:fs/promises";
-import path from "node:path";
+import nodePath from "node:path";
+import type { ExtractorPlugin, GenerateArgs } from "./plugin.ts";
 import { buildPo } from "./po.ts";
 import { collect } from "./messages.ts";
-import type { ExtractorPlugin } from "../../packages/extract/src/plugin.ts";
 
 export interface PoPluginOptions {
     /** Write the generated PO file to disk. */
@@ -15,14 +15,15 @@ export function poPlugin(options: PoPluginOptions = {}) {
     return {
         name: "po",
         setup(build) {
-            build.onCollect((messages) => collect(messages));
-            build.onGenerate(async ({ locale, messages }, ctx) => {
-                if (!locale) return;
+            build.onCollect((messages) => {
+                return collect(messages);
+            });
+            build.onGenerate(async ({ locale, messages }: GenerateArgs, ctx) => {
                 const out = buildPo(locale, messages);
                 po = out;
                 if (writePo) {
-                    const file = path.join(ctx.dest, `${locale}.po`);
-                    await fs.mkdir(path.dirname(file), { recursive: true });
+                    const file = nodePath.join(ctx.dest, `${locale}.po`);
+                    await fs.mkdir(nodePath.dirname(file), { recursive: true });
                     await fs.writeFile(file, out);
                 }
             });
@@ -32,5 +33,3 @@ export function poPlugin(options: PoPluginOptions = {}) {
         },
     } as ExtractorPlugin & { getPo(): string | undefined };
 }
-
-export { poPlugin as default };

@@ -1,8 +1,8 @@
 import fs from "node:fs/promises";
 import nodePath from "node:path";
 import { parseSource } from "./parse.ts";
+import type { ExtractorPlugin } from "./plugin.ts";
 import { resolveImport } from "./walk.ts";
-import type { ExtractorPlugin } from "../../packages/extract/src/plugin.ts";
 
 export function corePlugin(): ExtractorPlugin {
     return {
@@ -23,7 +23,5 @@ export function corePlugin(): ExtractorPlugin {
                 return { messages: translations, imports };
             });
         },
-    };
+    } satisfies ExtractorPlugin;
 }
-
-export { corePlugin as default };
