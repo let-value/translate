@@ -29,19 +29,48 @@ export function collect(source: Translation[]): GetTextTranslationRecord {
     return translations;
 }
 
-export function generate(locale: string, sources: CollectResult[]): string {
-    const headers = {
-        "content-type": "text/plain; charset=UTF-8",
-        "plural-forms": `nplurals=${getNPlurals(locale)}; plural=${getFormula(locale)};`,
-        language: locale,
-    } as Record<string, string>;
-
+export function merge(locale: string, sources: CollectResult[], existing?: string | Buffer): string {
+    let headers: Record<string, string> = {};
     let translations: GetTextTranslationRecord = { "": {} };
 
-    translations = sources.reduce(
-        (acc, { translations }) => assign(acc, translations as GetTextTranslationRecord),
-        translations,
-    );
+    if (existing) {
+        const parsed = gettextParser.po.parse(existing);
+        headers = parsed.headers || {};
+        translations = parsed.translations || { "": {} };
+        for (const ctx of Object.keys(translations)) {
+            for (const id of Object.keys(translations[ctx])) {
+                if (ctx === "" && id === "") continue;
+                translations[ctx][id].obsolete = true;
+            }
+        }
+    }
+
+    const collected = sources.reduce((acc, { translations }) => assign(acc, translations as GetTextTranslationRecord), {
+        "": {},
+    } as GetTextTranslationRecord);
+
+    for (const [ctx, msgs] of Object.entries(collected)) {
+        if (!translations[ctx]) translations[ctx] = {};
+        for (const [id, entry] of Object.entries(msgs)) {
+            const existingEntry = translations[ctx][id];
+            if (existingEntry) {
+                entry.msgstr = existingEntry.msgstr;
+                entry.comments = {
+                    ...entry.comments,
+                    translator: existingEntry.comments?.translator,
+                };
+            }
+            entry.obsolete = false;
+            translations[ctx][id] = entry;
+        }
+    }
+
+    headers = {
+        ...headers,
+        "content-type": headers["content-type"] || "text/plain; charset=UTF-8",
+        "plural-forms": `nplurals=${getNPlurals(locale)}; plural=${getFormula(locale)};`,
+        language: locale,
+    };
 
     const poObj: GetTextTranslations = {
         charset: "utf-8",
@@ -68,7 +97,8 @@ export function po(): ExtractorPlugin {
                 };
             });
             build.onGenerate({ filter: /.*\/po$/ }, async ({ path, locale, collected }: GenerateArgs) => {
-                const out = generate(locale, collected);
+                const existing = await fs.readFile(path).catch(() => undefined);
+                const out = merge(locale, collected, existing);
                 await fs.mkdir(dirname(path), { recursive: true });
                 await fs.writeFile(path, out);
             });
