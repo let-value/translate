@@ -25,3 +25,4 @@ export function collect(raw: GetTextTranslation[]): Message[] {
     }
     return Array.from(map.values());
 }
+
