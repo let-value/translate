@@ -7,6 +7,20 @@ import { assign } from "radash";
 import type { CollectResult, ExtractorPlugin, GenerateArgs, ExtractContext } from "../../plugin.ts";
 import type { Translation } from "../core/queries/types.ts";
 
+export function formatDate(date: Date): string {
+    const pad = (n: number) => n.toString().padStart(2, "0");
+    const year = date.getFullYear();
+    const month = pad(date.getMonth() + 1);
+    const day = pad(date.getDate());
+    const hours = pad(date.getHours());
+    const minutes = pad(date.getMinutes());
+    const tzo = -date.getTimezoneOffset();
+    const sign = tzo >= 0 ? "+" : "-";
+    const offsetHours = pad(Math.floor(Math.abs(tzo) / 60));
+    const offsetMinutes = pad(Math.abs(tzo) % 60);
+    return `${year}-${month}-${day} ${hours}:${minutes}${sign}${offsetHours}${offsetMinutes}`;
+}
+
 export function collect(source: Translation[]): GetTextTranslationRecord {
     const translations: GetTextTranslationRecord = { "": {} };
 
@@ -34,6 +48,7 @@ export function merge(
     sources: CollectResult[],
     existing: string | Buffer | undefined,
     strategy: "mark" | "remove" = "mark",
+    timestamp: Date = new Date(),
 ): string {
     let headers: Record<string, string> = {};
     let translations: GetTextTranslationRecord = { "": {} };
@@ -75,6 +90,8 @@ export function merge(
         "content-type": headers["content-type"] || "text/plain; charset=UTF-8",
         "plural-forms": `nplurals=${getNPlurals(locale)}; plural=${getFormula(locale)};`,
         language: locale,
+        "pot-creation-date": formatDate(timestamp),
+        "x-generator": "@let-value/translate-extract",
     };
 
     if (strategy === "remove") {
@@ -113,7 +130,7 @@ export function po(): ExtractorPlugin {
             });
             build.onGenerate({ filter: /.*\/po$/ }, async ({ path, locale, collected }: GenerateArgs, ctx: ExtractContext) => {
                 const existing = await fs.readFile(path).catch(() => undefined);
-                const out = merge(locale, collected, existing, ctx.config.obsolete);
+                const out = merge(locale, collected, existing, ctx.config.obsolete, ctx.generatedAt);
                 await fs.mkdir(dirname(path), { recursive: true });
                 await fs.writeFile(path, out);
             });
