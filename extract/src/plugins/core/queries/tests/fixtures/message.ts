@@ -1,6 +1,6 @@
 import { message, plural, Translator } from "@let-value/translate";
 
-const t = new Translator("en", {});
+const t = new Translator({}).getLocale("en" as never);
 
 message("hello");
 

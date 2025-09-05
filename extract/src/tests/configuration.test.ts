@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { join } from "node:path";
 import { test } from "node:test";
 import { defineConfig } from "../configuration.ts";
 import type { ExtractorPlugin } from "../plugin.ts";
@@ -28,7 +29,7 @@ test("normalizes single entrypoint to array", () => {
     const cfg = defineConfig({ entrypoints: "src/index.ts" });
     assert.deepEqual(
         cfg.entrypoints.map((e) => e.entrypoint),
-        ["src/index.ts"],
+        [join("src/index.ts")],
     );
 });
 

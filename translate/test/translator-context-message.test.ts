@@ -7,40 +7,36 @@ import { Translator } from "../src/translator.ts";
 
 test("context builder handles context-specific translations", () => {
     const ruPo = fs.readFileSync(new URL("./fixtures/ru.po", import.meta.url));
-    const translations = { ru: gettextParser.po.parse(ruPo) };
-    const t = new Translator("ru", translations);
+    const t = new Translator({ ru: gettextParser.po.parse(ruPo) }).getLocale("ru");
     assert.equal(t.context("verb").message("Open"), "Открыть");
     assert.equal(t.context("adjective").message("Open"), "Открытый");
 });
 
 test("context builder handles context-aware messages", async () => {
     const ruPo = fs.readFileSync(new URL("./fixtures/ru.po", import.meta.url));
-    const translations = { ru: gettextParser.po.parse(ruPo) };
-    const t = new Translator("en", translations);
-    await t.useLocale("ru");
+    const t = new Translator({ ru: gettextParser.po.parse(ruPo) }).getLocale("ru");
     const verb = context("verb");
     assert.equal(t.context("verb").message(verb.message("Open")), "Открыть");
 });
 
 test("context message returns original string when translation missing", () => {
     const ruPo = fs.readFileSync(new URL("./fixtures/ru.po", import.meta.url));
-    const translations = { ru: gettextParser.po.parse(ruPo) };
-    const t = new Translator("ru", translations);
+    const t = new Translator({ ru: gettextParser.po.parse(ruPo) }).getLocale("ru");
     assert.equal(t.context("verb").message("Close"), "Close");
 });
 
 test("pgettext alias works", () => {
-    const t = new Translator("en", {});
+    const t = new Translator({}).getLocale("en" as never);
     assert.equal(t.pgettext("ctx", "X"), "X");
 });
 
 test("translator context accepts template literals", () => {
-    const t = new Translator("en", {});
+    const t = new Translator({}).getLocale("en" as never);
     assert.equal(t.context`verb`.message`Open`, "Open");
 });
 
 test("translator context rejects interpolations", () => {
-    const t = new Translator("en", {});
+    const t = new Translator({}).getLocale("en" as never);
     const category = "test";
     // @ts-expect-error context cannot contain expressions
     void t.context`fruit${category}`;

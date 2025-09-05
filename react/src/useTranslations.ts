@@ -1,25 +1,15 @@
-import type { Translator } from "@let-value/translate";
-import type { GetTextTranslations } from "gettext-parser";
-import { useContext } from "react";
-
+import type { LocaleTranslator } from "@let-value/translate";
+import { use } from "react";
+import { localeContext } from "./LocaleProvider.ts";
 import { TranslatorContext } from "./TranslationsProvider.ts";
 
-export function useTranslations(locale?: string): Translator {
-    const translator = useContext(TranslatorContext);
+export function useTranslations(locale?: string): LocaleTranslator {
+    const requestedLocale = locale ?? use(localeContext) ?? "unknown";
+
+    const translator = use(TranslatorContext);
     if (!translator) {
         throw new Error("TranslationsProvider is missing");
     }
 
-    if (locale) {
-        const internal = translator as unknown as {
-            locale: string;
-            translations: Record<string, GetTextTranslations>;
-        };
-        if (internal.locale !== locale || !internal.translations[locale]) {
-            // biome-ignore lint/correctness/useHookAtTopLevel: Suspense integration
-            throw translator.useLocale(locale);
-        }
-    }
-
-    return translator;
+    return use(translator.fetchLocale(requestedLocale));
 }

@@ -1,6 +1,6 @@
 import { Translator } from "@let-value/translate";
 import type { GetTextTranslations } from "gettext-parser";
-import { createContext, createElement, type ReactNode, useContext, useMemo } from "react";
+import { createContext, createElement, type ReactNode, use, useMemo } from "react";
 
 export const TranslatorContext = createContext<Translator | null>(null);
 
@@ -22,33 +22,20 @@ function mergeTranslations(translator: Translator, entries: Record<string, Trans
 }
 
 export interface TranslationsProviderProps {
-    locale: string;
     translations?: Record<string, TranslationEntry>;
     children?: ReactNode;
 }
 
-export function TranslationsProvider({ locale, translations = {}, children }: TranslationsProviderProps) {
-    const parent = useContext(TranslatorContext);
+export function TranslationsProvider({ translations = {}, children }: TranslationsProviderProps) {
+    const parent = use(TranslatorContext);
 
-    // biome-ignore lint/correctness/useExhaustiveDependencies: translator instance should persist
     const translator = useMemo(() => {
-        return parent ?? new Translator(locale, translations);
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [parent]);
+        return parent ?? new Translator(translations);
+    }, [parent, translations]);
 
     useMemo(() => {
         mergeTranslations(translator, translations);
     }, [translator, translations]);
-
-    const internal = translator as unknown as {
-        locale: string;
-        translations: Record<string, GetTextTranslations>;
-    };
-
-    if (internal.locale !== locale || !internal.translations[locale]) {
-        // biome-ignore lint/correctness/useHookAtTopLevel: Suspense integration
-        throw translator.useLocale(locale);
-    }
 
     return createElement(TranslatorContext.Provider, { value: translator }, children);
 }

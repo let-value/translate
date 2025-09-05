@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { join } from "node:path";
 import { test } from "node:test";
 
 import { defineConfig } from "../configuration.ts";
@@ -30,7 +31,7 @@ test("passes collected messages to generate hooks", async () => {
     const config = defineConfig({ entrypoints: entrypoint });
     await run(entrypoint, [plugin], "en", { dest: "", config });
 
-    const finalPath = `${locale}/${destination}`;
+    const finalPath = join(`${locale}/${destination}`);
     assert.deepEqual(generated, {
         collected: [
             {

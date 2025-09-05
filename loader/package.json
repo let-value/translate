@@ -55,7 +55,7 @@
     },
     "devDependencies": {
         "@types/gettext-parser": "8.0.0",
-        "tsdown": "^0.14.2",
+        "tsdown": "0.14.2",
         "typescript": "5.9.2"
     },
     "scripts": {
@@ -65,6 +65,6 @@
         "test": "node --test \"**/*.test.ts\""
     },
     "peerDependencies": {
-        "@types/bun": "^1.2.21"
+        "@types/bun": "1.2.21"
     }
 }

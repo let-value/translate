@@ -9,13 +9,13 @@ const ruUrl = new URL("./fixtures/ru.po", import.meta.url);
 
 await test("getLocale returns locale translator", async () => {
     const ru = gettextParser.po.parse(await fs.promises.readFile(ruUrl));
-    const t = new Translator("en", { en: empty, ru });
+    const t = new Translator({ en: empty, ru });
     const name = "World";
     assert.equal(t.getLocale("ru").message`Hello, ${name}!`, "Привет, World!");
 });
 
 await test("fetchLocale loads translations", async () => {
-    const t = new Translator("en", {
+    const t = new Translator({
         en: empty,
         ru: async () => gettextParser.po.parse(await fs.promises.readFile(ruUrl)),
     });
@@ -25,9 +25,10 @@ await test("fetchLocale loads translations", async () => {
 });
 
 await test("getLocale throws for async locales", async () => {
-    const t = new Translator("en", {
+    const t = new Translator({
         en: empty,
         ru: async () => gettextParser.po.parse(await fs.promises.readFile(ruUrl)),
     });
+    // @ts-expect-error getLocale cannot return async locale
     assert.throws(() => t.getLocale("ru"));
 });
