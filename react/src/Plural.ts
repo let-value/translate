@@ -1,15 +1,15 @@
-import type { ReactNode } from "react";
+import { createElement, Fragment, type ReactNode } from "react";
 
-import { useTranslations } from "./useTranslations.tsx";
-import { buildMessageFromChildren } from "./utils.ts";
+import { useTranslations } from "./useTranslations.ts";
+import { buildMessageFromChildren, type StrictReactNode } from "./utils.ts";
 
-export interface PluralProps {
+export interface PluralProps<F extends readonly ReactNode[]> {
     number: number;
-    forms: ReactNode[];
+    forms: StrictReactNode<F>;
     context?: string;
 }
 
-export function Plural({ number, forms, context }: PluralProps) {
+export function Plural<F extends readonly ReactNode[]>({ number, forms, context }: PluralProps<F>) {
     const translator = useTranslations();
 
     const built = forms.map((child, i) => {
@@ -36,5 +36,5 @@ export function Plural({ number, forms, context }: PluralProps) {
         i += 3;
     }
 
-    return <>{result}</>;
+    return createElement(Fragment, null, ...result);
 }
