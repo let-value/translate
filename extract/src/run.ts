@@ -1,3 +1,4 @@
+import { join } from "node:path";
 import type {
     CollectArgs,
     CollectHook,
@@ -16,17 +17,19 @@ import type {
     ResolveHook,
     ResolveResult,
 } from "./plugin.ts";
+import type { ResolvedConfig } from "./configuration.ts";
 
 export async function run(
     entrypoint: string,
     plugins: ExtractorPlugin[],
     locale: string,
-    opts: { dest?: string } = {},
+    opts: { dest?: string; config: ResolvedConfig },
 ) {
     const queue: ResolveArgs[] = [{ entrypoint, path: entrypoint }];
     const context: ExtractContext = {
         entry: entrypoint,
         dest: opts.dest ?? process.cwd(),
+        config: opts.config,
     };
 
     const resolves: { filter: RegExp; hook: ResolveHook }[] = [];
@@ -128,9 +131,10 @@ export async function run(
     }
 
     for (const [path, collected] of Object.entries(result)) {
+        const fullPath = join(context.dest, path);
         for (const { filter, hook } of generates) {
-            if (!filter.test(path)) continue;
-            await hook({ entrypoint, locale, path, collected }, context);
+            if (!filter.test(fullPath)) continue;
+            await hook({ entrypoint, locale, path: fullPath, collected }, context);
         }
     }
 
