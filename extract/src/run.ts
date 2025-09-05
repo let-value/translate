@@ -1,4 +1,5 @@
 import { join } from "node:path";
+import type { ResolvedConfig } from "./configuration.ts";
 import type {
     CollectArgs,
     CollectHook,
@@ -17,7 +18,6 @@ import type {
     ResolveHook,
     ResolveResult,
 } from "./plugin.ts";
-import type { ResolvedConfig } from "./configuration.ts";
 
 export async function run(
     entrypoint: string,
@@ -25,11 +25,15 @@ export async function run(
     locale: string,
     opts: { dest?: string; config: ResolvedConfig },
 ) {
+    const entryConfig = opts.config.entrypoints.find((e) => e.entrypoint === entrypoint);
+    const destination = entryConfig?.destination ?? opts.config.destination;
+    const obsolete = entryConfig?.obsolete ?? opts.config.obsolete;
+
     const queue: ResolveArgs[] = [{ entrypoint, path: entrypoint }];
     const context: ExtractContext = {
         entry: entrypoint,
         dest: opts.dest ?? process.cwd(),
-        config: opts.config,
+        config: { ...opts.config, destination, obsolete },
         generatedAt: new Date(),
     };
 
@@ -40,7 +44,9 @@ export async function run(
     const generates: { filter: RegExp; hook: GenerateHook }[] = [];
 
     function resolvePath(args: ResolveArgs) {
-        queue.push(args);
+        if (context.config.walk) {
+            queue.push(args);
+        }
     }
 
     const build: ExtractBuild = {
@@ -124,11 +130,13 @@ export async function run(
         const collected = await applyCollect(extracted);
         if (!collected) continue;
 
-        if (!result[collected.destination]) {
-            result[collected.destination] = [];
+        const destPath = context.config.destination(locale, entrypoint, collected.destination);
+        const final = { ...collected, destination: destPath };
+        if (!result[destPath]) {
+            result[destPath] = [];
         }
 
-        result[collected.destination].push(collected);
+        result[destPath].push(final);
     }
 
     for (const [path, collected] of Object.entries(result)) {

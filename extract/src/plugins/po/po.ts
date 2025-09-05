@@ -4,7 +4,7 @@ import type { GetTextTranslationRecord, GetTextTranslations } from "gettext-pars
 import * as gettextParser from "gettext-parser";
 import { getFormula, getNPlurals } from "plural-forms";
 import { assign } from "radash";
-import type { CollectResult, ExtractorPlugin, GenerateArgs, ExtractContext } from "../../plugin.ts";
+import type { CollectResult, ExtractContext, ExtractorPlugin, GenerateArgs } from "../../plugin.ts";
 import type { Translation } from "../core/queries/types.ts";
 
 export function formatDate(date: Date): string {
@@ -128,12 +128,15 @@ export function po(): ExtractorPlugin {
                     translations: record,
                 };
             });
-            build.onGenerate({ filter: /.*\/po$/ }, async ({ path, locale, collected }: GenerateArgs, ctx: ExtractContext) => {
-                const existing = await fs.readFile(path).catch(() => undefined);
-                const out = merge(locale, collected, existing, ctx.config.obsolete, ctx.generatedAt);
-                await fs.mkdir(dirname(path), { recursive: true });
-                await fs.writeFile(path, out);
-            });
+            build.onGenerate(
+                { filter: /.*\/po$/ },
+                async ({ path, locale, collected }: GenerateArgs, ctx: ExtractContext) => {
+                    const existing = await fs.readFile(path).catch(() => undefined);
+                    const out = merge(locale, collected, existing, ctx.config.obsolete, ctx.generatedAt);
+                    await fs.mkdir(dirname(path), { recursive: true });
+                    await fs.writeFile(path, out);
+                },
+            );
         },
     };
 }
