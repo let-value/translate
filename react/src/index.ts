@@ -1,8 +1,5 @@
 export * from "@let-value/translate";
-export {
-    Message,
-    Plural,
-    TranslationsProvider,
-    TranslatorContext,
-    useTranslations,
-} from "./react.tsx";
+export { Message } from "./Message.tsx";
+export { Plural } from "./Plural.tsx";
+export { TranslationsProvider, TranslatorContext } from "./TranslationsProvider.tsx";
+export { useTranslations } from "./useTranslations.tsx";
