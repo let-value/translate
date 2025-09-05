@@ -4,7 +4,7 @@ import type { GetTextTranslationRecord, GetTextTranslations } from "gettext-pars
 import * as gettextParser from "gettext-parser";
 import { getFormula, getNPlurals } from "plural-forms";
 import { assign } from "radash";
-import type { CollectResult, ExtractorPlugin, GenerateArgs } from "../../plugin.ts";
+import type { CollectResult, ExtractorPlugin, GenerateArgs, ExtractContext } from "../../plugin.ts";
 import type { Translation } from "../core/queries/types.ts";
 
 export function collect(source: Translation[]): GetTextTranslationRecord {
@@ -29,7 +29,12 @@ export function collect(source: Translation[]): GetTextTranslationRecord {
     return translations;
 }
 
-export function merge(locale: string, sources: CollectResult[], existing?: string | Buffer): string {
+export function merge(
+    locale: string,
+    sources: CollectResult[],
+    existing: string | Buffer | undefined,
+    strategy: "mark" | "remove" = "mark",
+): string {
     let headers: Record<string, string> = {};
     let translations: GetTextTranslationRecord = { "": {} };
 
@@ -72,6 +77,16 @@ export function merge(locale: string, sources: CollectResult[], existing?: strin
         language: locale,
     };
 
+    if (strategy === "remove") {
+        for (const ctx of Object.keys(translations)) {
+            for (const id of Object.keys(translations[ctx])) {
+                if (translations[ctx][id].obsolete) {
+                    delete translations[ctx][id];
+                }
+            }
+        }
+    }
+
     const poObj: GetTextTranslations = {
         charset: "utf-8",
         headers,
@@ -96,9 +111,9 @@ export function po(): ExtractorPlugin {
                     translations: record,
                 };
             });
-            build.onGenerate({ filter: /.*\/po$/ }, async ({ path, locale, collected }: GenerateArgs) => {
+            build.onGenerate({ filter: /.*\/po$/ }, async ({ path, locale, collected }: GenerateArgs, ctx: ExtractContext) => {
                 const existing = await fs.readFile(path).catch(() => undefined);
-                const out = merge(locale, collected, existing);
+                const out = merge(locale, collected, existing, ctx.config.obsolete);
                 await fs.mkdir(dirname(path), { recursive: true });
                 await fs.writeFile(path, out);
             });

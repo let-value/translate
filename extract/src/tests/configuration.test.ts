@@ -28,3 +28,30 @@ test("normalizes single entrypoint to array", () => {
     const cfg = defineConfig({ entrypoints: "src/index.ts" });
     assert.deepEqual(cfg.entrypoints, ["src/index.ts"]);
 });
+
+test("provides default locale and locales", () => {
+    const cfg = defineConfig({ entrypoints: "src/index.ts" });
+    assert.equal(cfg.defaultLocale, "en");
+    assert.deepEqual(cfg.locales, ["en"]);
+});
+
+test("resolves locales and default locale", () => {
+    const cfg = defineConfig({
+        entrypoints: "src/index.ts",
+        defaultLocale: "en",
+        locales: ["en", "es"],
+    });
+    assert.equal(cfg.defaultLocale, "en");
+    assert.deepEqual(cfg.locales, ["en", "es"]);
+});
+
+test("uses custom destination and obsolete strategy", () => {
+    const destination = (locale: string, entry: string) => `${locale}/${entry}`;
+    const cfg = defineConfig({
+        entrypoints: "src/index.ts",
+        destination,
+        obsolete: "remove",
+    });
+    assert.equal(cfg.destination, destination);
+    assert.equal(cfg.obsolete, "remove");
+});

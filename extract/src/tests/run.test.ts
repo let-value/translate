@@ -3,6 +3,7 @@ import { test } from "node:test";
 
 import type { ExtractorPlugin, GenerateArgs } from "../plugin.ts";
 import { run } from "../run.ts";
+import { defineConfig } from "../configuration.ts";
 
 test("passes collected messages to generate hooks", async () => {
     const entrypoint = "dummy.ts";
@@ -26,7 +27,8 @@ test("passes collected messages to generate hooks", async () => {
         },
     };
 
-    await run(entrypoint, [plugin], "en");
+    const config = defineConfig({ entrypoints: entrypoint });
+    await run(entrypoint, [plugin], "en", { dest: "", config });
 
     assert.deepEqual(generated, {
         collected: [

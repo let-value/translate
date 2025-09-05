@@ -1,8 +1,11 @@
+import type { ResolvedConfig } from "./configuration.ts";
+
 type MaybePromise<T> = T | Promise<T>;
 
 export interface ExtractContext {
     entry: string;
     dest: string;
+    config: ResolvedConfig;
 }
 
 export interface ResolveArgs {
