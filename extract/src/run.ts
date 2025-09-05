@@ -30,6 +30,7 @@ export async function run(
         entry: entrypoint,
         dest: opts.dest ?? process.cwd(),
         config: opts.config,
+        generatedAt: new Date(),
     };
 
     const resolves: { filter: RegExp; hook: ResolveHook }[] = [];
