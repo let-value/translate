@@ -1,6 +1,6 @@
 import { Translator } from "@let-value/translate";
 import type { GetTextTranslations } from "gettext-parser";
-import { createContext, type ReactNode, useContext, useMemo } from "react";
+import { createContext, createElement, type ReactNode, useContext, useMemo } from "react";
 
 export const TranslatorContext = createContext<Translator | null>(null);
 
@@ -50,5 +50,5 @@ export function TranslationsProvider({ locale, translations = {}, children }: Tr
         throw translator.useLocale(locale);
     }
 
-    return <TranslatorContext.Provider value={translator}>{children}</TranslatorContext.Provider>;
+    return createElement(TranslatorContext.Provider, { value: translator }, children);
 }

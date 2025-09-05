@@ -1,16 +1,16 @@
-import type { ReactNode } from "react";
+import { createElement, Fragment, type ReactNode } from "react";
 
-import { useTranslations } from "./useTranslations.tsx";
-import { buildMessageFromChildren } from "./utils.ts";
+import { useTranslations } from "./useTranslations.ts";
+import { buildMessageFromChildren, type StrictReactNode } from "./utils.ts";
 
-export interface MessageProps {
+export interface MessageProps<T extends ReactNode> {
     context?: string;
-    children: ReactNode;
+    children: StrictReactNode<T>;
 }
 
-export function Message({ context, children }: MessageProps) {
+export function Message<T extends ReactNode>({ context, children }: MessageProps<T>) {
     const translator = useTranslations();
-    const { id, values } = buildMessageFromChildren(children);
+    const { id, values } = buildMessageFromChildren(children as ReactNode);
 
     if (values.length === 0) {
         if (context) {
@@ -34,5 +34,5 @@ export function Message({ context, children }: MessageProps) {
         }
     }
 
-    return <>{result}</>;
+    return createElement(Fragment, null, ...result);
 }

@@ -18,6 +18,9 @@
     "devDependencies": {
         "@types/gettext-parser": "8.0.0",
         "@types/react": "18.2.46",
+        "@types/react-dom": "^19.0.0",
+        "react": "^19.0.0",
+        "react-dom": "^19.0.0",
         "typescript": "5.9.2"
     },
     "peerDependencies": {

@@ -2,7 +2,7 @@ import type { Translator } from "@let-value/translate";
 import type { GetTextTranslations } from "gettext-parser";
 import { useContext } from "react";
 
-import { TranslatorContext } from "./TranslationsProvider.tsx";
+import { TranslatorContext } from "./TranslationsProvider.ts";
 
 export function useTranslations(locale?: string): Translator {
     const translator = useContext(TranslatorContext);
