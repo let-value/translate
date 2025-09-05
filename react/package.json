@@ -1,0 +1,27 @@
+{
+    "name": "@let-value/translate-react",
+    "version": "1.0.0",
+    "type": "module",
+    "main": "src/index.ts",
+    "exports": {
+        ".": "./src/index.ts"
+    },
+    "scripts": {
+        "build": "echo building translate-react",
+        "check": "biome check .",
+        "typecheck": "tsc --build",
+        "test": "node --test"
+    },
+    "dependencies": {
+        "@let-value/translate": "^1.0.0",
+        "react": "^18.2.0"
+    },
+    "devDependencies": {
+        "@types/gettext-parser": "8.0.0",
+        "@types/react": "18.2.46",
+        "typescript": "5.9.2"
+    },
+    "peerDependencies": {
+        "react": ">=18"
+    }
+}

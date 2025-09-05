@@ -5,7 +5,8 @@
     "workspaces": [
         "loader",
         "translate",
-        "extract"
+        "extract",
+        "react"
     ],
     "engines": {
         "node": ">=22"
