@@ -26,7 +26,10 @@ test("allows overriding default plugins with function", () => {
 
 test("normalizes single entrypoint to array", () => {
     const cfg = defineConfig({ entrypoints: "src/index.ts" });
-    assert.deepEqual(cfg.entrypoints, ["src/index.ts"]);
+    assert.deepEqual(
+        cfg.entrypoints.map((e) => e.entrypoint),
+        ["src/index.ts"],
+    );
 });
 
 test("provides default locale and locales", () => {
@@ -46,7 +49,7 @@ test("resolves locales and default locale", () => {
 });
 
 test("uses custom destination and obsolete strategy", () => {
-    const destination = (locale: string, entry: string) => `${locale}/${entry}`;
+    const destination = (locale: string, entry: string, path: string) => `${locale}/${entry}/${path}`;
     const cfg = defineConfig({
         entrypoints: "src/index.ts",
         destination,
@@ -54,4 +57,20 @@ test("uses custom destination and obsolete strategy", () => {
     });
     assert.equal(cfg.destination, destination);
     assert.equal(cfg.obsolete, "remove");
+});
+
+test("supports object entrypoints with overrides", () => {
+    const destination = (locale: string, _entry: string, path: string) => `${locale}/${path}`;
+    const cfg = defineConfig({
+        entrypoints: [{ entrypoint: "src/index.ts", destination, obsolete: "remove" }],
+    });
+    assert.equal(cfg.entrypoints[0].destination, destination);
+    assert.equal(cfg.entrypoints[0].obsolete, "remove");
+});
+
+test("configures walk option", () => {
+    const cfg = defineConfig({ entrypoints: "src/index.ts" });
+    assert.equal(cfg.walk, true);
+    const cfg2 = defineConfig({ entrypoints: "src/index.ts", walk: false });
+    assert.equal(cfg2.walk, false);
 });

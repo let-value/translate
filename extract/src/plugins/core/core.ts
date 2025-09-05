@@ -22,12 +22,14 @@ export function core(): ExtractorPlugin {
             });
             build.onExtract({ filter }, ({ entrypoint, path, contents }) => {
                 const { translations, imports } = parseSource(contents, path);
-                const paths = resolveImports(path, imports);
-                for (const path of paths) {
-                    build.resolvePath({
-                        entrypoint,
-                        path,
-                    });
+                if (build.context.config.walk) {
+                    const paths = resolveImports(path, imports);
+                    for (const path of paths) {
+                        build.resolvePath({
+                            entrypoint,
+                            path,
+                        });
+                    }
                 }
                 return {
                     entrypoint,
