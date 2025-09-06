@@ -41,6 +41,9 @@
             "import": "./dist/rspack.js",
             "require": "./dist/rspack.cjs"
         },
+        "./po": {
+            "types": "./dist/po.d.ts"
+        },
         "./package.json": "./package.json"
     },
     "files": [
@@ -59,7 +62,7 @@
         "typescript": "5.9.2"
     },
     "scripts": {
-        "build": "tsdown src/index.ts src/rollup.ts src/vite.ts src/webpack.ts src/esbuild.ts src/rspack.ts src/bun.ts --format esm,cjs --dts --out-dir dist --clean",
+        "build": "tsdown src/index.ts src/rollup.ts src/vite.ts src/webpack.ts src/esbuild.ts src/rspack.ts src/bun.ts --format esm,cjs --dts --out-dir dist --clean && cp src/po.d.ts dist/po.d.ts",
         "check": "biome check .",
         "typecheck": "tsc --build",
         "test": "node --test \"**/*.test.ts\""
