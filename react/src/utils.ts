@@ -1,14 +1,8 @@
 import { Children, type ReactNode } from "react";
 
-export type IsUnion<T, U = T> = (T extends unknown ? (x: T) => 0 : never) extends (x: U) => 0
-    ? false
-    : true;
+export type IsUnion<T, U = T> = (T extends unknown ? (x: T) => 0 : never) extends (x: U) => 0 ? false : true;
 
-export type StrictStaticString<T extends string> = string extends T
-    ? never
-    : IsUnion<T> extends true
-        ? never
-        : T;
+export type StrictStaticString<T extends string> = string extends T ? never : IsUnion<T> extends true ? never : T;
 
 type StrictTuple<T extends readonly unknown[]> = T extends readonly [infer Head, ...infer Tail]
     ? readonly [StrictReactNode<Head>, ...StrictTuple<Tail>]
@@ -17,10 +11,10 @@ type StrictTuple<T extends readonly unknown[]> = T extends readonly [infer Head,
 export type StrictReactNode<T> = T extends string
     ? StrictStaticString<T>
     : T extends readonly [infer Head, ...infer Tail]
-        ? readonly [StrictReactNode<Head>, ...StrictTuple<Tail>]
-        : T extends readonly (infer U)[]
-            ? readonly StrictReactNode<U>[]
-            : Exclude<T, string>;
+      ? readonly [StrictReactNode<Head>, ...StrictTuple<Tail>]
+      : T extends readonly (infer U)[]
+        ? readonly StrictReactNode<U>[]
+        : Exclude<T, string>;
 
 export function buildMessageFromChildren(children: ReactNode): {
     id: string;
