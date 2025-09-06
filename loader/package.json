@@ -3,42 +3,42 @@
     "version": "1.0.0",
     "type": "module",
     "main": "dist/index.cjs",
-    "module": "dist/index.mjs",
+    "module": "dist/index.js",
     "types": "dist/index.d.ts",
     "exports": {
         ".": {
             "types": "./dist/index.d.ts",
-            "import": "./dist/index.mjs",
+            "import": "./dist/index.js",
             "require": "./dist/index.cjs"
         },
         "./bun": {
             "types": "./dist/bun.d.ts",
-            "import": "./dist/bun.mjs",
+            "import": "./dist/bun.js",
             "require": "./dist/bun.cjs"
         },
         "./rollup": {
             "types": "./dist/rollup.d.ts",
-            "import": "./dist/rollup.mjs",
+            "import": "./dist/rollup.js",
             "require": "./dist/rollup.cjs"
         },
         "./vite": {
             "types": "./dist/vite.d.ts",
-            "import": "./dist/vite.mjs",
+            "import": "./dist/vite.js",
             "require": "./dist/vite.cjs"
         },
         "./webpack": {
             "types": "./dist/webpack.d.ts",
-            "import": "./dist/webpack.mjs",
+            "import": "./dist/webpack.js",
             "require": "./dist/webpack.cjs"
         },
         "./esbuild": {
             "types": "./dist/esbuild.d.ts",
-            "import": "./dist/esbuild.mjs",
+            "import": "./dist/esbuild.js",
             "require": "./dist/esbuild.cjs"
         },
         "./rspack": {
             "types": "./dist/rspack.d.ts",
-            "import": "./dist/rspack.mjs",
+            "import": "./dist/rspack.js",
             "require": "./dist/rspack.cjs"
         },
         "./package.json": "./package.json"
@@ -63,6 +63,9 @@
         "check": "biome check .",
         "typecheck": "tsc --build",
         "test": "node --test \"**/*.test.ts\""
+    },
+    "publishConfig": {
+        "registry": "https://npm.pkg.github.com"
     },
     "peerDependencies": {
         "@types/bun": "1.2.21"
