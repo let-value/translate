@@ -9,5 +9,7 @@ export function useTranslations(locale?: string): LocaleTranslator {
         throw new Error("TranslationsProvider is missing");
     }
 
-    return use(translator.fetchLocale(requestedLocale));
+    const resource = translator.fetchLocale(requestedLocale);
+
+    return resource instanceof Promise ? use(resource) : resource;
 }

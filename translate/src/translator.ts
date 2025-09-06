@@ -145,6 +145,7 @@ export class Translator<T extends Record<string, TranslationEntry> = Record<stri
     loaders: Partial<Record<string, TranslationLoader>> = {};
     translations: Partial<Record<string, GetTextTranslations>> = {};
     translators: Partial<Record<string, LocaleTranslator>> = {};
+    pending: Partial<Record<string, Promise<LocaleTranslator>>> = {};
 
     constructor(translations: T, parent?: Translator) {
         this.parent = parent;
@@ -181,7 +182,7 @@ export class Translator<T extends Record<string, TranslationEntry> = Record<stri
             return this.translators[key];
         }
 
-        if (this.loaders[key]) {
+        if (this.pending[key] || this.loaders[key]) {
             throw new Error("async locale cannot be loaded synchronously");
         }
 
@@ -189,12 +190,23 @@ export class Translator<T extends Record<string, TranslationEntry> = Record<stri
         return this.translators[key];
     }
 
-    async fetchLocale<L extends keyof T>(locale: L) {
+    fetchLocale<L extends keyof T>(locale: L) {
         const key = locale as string;
 
+        if (this.pending[key]) {
+            return this.pending[key];
+        }
+
         if (this.loaders[key]) {
-            this.translations[key] ??= await this.loaders[key]();
-            delete this.loaders[key];
+            this.pending[key] = this.loaders[key]().then((translations) => {
+                this.translations[key] ??= translations;
+                delete this.loaders[key];
+                delete this.pending[key];
+
+                return this.getLocale(key as never);
+            });
+
+            return this.pending[key];
         }
 
         return this.getLocale(key as never);

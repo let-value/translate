@@ -9,6 +9,6 @@
         "rootDir": ".."
     },
     "include": ["src/**/*.ts", "bin/**/*.ts", "index.ts", "../packages/extract/src/**/*.ts"],
-    "exclude": ["src/tests/fixtures"],
+    "exclude": ["src/tests/fixtures", "src/plugins/core/tests/fixtures"],
     "references": [{ "path": "../translate" }]
 }
