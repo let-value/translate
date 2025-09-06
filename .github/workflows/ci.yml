@@ -25,6 +25,9 @@ jobs:
     if: github.event_name == 'release'
     needs: test
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
     strategy:
       matrix:
         registry: [github]
