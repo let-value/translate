@@ -1,19 +1,30 @@
 import type { LocaleTranslator, Translator } from "@let-value/translate";
-import { cache, use } from "react";
+import { use } from "react";
 import { localeContext, translatorContext } from "../context.ts";
 
-const cachedFetchers = new WeakMap<
-    Translator,
-    (locale: string) => LocaleTranslator | Promise<LocaleTranslator>
->();
+const localeCaches = new WeakMap<Translator, Map<string, LocaleTranslator | Promise<LocaleTranslator>>>();
 
-function getFetcher(translator: Translator) {
-    let fetcher = cachedFetchers.get(translator);
-    if (!fetcher) {
-        fetcher = cache((locale: string) => translator.fetchLocale(locale));
-        cachedFetchers.set(translator, fetcher);
+function getLocale(translator: Translator, locale: string): LocaleTranslator | Promise<LocaleTranslator> {
+    let translatorCache = localeCaches.get(translator);
+    if (!translatorCache) {
+        translatorCache = new Map();
+        localeCaches.set(translator, translatorCache);
     }
-    return fetcher;
+
+    const cached = translatorCache.get(locale);
+    if (cached) {
+        return cached;
+    }
+
+    const result = translator.fetchLocale(locale);
+    translatorCache.set(locale, result);
+    if (result instanceof Promise) {
+        result.then((value) => {
+            translatorCache.set(locale, value);
+            return value;
+        });
+    }
+    return result;
 }
 
 export function useTranslations(locale?: string): LocaleTranslator {
@@ -23,8 +34,6 @@ export function useTranslations(locale?: string): LocaleTranslator {
         throw new Error("TranslationsProvider is missing");
     }
 
-    const fetcher = getFetcher(translator);
-    const resource = fetcher(requestedLocale);
-
+    const resource = getLocale(translator, requestedLocale);
     return resource instanceof Promise ? use(resource) : resource;
 }
