@@ -1,6 +1,5 @@
-import { createContext, createElement, type ReactNode } from "react";
-
-export const localeContext = createContext<string | null>(null);
+import { createElement, type ReactNode } from "react";
+import { localeContext } from "../context.ts";
 
 export interface LocaleProviderProps {
     locale: string;

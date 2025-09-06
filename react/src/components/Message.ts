@@ -1,7 +1,7 @@
 import { createElement, Fragment, type ReactNode } from "react";
 
-import { useTranslations } from "./useTranslations.ts";
-import { buildMessageFromChildren, type StrictReactNode } from "./utils.ts";
+import { useTranslations } from "../hooks/useTranslations.ts";
+import { buildMessageFromChildren, type StrictReactNode } from "../utils.ts";
 
 export interface MessageProps<T extends ReactNode> {
     context?: string;

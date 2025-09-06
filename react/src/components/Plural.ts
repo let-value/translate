@@ -1,15 +1,19 @@
 import { createElement, Fragment, type ReactNode } from "react";
 
-import { useTranslations } from "./useTranslations.ts";
-import { buildMessageFromChildren, type StrictReactNode } from "./utils.ts";
+import { useTranslations } from "../hooks/useTranslations.ts";
+import { buildMessageFromChildren, type StrictReactNode, type StrictStaticString } from "../utils.ts";
 
-export interface PluralProps<F extends readonly ReactNode[]> {
+export interface PluralProps<F extends readonly ReactNode[], TContext extends string> {
     number: number;
     forms: StrictReactNode<F>;
-    context?: string;
+    context?: StrictStaticString<TContext>;
 }
 
-export function Plural<F extends readonly ReactNode[]>({ number, forms, context }: PluralProps<F>) {
+export function Plural<F extends readonly ReactNode[], TContext extends string>({
+    number,
+    forms,
+    context,
+}: PluralProps<F, TContext>) {
     const translator = useTranslations();
 
     const built = forms.map((child, i) => {
@@ -21,7 +25,7 @@ export function Plural<F extends readonly ReactNode[]>({ number, forms, context 
     const messages = built.map((b) => b.message);
     const input = { forms: messages, n: number };
 
-    const translated = context ? translator.npgettext({ context, id: input }) : translator.plural(input);
+    const translated = context ? translator.context(context as "").plural(input) : translator.plural(input);
 
     // biome-ignore lint/suspicious/noControlCharactersInRegex: using null separators
     const parts = translated.split(/\u0000(\d+)-(\d+)\u0000/);

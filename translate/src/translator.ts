@@ -1,4 +1,6 @@
 import type { GetTextTranslations } from "gettext-parser";
+import { assign } from "radash";
+
 import {
     message as buildMessage,
     plural as buildPlural,
@@ -23,8 +25,8 @@ type ContextMessageInput<T extends string> = [ContextMessage] | MessageInput<T>;
 type ContextPluralInput = [ContextPluralMessage] | PluralInput;
 
 export class LocaleTranslator {
-    private locale: string;
-    private translations?: GetTextTranslations;
+    locale: string;
+    translations?: GetTextTranslations;
 
     constructor(locale: string, translations?: GetTextTranslations) {
         this.locale = locale;
@@ -139,46 +141,62 @@ export class LocaleTranslator {
 }
 
 export class Translator<T extends Record<string, TranslationEntry> = Record<string, TranslationEntry>> {
-    private translations: Partial<Record<string, LocaleTranslator>> = {};
-    private loaders: Partial<Record<string, TranslationLoader>> = {};
+    parent: Translator | undefined;
+    loaders: Partial<Record<string, TranslationLoader>> = {};
+    translations: Partial<Record<string, GetTextTranslations>> = {};
+    translators: Partial<Record<string, LocaleTranslator>> = {};
 
-    constructor(translations: T) {
+    constructor(translations: T, parent?: Translator) {
+        this.parent = parent;
         for (const [locale, value] of Object.entries(translations)) {
             if (typeof value === "function") {
                 this.loaders[locale] = value;
             } else if ("then" in value) {
                 this.loaders[locale] = () => value;
             } else {
-                this.translations[locale] = new LocaleTranslator(locale, value);
+                this.translations[locale] = value;
             }
         }
     }
 
     async loadLocale(locale: string, loader?: TranslationLoader): Promise<LocaleTranslator> {
-        if (this.translations[locale] && !loader) {
-            return this.translations[locale];
-        }
+        this.loaders[locale] = loader ?? this.loaders[locale];
 
-        const fn = loader ?? this.loaders[locale];
-
-        if (fn) {
-            const translations = await fn();
-            this.translations[locale] = new LocaleTranslator(locale as string, translations);
-            delete this.loaders[locale];
-        }
-
-        return this.translations[locale] ?? new LocaleTranslator(locale as string);
+        return this.fetchLocale(locale);
     }
 
     getLocale<L extends SyncLocaleKeys<T>>(locale: L): LocaleTranslator {
-        if (this.loaders[locale as string]) {
+        const key = locale as string;
+        if (this.translators[key]) {
+            return this.translators[key];
+        }
+
+        if (this.translations[key]) {
+            const parent = this.parent?.getLocale(locale as never)?.translations;
+
+            const translations = assign<GetTextTranslations>(this.translations[key], parent as never);
+            delete this.translations[key];
+
+            this.translators[key] = new LocaleTranslator(key, translations);
+            return this.translators[key];
+        }
+
+        if (this.loaders[key]) {
             throw new Error("async locale cannot be loaded synchronously");
         }
 
-        return this.translations[locale] ?? new LocaleTranslator(locale as string);
+        this.translators[key] ??= new LocaleTranslator(key);
+        return this.translators[key];
     }
 
-    fetchLocale<L extends keyof T>(locale: L) {
-        return this.loadLocale(locale as string);
+    async fetchLocale<L extends keyof T>(locale: L) {
+        const key = locale as string;
+
+        if (this.loaders[key]) {
+            this.translations[key] ??= await this.loaders[key]();
+            delete this.loaders[key];
+        }
+
+        return this.getLocale(key as never);
     }
 }
