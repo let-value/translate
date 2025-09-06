@@ -19,15 +19,15 @@ suite("should extract messages", () =>
                     {
                         error: undefined,
                         translation: {
-                            msgid: "hello",
-                            msgstr: ["hello"],
+                            id: "hello",
+                            message: ["hello"],
                         },
                     },
                     {
                         error: undefined,
                         translation: {
-                            msgid: "hello comment",
-                            msgstr: ["hello comment"],
+                            id: "hello comment",
+                            message: ["hello comment"],
                             comments: {
                                 extracted: "comment",
                             },
@@ -36,8 +36,8 @@ suite("should extract messages", () =>
                     {
                         error: undefined,
                         translation: {
-                            msgid: "greeting",
-                            msgstr: ["Hello, world!"],
+                            id: "greeting",
+                            message: ["Hello, world!"],
                             comments: {
                                 extracted: "descriptor",
                             },
@@ -46,8 +46,8 @@ suite("should extract messages", () =>
                     {
                         error: undefined,
                         translation: {
-                            msgid: "greeting",
-                            msgstr: ["Hello, world!"],
+                            id: "greeting",
+                            message: ["Hello, world!"],
                             comments: {
                                 extracted: "multiline\ncomment",
                             },
@@ -56,8 +56,8 @@ suite("should extract messages", () =>
                     {
                         error: undefined,
                         translation: {
-                            msgid: "Hello, ${name}!",
-                            msgstr: ["Hello, ${name}!"],
+                            id: "Hello, ${name}!",
+                            message: ["Hello, ${name}!"],
                         },
                     },
                     {
@@ -71,8 +71,8 @@ suite("should extract messages", () =>
                     {
                         error: undefined,
                         translation: {
-                            msgid: "Hi, nested",
-                            msgstr: ["Hi, nested"],
+                            id: "Hi, nested",
+                            message: ["Hi, nested"],
                         },
                     },
                 ],

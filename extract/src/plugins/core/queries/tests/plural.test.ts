@@ -20,17 +20,17 @@ suite("should extract plural messages", () =>
                     {
                         error: undefined,
                         translation: {
-                            msgid: "hello",
-                            msgid_plural: "hellos",
-                            msgstr: ["hello", "hellos"],
+                            id: "hello",
+                            plural: "hellos",
+                            message: ["hello", "hellos"],
                         },
                     },
                     {
                         error: undefined,
                         translation: {
-                            msgid: "${count} apple",
-                            msgid_plural: "${count} apples",
-                            msgstr: ["${count} apple", "${count} apples"],
+                            id: "${count} apple",
+                            plural: "${count} apples",
+                            message: ["${count} apple", "${count} apples"],
                             comments: {
                                 extracted: "comment",
                             },
@@ -39,17 +39,17 @@ suite("should extract plural messages", () =>
                     {
                         error: undefined,
                         translation: {
-                            msgid: "greeting",
-                            msgid_plural: "greetings",
-                            msgstr: ["Hello, world!", "Hello, worlds!"],
+                            id: "greeting",
+                            plural: "greetings",
+                            message: ["Hello, world!", "Hello, worlds!"],
                         },
                     },
                     {
                         error: undefined,
                         translation: {
-                            msgid: "Hello, ${name}!",
-                            msgid_plural: "Hello, ${name}!",
-                            msgstr: ["Hello, ${name}!", "Hello, ${name}!"],
+                            id: "Hello, ${name}!",
+                            plural: "Hello, ${name}!",
+                            message: ["Hello, ${name}!", "Hello, ${name}!"],
                         },
                     },
                     {
