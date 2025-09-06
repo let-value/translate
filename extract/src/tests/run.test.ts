@@ -11,7 +11,7 @@ test("passes collected messages to generate hooks", async () => {
     const path = entrypoint;
     const destination = "messages.po";
     const locale = "en";
-    const translations = [{ msgid: "hello", msgstr: [""] }];
+    const translations = [{ id: "hello", message: [""] }];
 
     let generated: GenerateArgs | undefined;
 
