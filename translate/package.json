@@ -2,12 +2,22 @@
     "name": "@let-value/translate",
     "version": "1.0.0",
     "type": "module",
-    "main": "src/index.ts",
+    "main": "dist/index.cjs",
+    "module": "dist/index.js",
+    "types": "dist/index.d.ts",
     "exports": {
-        ".": "./src/index.ts"
+        ".": {
+            "types": "./dist/index.d.ts",
+            "import": "./dist/index.js",
+            "require": "./dist/index.cjs"
+        },
+        "./package.json": "./package.json"
     },
+    "files": [
+        "dist"
+    ],
     "scripts": {
-        "build": "echo building translate",
+        "build": "tsdown src/index.ts --format esm,cjs --dts --out-dir dist --clean",
         "check": "biome check .",
         "typecheck": "tsc --build",
         "test": "node --test"
@@ -18,6 +28,10 @@
     },
     "devDependencies": {
         "@types/gettext-parser": "8.0.0",
+        "tsdown": "0.14.2",
         "typescript": "5.9.2"
+    },
+    "publishConfig": {
+        "registry": "https://npm.pkg.github.com"
     }
 }

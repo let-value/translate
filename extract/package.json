@@ -2,10 +2,23 @@
     "name": "@let-value/translate-extract",
     "version": "1.0.0",
     "type": "module",
-    "main": "src/index.ts",
+    "main": "dist/index.cjs",
+    "module": "dist/index.js",
+    "types": "dist/index.d.ts",
     "bin": {
-        "translate-extract": "bin/cli.ts"
+        "translate-extract": "dist/bin/cli.js"
     },
+    "exports": {
+        ".": {
+            "types": "./dist/index.d.ts",
+            "import": "./dist/index.js",
+            "require": "./dist/index.cjs"
+        },
+        "./package.json": "./package.json"
+    },
+    "files": [
+        "dist"
+    ],
     "dependencies": {
         "@let-value/translate": "^1.0.0",
         "gettext-parser": "8.0.0",
@@ -19,12 +32,16 @@
     },
     "devDependencies": {
         "@types/gettext-parser": "8.0.0",
+        "tsdown": "0.14.2",
         "typescript": "5.9.2"
     },
     "scripts": {
-        "build": "echo building extract",
+        "build": "tsdown src/index.ts bin/cli.ts --format esm,cjs --dts --out-dir dist --clean",
         "check": "biome check .",
         "typecheck": "tsc --build",
         "test": "node --test \"**/*.test.ts\""
+    },
+    "publishConfig": {
+        "registry": "https://npm.pkg.github.com"
     }
 }
