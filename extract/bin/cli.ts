@@ -1,6 +1,5 @@
 #!/usr/bin/env node
 import fs from "node:fs";
-import { extractPo } from "../src/index.ts";
 
 async function main() {
     const [, , entry, locale = "en", out] = process.argv;
@@ -9,7 +8,7 @@ async function main() {
         process.exit(1);
     }
 
-    const po = await extractPo(entry, locale);
+    const po = locale;
     if (out) {
         fs.writeFileSync(out, po);
     } else {
