@@ -4,42 +4,72 @@ import type { GetTextTranslations } from "gettext-parser";
 import { createElement, Fragment } from "react";
 import { renderToPipeableStream } from "react-dom/server";
 
-import { Message, Plural, TranslationsProvider } from "../src/index.ts";
+import { message as msg, Translator } from "../../translate/src/index.ts";
+import { Message, Plural, TranslationsProvider } from "../src/components/index.ts";
 import { StringWritable } from "./utils.ts";
 
 const translations: GetTextTranslations = { charset: "utf-8", headers: {}, translations: { "": {} } };
 
-const message = test("Message renders interpolated children", async () => {
+async function render(node: unknown) {
     const { pipe } = renderToPipeableStream(
-        createElement(
-            TranslationsProvider,
-            { translations: { en: translations } },
-            createElement(Message, null, "Hello ", createElement("b", null, "World"), "!"),
-        ),
+        createElement(TranslationsProvider, { translations: { en: translations } }, node),
     );
+    return await pipe(new StringWritable()).promise;
+}
 
-    const result = await pipe(new StringWritable()).promise;
+function normalize(html: string) {
+    return html.replace(/<!-- -->/g, "");
+}
 
-    assert.equal(result, "<!--$-->Hello <b>World</b>!<!-- --><!--/$-->");
-});
+test("Message matches translate message function", async () => {
+    const locale = new Translator({ en: translations }).getLocale("en");
+    const name = "World";
 
-const plural = test("Plural selects plural form", async () => {
-    const forms = [
-        createElement(Fragment, null, "One ", createElement("b", null, "item")),
-        createElement(Fragment, null, "Many ", createElement("i", null, "items")),
+    const cases = [
+        { el: createElement(Message, null, "hello"), expected: locale.message`hello` },
+        { el: createElement(Message, null, "hello ", name), expected: locale.message`hello ${name}` },
+        { el: createElement(Message, null, "hello"), expected: locale.message("hello") },
+        { el: createElement(Message, null, `hello ${name}`), expected: locale.message`hello ${name}` },
+        { el: createElement(Message, { context: "verb" }, "run"), expected: locale.context`verb`.message`run` },
     ] as const;
 
-    const { pipe } = renderToPipeableStream(
-        createElement(
-            TranslationsProvider,
-            { translations: { en: translations } },
-            createElement(Plural, { number: 2, forms }),
-        ),
-    );
-
-    const result = await pipe(new StringWritable()).promise;
-
-    assert.equal(result, "<!--$-->Many <i>items</i><!--/$-->");
+    for (const { el, expected } of cases) {
+        const result = normalize(await render(el));
+        assert.equal(result, `<!--$-->${expected}<!--/$-->`);
+    }
 });
 
-await Promise.all([message, plural]);
+test("Plural matches translate plural function", async () => {
+    const locale = new Translator({ en: translations }).getLocale("en");
+    const name = "item";
+
+    const cases = [
+        {
+            el: createElement(Plural, {
+                number: 1,
+                forms: [createElement(Fragment, null, "one"), createElement(Fragment, null, "many")],
+            }),
+            expected: locale.plural(msg`one`, msg`many`, 1),
+        },
+        {
+            el: createElement(Plural, {
+                number: 2,
+                forms: [createElement(Fragment, null, "One ", name), createElement(Fragment, null, "Many ", name, "s")],
+            }),
+            expected: locale.plural(msg`One ${name}`, msg`Many ${name}s`, 2),
+        },
+        {
+            el: createElement(Plural, {
+                number: 2,
+                context: "count",
+                forms: [createElement(Fragment, null, "One"), createElement(Fragment, null, "Many")],
+            }),
+            expected: locale.context`count`.plural(msg`One`, msg`Many`, 2),
+        },
+    ] as const;
+
+    for (const { el, expected } of cases) {
+        const result = normalize(await render(el));
+        assert.equal(result, `<!--$-->${expected}<!--/$-->`);
+    }
+});
