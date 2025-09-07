@@ -144,8 +144,8 @@ export class Translator<T extends Record<string, TranslationEntry> = Record<stri
     parent: Translator | undefined;
     loaders: Partial<Record<string, TranslationLoader>> = {};
     translations: Partial<Record<string, GetTextTranslations>> = {};
-    translators: Partial<Record<string, LocaleTranslator>> = {};
     pending: Partial<Record<string, Promise<LocaleTranslator>>> = {};
+    translators: Partial<Record<string, LocaleTranslator>> = {};
 
     constructor(translations: T, parent?: Translator) {
         this.parent = parent;
@@ -200,11 +200,11 @@ export class Translator<T extends Record<string, TranslationEntry> = Record<stri
         if (this.loaders[key]) {
             this.pending[key] = this.loaders[key]().then((translations) => {
                 this.translations[key] ??= translations;
-                delete this.loaders[key];
                 delete this.pending[key];
 
                 return this.getLocale(key as never);
             });
+            delete this.loaders[key];
 
             return this.pending[key];
         }
