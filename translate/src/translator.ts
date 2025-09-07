@@ -15,14 +15,19 @@ import {
 } from "./messages.ts";
 import { pluralFunc, type StrictStaticString, substitute } from "./utils.ts";
 
-type TranslationLoader = () => Promise<GetTextTranslations>;
-type TranslationEntry = GetTextTranslations | Promise<GetTextTranslations> | TranslationLoader;
+type TranslationModule = GetTextTranslations | { default: GetTextTranslations };
+type TranslationLoader = () => Promise<TranslationModule>;
+type TranslationEntry = TranslationModule | Promise<TranslationModule> | TranslationLoader;
 type SyncLocaleKeys<T> = {
     [K in keyof T]: T[K] extends GetTextTranslations ? K : never;
 }[keyof T];
 
 type ContextMessageInput<T extends string> = [ContextMessage] | MessageInput<T>;
 type ContextPluralInput = [ContextPluralMessage] | PluralInput;
+
+function resolveTranslationModule(module: TranslationModule): GetTextTranslations {
+    return "default" in module ? module.default : module;
+}
 
 export class LocaleTranslator {
     locale: string;
@@ -155,7 +160,7 @@ export class Translator<T extends Record<string, TranslationEntry> = Record<stri
             } else if ("then" in value) {
                 this.loaders[locale] = () => value;
             } else {
-                this.translations[locale] = value;
+                this.translations[locale] = resolveTranslationModule(value);
             }
         }
     }
@@ -199,7 +204,7 @@ export class Translator<T extends Record<string, TranslationEntry> = Record<stri
 
         if (this.loaders[key]) {
             this.pending[key] = this.loaders[key]().then((translations) => {
-                this.translations[key] ??= translations;
+                this.translations[key] ??= resolveTranslationModule(translations);
                 delete this.pending[key];
 
                 return this.getLocale(key as never);
