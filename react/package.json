@@ -1,6 +1,6 @@
 {
     "name": "@let-value/translate-react",
-    "version": "1.0.4",
+    "version": "1.0.5-beta.15",
     "type": "module",
     "main": "dist/index.cjs",
     "module": "dist/index.js",
@@ -23,7 +23,7 @@
         "test": "node --test"
     },
     "dependencies": {
-        "@let-value/translate": "^1.0.0",
+        "@let-value/translate": "1.0.5-beta.15",
         "radash": "^12.1.1"
     },
     "devDependencies": {

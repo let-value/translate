@@ -1,16 +1,16 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
+import { message as msg, Translator } from "@let-value/translate";
 import type { GetTextTranslations } from "gettext-parser";
-import { createElement, Fragment } from "react";
+import { createElement, Fragment, type ReactNode } from "react";
 import { renderToPipeableStream } from "react-dom/server";
 
-import { message as msg, Translator } from "../../translate/src/index.ts";
 import { Message, Plural, TranslationsProvider } from "../src/components/index.ts";
 import { StringWritable } from "./utils.ts";
 
 const translations: GetTextTranslations = { charset: "utf-8", headers: {}, translations: { "": {} } };
 
-async function render(node: unknown) {
+async function render(node: ReactNode) {
     const { pipe } = renderToPipeableStream(
         createElement(TranslationsProvider, { translations: { en: translations } }, node),
     );
@@ -30,7 +30,10 @@ test("Message matches translate message function", async () => {
         { el: createElement(Message, null, "hello ", name), expected: locale.message`hello ${name}` },
         { el: createElement(Message, null, "hello"), expected: locale.message("hello") },
         { el: createElement(Message, null, `hello ${name}`), expected: locale.message`hello ${name}` },
-        { el: createElement(Message, { context: "verb" }, "run"), expected: locale.context`verb`.message`run` },
+        {
+            el: createElement(Message, { context: "verb" } as never, "run"),
+            expected: locale.context`verb`.message`run`,
+        },
     ] as const;
 
     for (const { el, expected } of cases) {

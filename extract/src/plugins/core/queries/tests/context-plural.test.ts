@@ -19,19 +19,19 @@ suite("should extract context builder plural messages", () =>
                     {
                         error: undefined,
                         translation: {
-                            msgctxt: "ctx",
-                            msgid: "hello",
-                            msgid_plural: "hellos",
-                            msgstr: ["hello", "hellos"],
+                            context: "ctx",
+                            id: "hello",
+                            plural: "hellos",
+                            message: ["hello", "hellos"],
                         },
                     },
                     {
                         error: undefined,
                         translation: {
-                            msgctxt: "company",
-                            msgid: "${count} apple",
-                            msgid_plural: "${count} apples",
-                            msgstr: ["${count} apple", "${count} apples"],
+                            context: "company",
+                            id: "${count} apple",
+                            plural: "${count} apples",
+                            message: ["${count} apple", "${count} apples"],
                             comments: {
                                 extracted: "comment",
                             },
@@ -40,19 +40,19 @@ suite("should extract context builder plural messages", () =>
                     {
                         error: undefined,
                         translation: {
-                            msgctxt: "ctx",
-                            msgid: "greeting",
-                            msgid_plural: "greetings",
-                            msgstr: ["Hello, world!", "Hello, worlds!"],
+                            context: "ctx",
+                            id: "greeting",
+                            plural: "greetings",
+                            message: ["Hello, world!", "Hello, worlds!"],
                         },
                     },
                     {
                         error: undefined,
                         translation: {
-                            msgctxt: "ctx",
-                            msgid: "Hello, ${name}!",
-                            msgid_plural: "Hello, ${name}!",
-                            msgstr: ["Hello, ${name}!", "Hello, ${name}!"],
+                            context: "ctx",
+                            id: "Hello, ${name}!",
+                            plural: "Hello, ${name}!",
+                            message: ["Hello, ${name}!", "Hello, ${name}!"],
                         },
                     },
                     {

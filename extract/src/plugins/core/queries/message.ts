@@ -75,8 +75,8 @@ export const extractMessage =
             return {
                 node,
                 translation: {
-                    msgid,
-                    msgstr: [msgid],
+                    id: msgid,
+                    message: [msgid],
                 },
             };
         }
@@ -101,7 +101,7 @@ export const extractMessage =
 
             return {
                 node,
-                translation: { msgid: text, msgstr: [text] },
+                translation: { id: text, message: [text] },
             };
         }
 
@@ -117,8 +117,8 @@ export const extractMessage =
         return {
             node,
             translation: {
-                msgid: msgId,
-                msgstr: [msgstr],
+                id: msgId,
+                message: [msgstr],
             },
         };
     };

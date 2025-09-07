@@ -9,7 +9,7 @@ export interface Comments {
 }
 
 export interface Translation {
-    context: string;
+    context?: string;
     id: string;
     plural?: string;
     message: string[];

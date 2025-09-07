@@ -16,9 +16,9 @@ export function Message({ context, children }: MessageProps) {
     if (values.length === 0) {
         const input = strings.join("");
         if (context) {
-            return translator.context(context as "").message(input);
+            return translator.context(context as "").message(input as never);
         }
-        return translator.message(input);
+        return translator.message(input as never);
     }
 
     const tokens = values.map((_, i) => `\u0000${i}\u0000`);

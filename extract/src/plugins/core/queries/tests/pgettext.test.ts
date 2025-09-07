@@ -19,16 +19,16 @@ suite("should extract context messages", () =>
                         error: undefined,
                         translation: {
                             msgctxt: "ctx",
-                            msgid: "hello",
-                            msgstr: ["hello"],
+                            id: "hello",
+                            message: ["hello"],
                         },
                     },
                     {
                         error: undefined,
                         translation: {
                             msgctxt: "ctx",
-                            msgid: "hello comment",
-                            msgstr: ["hello comment"],
+                            id: "hello comment",
+                            message: ["hello comment"],
                             comments: {
                                 extracted: "comment",
                             },
@@ -38,8 +38,8 @@ suite("should extract context messages", () =>
                         error: undefined,
                         translation: {
                             msgctxt: "ctx",
-                            msgid: "greeting",
-                            msgstr: ["Hello, world!"],
+                            id: "greeting",
+                            message: ["Hello, world!"],
                             comments: {
                                 extracted: "descriptor",
                             },
@@ -49,8 +49,8 @@ suite("should extract context messages", () =>
                         error: undefined,
                         translation: {
                             msgctxt: "ctx",
-                            msgid: "greeting",
-                            msgstr: ["Hello, world!"],
+                            id: "greeting",
+                            message: ["Hello, world!"],
                             comments: {
                                 extracted: "multiline\ncomment",
                             },
@@ -60,8 +60,8 @@ suite("should extract context messages", () =>
                         error: undefined,
                         translation: {
                             msgctxt: "ctx",
-                            msgid: "Hello, ${name}!",
-                            msgstr: ["Hello, ${name}!"],
+                            id: "Hello, ${name}!",
+                            message: ["Hello, ${name}!"],
                         },
                     },
                     {

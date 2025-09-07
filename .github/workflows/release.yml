@@ -1,0 +1,34 @@
+name: ci
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      matrix:
+        registry: [
+          { enabled: true, url: 'https://npm.pkg.github.com', token: GITHUB_TOKEN },
+          { enabled: false, url: 'https://registry.npmjs.org', token: NPM_TOKEN }
+        ]
+      fail-fast: false
+    steps:
+      - name: Early exit
+        if: matrix.registry.enabled == false
+        run: exit 1
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          registry-url: ${{ matrix.registry.url }}
+          scope: '@let-value'
+      - run: npm ci
+      - run: npm run build
+      - run: npm publish --workspaces
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets[matrix.registry.token] }}

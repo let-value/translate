@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { createElement } from "react";
+
 import { buildTemplateFromChildren } from "../src/utils.ts";
 
 test("buildTemplateFromChildren splits strings and values", () => {

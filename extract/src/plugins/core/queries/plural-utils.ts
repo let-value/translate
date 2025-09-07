@@ -1,7 +1,6 @@
-import type { GetTextTranslation } from "gettext-parser";
 import type Parser from "tree-sitter";
 import { extractMessage } from "./message.ts";
-import type { MessageMatch } from "./types.ts";
+import type { MessageMatch, Translation } from "./types.ts";
 import { isDescendant } from "./utils.ts";
 
 export const extractPluralForms =
@@ -34,8 +33,8 @@ export const extractPluralForms =
                 return { node: call, error: result.error };
             }
             if (result.translation) {
-                ids.push(result.translation.msgid);
-                strs.push(result.translation.msgstr[0] ?? "");
+                ids.push(result.translation.id);
+                strs.push(result.translation.message[0] ?? "");
             }
         }
 
@@ -43,12 +42,12 @@ export const extractPluralForms =
             return undefined;
         }
 
-        const translation: GetTextTranslation = {
-            msgid: ids[0],
-            msgid_plural: ids[1],
-            msgstr: strs,
+        const translation: Translation = {
+            id: ids[0],
+            plural: ids[1],
+            message: strs,
         };
-        if (msgctxt) translation.msgctxt = msgctxt;
+        if (msgctxt) translation.context = msgctxt;
 
         return { node: call, translation };
     };

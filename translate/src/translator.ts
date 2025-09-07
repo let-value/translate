@@ -15,14 +15,19 @@ import {
 } from "./messages.ts";
 import { pluralFunc, type StrictStaticString, substitute } from "./utils.ts";
 
-type TranslationLoader = () => Promise<GetTextTranslations>;
-type TranslationEntry = GetTextTranslations | Promise<GetTextTranslations> | TranslationLoader;
+type TranslationModule = GetTextTranslations | { default: GetTextTranslations };
+type TranslationLoader = () => Promise<TranslationModule>;
+type TranslationEntry = TranslationModule | Promise<TranslationModule> | TranslationLoader;
 type SyncLocaleKeys<T> = {
     [K in keyof T]: T[K] extends GetTextTranslations ? K : never;
 }[keyof T];
 
 type ContextMessageInput<T extends string> = [ContextMessage] | MessageInput<T>;
 type ContextPluralInput = [ContextPluralMessage] | PluralInput;
+
+function resolveTranslationModule(module: TranslationModule): GetTextTranslations {
+    return "default" in module ? module.default : module;
+}
 
 export class LocaleTranslator {
     locale: string;
@@ -144,6 +149,7 @@ export class Translator<T extends Record<string, TranslationEntry> = Record<stri
     parent: Translator | undefined;
     loaders: Partial<Record<string, TranslationLoader>> = {};
     translations: Partial<Record<string, GetTextTranslations>> = {};
+    pending: Partial<Record<string, Promise<LocaleTranslator>>> = {};
     translators: Partial<Record<string, LocaleTranslator>> = {};
 
     constructor(translations: T, parent?: Translator) {
@@ -154,7 +160,7 @@ export class Translator<T extends Record<string, TranslationEntry> = Record<stri
             } else if ("then" in value) {
                 this.loaders[locale] = () => value;
             } else {
-                this.translations[locale] = value;
+                this.translations[locale] = resolveTranslationModule(value);
             }
         }
     }
@@ -181,7 +187,7 @@ export class Translator<T extends Record<string, TranslationEntry> = Record<stri
             return this.translators[key];
         }
 
-        if (this.loaders[key]) {
+        if (this.pending[key] || this.loaders[key]) {
             throw new Error("async locale cannot be loaded synchronously");
         }
 
@@ -189,12 +195,23 @@ export class Translator<T extends Record<string, TranslationEntry> = Record<stri
         return this.translators[key];
     }
 
-    async fetchLocale<L extends keyof T>(locale: L) {
+    fetchLocale<L extends keyof T>(locale: L) {
         const key = locale as string;
 
+        if (this.pending[key]) {
+            return this.pending[key];
+        }
+
         if (this.loaders[key]) {
-            this.translations[key] ??= await this.loaders[key]();
+            this.pending[key] = this.loaders[key]().then((translations) => {
+                this.translations[key] ??= resolveTranslationModule(translations);
+                delete this.pending[key];
+
+                return this.getLocale(key as never);
+            });
             delete this.loaders[key];
+
+            return this.pending[key];
         }
 
         return this.getLocale(key as never);
