@@ -1,3 +1,4 @@
+import type { Locale } from "@let-value/translate";
 import { Translator } from "@let-value/translate";
 import type { GetTextTranslations } from "gettext-parser";
 import { createElement, type ReactNode, Suspense, use, useMemo } from "react";
@@ -7,7 +8,7 @@ type TranslationLoader = () => Promise<GetTextTranslations>;
 type TranslationEntry = GetTextTranslations | TranslationLoader;
 
 export interface TranslationsProviderProps {
-    translations?: Record<string, TranslationEntry>;
+    translations?: Partial<Record<Locale, TranslationEntry>>;
     children?: ReactNode;
 }
 

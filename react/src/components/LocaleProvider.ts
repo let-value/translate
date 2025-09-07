@@ -1,8 +1,9 @@
+import type { Locale } from "@let-value/translate";
 import { createElement, type ReactNode } from "react";
 import { localeContext } from "../context.ts";
 
 export interface LocaleProviderProps {
-    locale: string;
+    locale: Locale;
     children?: ReactNode;
 }
 

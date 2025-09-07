@@ -1,4 +1,4 @@
-import type { LocaleTranslator } from "@let-value/translate";
+import type { Locale, LocaleTranslator } from "@let-value/translate";
 import { use } from "react";
 
 import { localeContext, translatorContext } from "../context.ts";
@@ -28,7 +28,7 @@ function getPromiseState(promise: any) {
     }
 }
 
-export function useTranslations(locale?: string): LocaleTranslator {
+export function useTranslations(locale?: Locale): LocaleTranslator {
     const requestedLocale = locale ?? use(localeContext) ?? "unknown";
     const translator = use(translatorContext);
     if (!translator) {

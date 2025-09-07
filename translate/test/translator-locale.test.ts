@@ -29,6 +29,6 @@ await test("getLocale throws for async locales", async () => {
         en: empty,
         ru: async () => gettextParser.po.parse(await fs.promises.readFile(ruUrl)),
     });
-    // @ts-expect-error getLocale cannot return async locale
+    // @ts-expect-error async locale cannot be loaded synchronously
     assert.throws(() => t.getLocale("ru"));
 });
