@@ -1,4 +1,5 @@
 import { getNPlurals, getPluralFunc } from "plural-forms";
+import type { Locale } from "./config.ts";
 
 // biome-ignore lint/suspicious/noExplicitAny: true
 export type IsUnion<T, U = T> = (T extends any ? (x: T) => 0 : never) extends (x: U) => 0 ? false : true;
@@ -32,7 +33,7 @@ export function substitute(text: string, values: unknown[] = []): string {
 
 const defaultPluralFunc = (n: number) => (n !== 1 ? 1 : 0);
 
-export const pluralFunc = memo(function pluralFunc(locale: string) {
+export const pluralFunc = memo(function pluralFunc(locale: Locale) {
     try {
         const length = Number(getNPlurals(locale));
         const pluralFunc = getPluralFunc(locale);

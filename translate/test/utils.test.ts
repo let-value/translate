@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
+import type { Locale } from "../src/config.ts";
 import { memo, pluralFunc, substitute } from "../src/utils.ts";
 
 // substitute replacement behavior
@@ -23,7 +24,7 @@ test("memo caches results for same inputs", () => {
 
 // pluralFunc default behavior for unknown locale
 test("pluralFunc falls back to default when locale is unknown", () => {
-    const pf = pluralFunc("xx");
+    const pf = pluralFunc("xx" as unknown as Locale);
     assert.equal(pf(1), 0);
     assert.equal(pf(2), 1);
 });

@@ -1,5 +1,6 @@
 import type { GetTextTranslations } from "gettext-parser";
 import { assign } from "radash";
+import type { Locale } from "./config.ts";
 
 import {
     message as buildMessage,
@@ -18,6 +19,7 @@ import { pluralFunc, type StrictStaticString, substitute } from "./utils.ts";
 type TranslationModule = GetTextTranslations | { default: GetTextTranslations };
 type TranslationLoader = () => Promise<TranslationModule>;
 type TranslationEntry = TranslationModule | Promise<TranslationModule> | TranslationLoader;
+type TranslationRecord = Partial<Record<Locale, TranslationEntry>>;
 type SyncLocaleKeys<T> = {
     [K in keyof T]: T[K] extends GetTextTranslations ? K : never;
 }[keyof T];
@@ -30,10 +32,10 @@ function resolveTranslationModule(module: TranslationModule): GetTextTranslation
 }
 
 export class LocaleTranslator {
-    locale: string;
+    locale: Locale;
     translations?: GetTextTranslations;
 
-    constructor(locale: string, translations?: GetTextTranslations) {
+    constructor(locale: Locale, translations?: GetTextTranslations) {
         this.locale = locale;
         this.translations = translations;
     }
@@ -145,16 +147,16 @@ export class LocaleTranslator {
     }
 }
 
-export class Translator<T extends Record<string, TranslationEntry> = Record<string, TranslationEntry>> {
+export class Translator<T extends TranslationRecord = TranslationRecord> {
     parent: Translator | undefined;
-    loaders: Partial<Record<string, TranslationLoader>> = {};
-    translations: Partial<Record<string, GetTextTranslations>> = {};
-    pending: Partial<Record<string, Promise<LocaleTranslator>>> = {};
-    translators: Partial<Record<string, LocaleTranslator>> = {};
+    loaders: Partial<Record<Locale, TranslationLoader>> = {};
+    translations: Partial<Record<Locale, GetTextTranslations>> = {};
+    pending: Partial<Record<Locale, Promise<LocaleTranslator>>> = {};
+    translators: Partial<Record<Locale, LocaleTranslator>> = {};
 
     constructor(translations: T, parent?: Translator) {
         this.parent = parent;
-        for (const [locale, value] of Object.entries(translations)) {
+        for (const [locale, value] of Object.entries(translations) as [Locale, TranslationEntry][]) {
             if (typeof value === "function") {
                 this.loaders[locale] = value;
             } else if ("then" in value) {
@@ -165,26 +167,28 @@ export class Translator<T extends Record<string, TranslationEntry> = Record<stri
         }
     }
 
-    async loadLocale(locale: string, loader?: TranslationLoader): Promise<LocaleTranslator> {
+    async loadLocale(locale: Locale, loader?: TranslationLoader): Promise<LocaleTranslator> {
         this.loaders[locale] = loader ?? this.loaders[locale];
 
-        return this.fetchLocale(locale);
+        return this.fetchLocale(locale as never);
     }
 
     getLocale<L extends SyncLocaleKeys<T>>(locale: L): LocaleTranslator {
-        const key = locale as string;
-        if (this.translators[key]) {
-            return this.translators[key];
+        const key = locale as Locale;
+        const existing = this.translators[key];
+        if (existing) {
+            return existing;
         }
 
-        if (this.translations[key]) {
-            const parent = this.parent?.getLocale(locale as never)?.translations;
-
-            const translations = assign<GetTextTranslations>(this.translations[key], parent as never);
+        const base = this.translations[key];
+        if (base) {
+            const parentTranslations = this.parent?.getLocale(locale as never)?.translations;
+            const translations = assign<GetTextTranslations>(base, parentTranslations as never);
             delete this.translations[key];
 
-            this.translators[key] = new LocaleTranslator(key, translations);
-            return this.translators[key];
+            const translator = new LocaleTranslator(key, translations);
+            this.translators[key] = translator;
+            return translator;
         }
 
         if (this.pending[key] || this.loaders[key]) {
@@ -196,22 +200,25 @@ export class Translator<T extends Record<string, TranslationEntry> = Record<stri
     }
 
     fetchLocale<L extends keyof T>(locale: L) {
-        const key = locale as string;
+        const key = locale as Locale;
 
-        if (this.pending[key]) {
-            return this.pending[key];
+        const pending = this.pending[key];
+        if (pending) {
+            return pending;
         }
 
-        if (this.loaders[key]) {
-            this.pending[key] = this.loaders[key]().then((translations) => {
+        const loader = this.loaders[key];
+        if (loader) {
+            const promise = loader().then((translations) => {
                 this.translations[key] ??= resolveTranslationModule(translations);
                 delete this.pending[key];
 
                 return this.getLocale(key as never);
             });
+            this.pending[key] = promise;
             delete this.loaders[key];
 
-            return this.pending[key];
+            return promise;
         }
 
         return this.getLocale(key as never);
