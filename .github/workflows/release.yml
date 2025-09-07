@@ -30,8 +30,11 @@ jobs:
           node-version: 22
           registry-url: ${{ matrix.registry.url }}
           scope: '@let-value'
-      - run: npm ci
-      - run: npm run build
-      - run: npm publish --workspaces
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - run: bun install --frozen-lockfile
+      - run: bun run build
+      - run: bun publish --workspaces
         env:
           NODE_AUTH_TOKEN: ${{ secrets[matrix.registry.token] }}

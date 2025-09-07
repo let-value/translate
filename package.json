@@ -17,7 +17,7 @@
         "check": "npm run check --workspaces",
         "typecheck": "npm run typecheck --workspaces",
         "test": "npm run test --workspaces",
-        "release": "bumpp -r",
+        "release": "bumpp package.json translate/package.json loader/package.json extract/package.json react/package.json",
         "publish": "npm publish --workspaces"
     },
     "devDependencies": {
