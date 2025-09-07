@@ -17,8 +17,13 @@ jobs:
           { enabled: false, url: 'https://registry.npmjs.org', token: NPM_TOKEN }
         ]
     steps:
-      - if: matrix.registry.enabled == false
-        run: exit 0
+      - name: Early exit
+        if: matrix.registry.enabled == false
+        run: |
+          gh run cancel ${{ github.run_id }}
+          gh run watch ${{ github.run_id }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
