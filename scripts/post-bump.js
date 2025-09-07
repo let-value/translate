@@ -33,20 +33,20 @@ const runCommand = (command, args = []) => {
 };
 
 const getWorkspaceInfo = async () => {
-    const output = await runCommand("npm", ["ls", "--workspaces", "--json=true"]);
+    const output = await runCommand("npm", ["query", ".workspace"]);
     return JSON.parse(output);
 };
 
 const fixVersions = async () => {
-    const workspaceInfo = await getWorkspaceInfo();
-    const rootVersion = workspaceInfo.version;
+    const workspacePackages = await getWorkspaceInfo();
+    const rootPackageJson = JSON.parse(readFileSync("package.json", "utf8"));
+    const rootVersion = rootPackageJson.version;
 
     // Get all workspace packages that start with @let-value/
-    const workspacePackages = Object.keys(workspaceInfo.dependencies).filter((name) => name.startsWith("@let-value/"));
+    const letValuePackages = workspacePackages.filter((pkg) => pkg.name.startsWith("@let-value/"));
 
-    for (const packageName of workspacePackages) {
-        const packageInfo = workspaceInfo.dependencies[packageName];
-        const packagePath = packageInfo.resolved.replace("file:", "") + "/package.json";
+    for (const packageInfo of letValuePackages) {
+        const packagePath = packageInfo.path + "/package.json";
 
         const originalContent = readFileSync(packagePath, "utf8");
         const packageContent = JSON.parse(originalContent);
@@ -61,8 +61,9 @@ const fixVersions = async () => {
         // Fix dependencies - check if this package uses other workspace packages
         if (packageContent.dependencies) {
             for (const [depName, depVersion] of Object.entries(packageContent.dependencies)) {
-                if (workspacePackages.includes(depName) && (depVersion === "*" || !depVersion.includes(rootVersion))) {
-                    packageContent.dependencies[depName] = `^${rootVersion}`;
+                const isWorkspacePackage = letValuePackages.some((pkg) => pkg.name === depName);
+                if (isWorkspacePackage && (depVersion === "*" || !depVersion.includes(rootVersion))) {
+                    packageContent.dependencies[depName] = `${rootVersion}`;
                     hasChanges = true;
                 }
             }
@@ -71,8 +72,9 @@ const fixVersions = async () => {
         // Fix devDependencies
         if (packageContent.devDependencies) {
             for (const [depName, depVersion] of Object.entries(packageContent.devDependencies)) {
-                if (workspacePackages.includes(depName) && (depVersion === "*" || !depVersion.includes(rootVersion))) {
-                    packageContent.devDependencies[depName] = `^${rootVersion}`;
+                const isWorkspacePackage = letValuePackages.some((pkg) => pkg.name === depName);
+                if (isWorkspacePackage && (depVersion === "*" || !depVersion.includes(rootVersion))) {
+                    packageContent.devDependencies[depName] = `${rootVersion}`;
                     hasChanges = true;
                 }
             }
