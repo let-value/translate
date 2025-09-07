@@ -1,6 +1,6 @@
 {
     "name": "translate",
-    "version": "1.0.5-beta.4",
+    "version": "1.0.5-beta.5",
     "private": true,
     "workspaces": [
         "loader",
