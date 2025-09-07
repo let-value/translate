@@ -19,11 +19,7 @@ jobs:
     steps:
       - name: Early exit
         if: matrix.registry.enabled == false
-        run: |
-          gh run cancel ${{ github.run_id }}
-          gh run watch ${{ github.run_id }}
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: exit 1
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
