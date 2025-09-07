@@ -1,6 +1,6 @@
 {
     "name": "translate",
-    "version": "1.0.5-beta.8",
+    "version": "1.0.5-beta.9",
     "private": true,
     "workspaces": [
         "loader",
@@ -17,7 +17,7 @@
         "check": "npm run check --workspaces",
         "typecheck": "npm run typecheck --workspaces",
         "test": "npm run test --workspaces",
-        "release": "bumpp package.json translate/package.json loader/package.json extract/package.json react/package.json",
+        "release": "bumpp --install package.json translate/package.json loader/package.json extract/package.json react/package.json",
         "publish": "npm publish --workspaces"
     },
     "devDependencies": {
