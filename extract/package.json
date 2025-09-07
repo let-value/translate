@@ -20,7 +20,7 @@
         "dist"
     ],
     "dependencies": {
-        "@let-value/translate": "*",
+        "@let-value/translate": "^1.0.5-beta.12",
         "gettext-parser": "8.0.0",
         "oxc-resolver": "11.7.1",
         "plural-forms": "0.5.5",

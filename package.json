@@ -1,6 +1,7 @@
 {
     "name": "translate",
     "version": "1.0.5-beta.12",
+    "type": "module",
     "private": true,
     "workspaces": [
         "loader",
@@ -17,7 +18,7 @@
         "check": "npm run check --workspaces",
         "typecheck": "npm run typecheck --workspaces",
         "test": "npm run test --workspaces",
-        "release": "bumpp --install -r",
+        "release": "bumpp",
         "publish": "npm publish --workspaces"
     },
     "devDependencies": {
