@@ -16,6 +16,7 @@ jobs:
           { enabled: true, url: 'https://npm.pkg.github.com', token: GITHUB_TOKEN },
           { enabled: false, url: 'https://registry.npmjs.org', token: NPM_TOKEN }
         ]
+      fail-fast: false
     steps:
       - name: Early exit
         if: matrix.registry.enabled == false
