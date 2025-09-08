@@ -7,7 +7,8 @@ export const extractPluralForms =
     (name: string) =>
     (match: Parser.QueryMatch): MessageMatch | undefined => {
         const call = match.captures.find((c) => c.name === "call")?.node;
-        if (!call) {
+        const n = match.captures.find((c) => c.name === "n")?.node;
+        if (!call || !n || n.nextNamedSibling) {
             return undefined;
         }
 

@@ -56,6 +56,15 @@ suite("should extract context plural messages", () =>
                         },
                     },
                     {
+                        error: undefined,
+                        translation: {
+                            context: "ctx",
+                            id: "one",
+                            plural: "few",
+                            message: ["one", "few", "many", "other"],
+                        },
+                    },
+                    {
                         error: "npgettext() template expressions must be simple identifiers",
                         translation: undefined,
                     },
