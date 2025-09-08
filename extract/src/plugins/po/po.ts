@@ -52,6 +52,7 @@ export function merge(
 ): string {
     let headers: Record<string, string> = {};
     let translations: GetTextTranslationRecord = { "": {} };
+    const nplurals = getNPlurals(locale);
 
     if (existing) {
         const parsed = gettextParser.po.parse(existing);
@@ -81,6 +82,8 @@ export function merge(
                 };
             }
             entry.obsolete = false;
+            entry.msgstr = entry.msgstr.slice(0, nplurals);
+            while (entry.msgstr.length < nplurals) entry.msgstr.push("");
             translations[ctx][id] = entry;
         }
     }
@@ -88,7 +91,7 @@ export function merge(
     headers = {
         ...headers,
         "content-type": headers["content-type"] || "text/plain; charset=UTF-8",
-        "plural-forms": `nplurals=${getNPlurals(locale)}; plural=${getFormula(locale)};`,
+        "plural-forms": `nplurals=${nplurals}; plural=${getFormula(locale)};`,
         language: locale,
         "pot-creation-date": formatDate(timestamp),
         "x-generator": "@let-value/translate-extract",

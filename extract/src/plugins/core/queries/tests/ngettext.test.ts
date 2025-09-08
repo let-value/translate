@@ -53,6 +53,14 @@ suite("should extract plural messages", () =>
                         },
                     },
                     {
+                        error: undefined,
+                        translation: {
+                            id: "one",
+                            plural: "few",
+                            message: ["one", "few", "many", "other"],
+                        },
+                    },
+                    {
                         error: "ngettext() template expressions must be simple identifiers",
                         translation: undefined,
                     },
