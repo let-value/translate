@@ -1,6 +1,7 @@
 import type Parser from "tree-sitter";
+
 import { withComment } from "../../core/queries/comment.ts";
-import type { QuerySpec, MessageMatch, Translation } from "../../core/queries/types.ts";
+import type { MessageMatch, QuerySpec, Translation } from "../../core/queries/types.ts";
 import { buildTemplate } from "./utils.ts";
 
 function parseForms(node: Parser.SyntaxNode): { forms: string[]; error?: string } {

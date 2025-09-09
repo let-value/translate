@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { suite, test } from "node:test";
-import { parseSource } from "../parse.ts";
 import { getMatches } from "../../core/queries/tests/utils.ts";
+import { parseSource } from "../parse.ts";
 import { messageQuery } from "../queries/message.ts";
 import { pluralQuery } from "../queries/plural.ts";
 

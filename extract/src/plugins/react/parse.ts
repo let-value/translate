@@ -3,10 +3,10 @@ import { resolve } from "node:path";
 import Parser from "tree-sitter";
 
 import { getParser } from "../core/parse.ts";
+import { getReference } from "../core/queries/comment.ts";
 import { importQuery } from "../core/queries/import.ts";
 import { queries as coreQueries } from "../core/queries/index.ts";
 import type { Context, Translation } from "../core/queries/types.ts";
-import { getReference } from "../core/queries/comment.ts";
 import { queries as reactQueries } from "./queries/index.ts";
 
 export interface ParseResult {

@@ -1,7 +1,8 @@
 import type Parser from "tree-sitter";
+
 import { withComment } from "../../core/queries/comment.ts";
-import type { QuerySpec, MessageMatch, Translation } from "../../core/queries/types.ts";
-import { buildTemplate, buildAttrValue } from "./utils.ts";
+import type { MessageMatch, QuerySpec, Translation } from "../../core/queries/types.ts";
+import { buildAttrValue, buildTemplate } from "./utils.ts";
 
 export const messageQuery: QuerySpec = withComment({
     pattern: `(

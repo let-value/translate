@@ -1,5 +1,5 @@
-import { Fragment } from "react";
 import { Message, Plural } from "@let-value/translate-react";
+import { Fragment } from "react";
 
 const name = "World";
 const n = 2;

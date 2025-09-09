@@ -24,7 +24,7 @@ export function buildTemplate(node: Parser.SyntaxNode): { text: string; error?: 
     for (let i = 0; i < strings.length; i++) {
         text += strings[i];
         if (values[i]) {
-            text += "${" + values[i] + "}";
+            text += `\${${values[i]}}`;
         }
     }
     return { text };
@@ -39,7 +39,7 @@ export function buildAttrValue(node: Parser.SyntaxNode): { text: string; error?:
         if (!expr || expr.type !== "identifier") {
             return { text: "", error: "JSX expressions must be simple identifiers" };
         }
-        return { text: "${" + expr.text + "}" };
+        return { text: `\${${expr.text}}` };
     }
     return { text: "", error: "Unsupported JSX child" };
 }

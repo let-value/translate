@@ -1,8 +1,9 @@
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
+
 import type { ExtractorPlugin } from "../../plugin.ts";
-import { parseSource } from "./parse.ts";
 import { resolveImports } from "../core/resolve.ts";
+import { parseSource } from "./parse.ts";
 
 const filter = /\.[cm]?[jt]sx$/;
 
