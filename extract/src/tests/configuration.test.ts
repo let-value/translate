@@ -15,8 +15,8 @@ test("appends plugins when array provided", () => {
 test("allows overriding default plugins with function", () => {
     const cfg = defineConfig({
         entrypoints: "src/index.ts",
-        plugins(defaults) {
-            return defaults.filter((p) => p.name !== "po");
+        plugins({ core }) {
+            return [core()];
         },
     });
     assert.deepEqual(

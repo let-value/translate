@@ -1,0 +1,63 @@
+import fs from "node:fs";
+import { resolve } from "node:path";
+import Parser from "tree-sitter";
+
+import { getParser } from "../core/parse.ts";
+import { getReference } from "../core/queries/comment.ts";
+import { importQuery } from "../core/queries/import.ts";
+import { queries as coreQueries } from "../core/queries/index.ts";
+import type { Context, Translation } from "../core/queries/types.ts";
+import { queries as reactQueries } from "./queries/index.ts";
+
+export interface ParseResult {
+    translations: Translation[];
+    imports: string[];
+}
+
+export function parseFile(filePath: string): ParseResult {
+    const path = resolve(filePath);
+    const source = fs.readFileSync(path, "utf8");
+    return parseSource(source, path);
+}
+
+export function parseSource(source: string, path: string): ParseResult {
+    const context: Context = { path };
+    const { parser, language } = getParser(path);
+    const tree = parser.parse(source);
+
+    const translations: Translation[] = [];
+    const imports: string[] = [];
+    const seen = new Set<number>();
+
+    for (const spec of [...coreQueries, ...reactQueries]) {
+        const query = new Parser.Query(language, spec.pattern);
+        for (const match of query.matches(tree.rootNode)) {
+            const message = spec.extract(match);
+            if (!message) continue;
+            const { node, translation, error } = message;
+            if (seen.has(node.id)) continue;
+            seen.add(node.id);
+            const reference = getReference(node, context);
+            if (translation) {
+                translations.push({
+                    ...translation,
+                    comments: {
+                        ...translation.comments,
+                        reference,
+                    },
+                });
+            }
+            if (error) {
+                console.warn(`Parsing error at ${reference}: ${error}`);
+            }
+        }
+    }
+
+    const importTreeQuery = new Parser.Query(language, importQuery.pattern);
+    for (const match of importTreeQuery.matches(tree.rootNode)) {
+        const imp = importQuery.extract(match);
+        if (imp) imports.push(imp);
+    }
+
+    return { translations, imports };
+}
