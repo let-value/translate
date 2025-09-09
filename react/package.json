@@ -17,8 +17,9 @@
         "dist"
     ],
     "scripts": {
-        "build": "tsdown src/index.ts --format esm,cjs --dts --out-dir dist --clean",
-        "check": "biome check --write .",
+        "build": "tsdown",
+        "check": "biome check .",
+        "format": "biome check --write .",
         "typecheck": "tsc --build",
         "test": "node --test"
     },
@@ -37,8 +38,5 @@
     },
     "peerDependencies": {
         "react": ">=19"
-    },
-    "publishConfig": {
-        "registry": "https://npm.pkg.github.com"
     }
 }
