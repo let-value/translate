@@ -18,7 +18,7 @@ suite("should extract context builder messages", () =>
                     {
                         error: undefined,
                         translation: {
-                            msgctxt: "ctx",
+                            context: "ctx",
                             id: "hello",
                             message: ["hello"],
                         },
@@ -26,7 +26,7 @@ suite("should extract context builder messages", () =>
                     {
                         error: undefined,
                         translation: {
-                            msgctxt: "ctx",
+                            context: "ctx",
                             id: "hello comment",
                             message: ["hello comment"],
                             comments: {
@@ -37,7 +37,7 @@ suite("should extract context builder messages", () =>
                     {
                         error: undefined,
                         translation: {
-                            msgctxt: "ctx",
+                            context: "ctx",
                             id: "greeting",
                             message: ["Hello, world!"],
                             comments: {
@@ -48,7 +48,7 @@ suite("should extract context builder messages", () =>
                     {
                         error: undefined,
                         translation: {
-                            msgctxt: "ctx",
+                            context: "ctx",
                             id: "greeting",
                             message: ["Hello, world!"],
                             comments: {
@@ -59,7 +59,7 @@ suite("should extract context builder messages", () =>
                     {
                         error: undefined,
                         translation: {
-                            msgctxt: "ctx",
+                            context: "ctx",
                             id: "Hello, ${name}!",
                             message: ["Hello, ${name}!"],
                         },
