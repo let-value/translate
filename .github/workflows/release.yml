@@ -1,4 +1,4 @@
-name: ci
+name: release
 
 on:
   release:
@@ -27,6 +27,7 @@ jobs:
           node-version: 22
           registry-url: ${{ matrix.registry.url }}
           scope: '@let-value'
+          token: ${{ secrets[matrix.registry.token] }}
       - run: npm ci
       - run: npm run build
       - run: npm publish --workspaces
