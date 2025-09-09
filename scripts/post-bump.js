@@ -92,7 +92,6 @@ const main = async () => {
         await runCommand("npm", ["install"]);
     } catch (error) {
         console.error("Post-bump failed:", error.message);
-        process.exit(1);
     }
 };
 
