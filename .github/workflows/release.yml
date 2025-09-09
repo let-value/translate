@@ -13,8 +13,8 @@ jobs:
     strategy:
       matrix:
         registry: [
-          { enabled: true, url: 'https://npm.pkg.github.com', token: GITHUB_TOKEN },
-          { enabled: true, url: 'https://registry.npmjs.org', token: NPM_TOKEN }
+          { enabled: true, public: false, url: 'https://npm.pkg.github.com', token: GITHUB_TOKEN,  },
+          { enabled: true, public: true, url: 'https://registry.npmjs.org', token: NPM_TOKEN,  },
         ]
       fail-fast: false
     steps:
@@ -30,6 +30,6 @@ jobs:
           token: ${{ secrets[matrix.registry.token] }}
       - run: npm ci
       - run: npm run build
-      - run: npm publish --workspaces
+      - run: npm publish --workspaces --access ${{ matrix.registry.public && 'public' || 'restricted' }}
         env:
           NODE_AUTH_TOKEN: ${{ secrets[matrix.registry.token] }}
