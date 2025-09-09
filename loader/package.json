@@ -63,7 +63,7 @@
     },
     "scripts": {
         "build": "tsdown src/index.ts src/rollup.ts src/vite.ts src/webpack.ts src/esbuild.ts src/rspack.ts src/bun.ts --format esm,cjs --dts --out-dir dist --clean && cp src/po.d.ts dist/po.d.ts",
-        "check": "biome check .",
+        "check": "biome check --write .",
         "typecheck": "tsc --build",
         "test": "node --test \"**/*.test.ts\""
     },

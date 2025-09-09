@@ -13,13 +13,7 @@ test("preserves existing translations and comments", async () => {
     const existing = await fs.readFile(existingPath);
 
     const { translations } = parseFile(fixture);
-    const record = collect(
-        translations.map((t) => ({
-            ...t,
-            context: (t as any).context ?? (t as any).msgctxt,
-        })),
-        "en",
-    );
+    const record = collect(translations, "en");
 
     const out = merge(
         "en",

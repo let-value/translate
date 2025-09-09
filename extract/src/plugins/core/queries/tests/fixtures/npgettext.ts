@@ -18,13 +18,6 @@ t.npgettext(
 const name = "World";
 t.npgettext("ctx", message`Hello, ${name}!`, message`Hello, ${name}!`, 1);
 
-t.npgettext(
-    "ctx",
-    message("one"),
-    message("few"),
-    message("many"),
-    message("other"),
-    5,
-);
+t.npgettext("ctx", message("one"), message("few"), message("many"), message("other"), 5);
 
 t.npgettext("ctx", message`Hi, ${name.toUpperCase()}!`, message`Hi, ${name}!`, 1);

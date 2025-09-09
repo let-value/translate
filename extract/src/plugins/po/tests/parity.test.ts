@@ -7,20 +7,13 @@ import { parseFile } from "../../core/parse.ts";
 import { collect, merge } from "../po.ts";
 
 function normalize(po: gettextParser.GetTextTranslations) {
-    const result: Record<string, Record<string, unknown>> = {};
-    for (const [ctx, msgs] of Object.entries(po.translations)) {
-        for (const [id, msg] of Object.entries(msgs as Record<string, any>)) {
-            if (id === "") continue;
-            result[ctx] ??= {};
-            result[ctx][id] = {
-                msgid: (msg as any).msgid,
-                msgid_plural: (msg as any).msgid_plural,
-                msgctxt: (msg as any).msgctxt,
-                msgstr: (msg as any).msgstr,
-            };
-        }
-    }
-    return result;
+    return Object.values(po.translations)
+        .flatMap((ctx) => Object.values(ctx))
+        .filter(({ msgid }) => msgid)
+        .map(({ comments, ...rest }) => ({
+            comments: { ...comments, flag: undefined, reference: undefined },
+            ...rest,
+        }));
 }
 
 test("matches xgettext output", async () => {
@@ -29,13 +22,7 @@ test("matches xgettext output", async () => {
     const ref = gettextParser.po.parse(await fs.readFile(refPath));
 
     const { translations } = parseFile(fixture);
-    const record = collect(
-        translations.map((t) => ({
-            ...t,
-            context: (t as any).context ?? (t as any).msgctxt,
-        })),
-        "en",
-    );
+    const record = collect(translations, "en");
     const out = merge(
         "en",
         [{ entrypoint: fixture, path: fixture, destination: "messages.po", translations: record }],
@@ -54,13 +41,7 @@ test("matches xgettext output for 4 plural forms", async () => {
     const ref = gettextParser.po.parse(await fs.readFile(refPath));
 
     const { translations } = parseFile(fixture);
-    const record = collect(
-        translations.map((t) => ({
-            ...t,
-            context: (t as any).context ?? (t as any).msgctxt,
-        })),
-        "sl",
-    );
+    const record = collect(translations, "sl");
     const out = merge(
         "sl",
         [{ entrypoint: fixture, path: fixture, destination: "messages.po", translations: record }],

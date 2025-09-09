@@ -17,12 +17,6 @@ t.ngettext(
 const name = "World";
 t.ngettext(message`Hello, ${name}!`, message`Hello, ${name}!`, 1);
 
-t.ngettext(
-    message("one"),
-    message("few"),
-    message("many"),
-    message("other"),
-    5,
-);
+t.ngettext(message("one"), message("few"), message("many"), message("other"), 5);
 
 t.ngettext(message`Hi, ${name.toUpperCase()}!`, message`Hi, ${name}!`, 1);

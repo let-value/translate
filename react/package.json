@@ -18,7 +18,7 @@
     ],
     "scripts": {
         "build": "tsdown src/index.ts --format esm,cjs --dts --out-dir dist --clean",
-        "check": "biome check .",
+        "check": "biome check --write .",
         "typecheck": "tsc --build",
         "test": "node --test"
     },

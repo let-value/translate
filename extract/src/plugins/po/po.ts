@@ -31,13 +31,13 @@ export function collect(source: Translation[], locale?: string): GetTextTranslat
             translations[ctx] = {};
         }
 
-        const msgstrLength = plural ? nplurals ?? message.length : 1;
+        const length = plural ? (nplurals ?? message.length) : 1;
 
         translations[ctx][id] = {
             msgctxt: context || undefined,
             msgid: id,
             msgid_plural: plural,
-            msgstr: new Array(msgstrLength).fill(""),
+            msgstr: Array.from({ length }, () => ""),
             comments: comments,
             obsolete: obsolete,
         };
