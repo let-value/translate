@@ -1,0 +1,9 @@
+msgid ""
+msgstr ""
+"Language: en\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+# existing translator comment
+msgid "Hello world"
+msgstr "Ahoy!"
+

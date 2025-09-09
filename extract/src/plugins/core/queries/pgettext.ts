@@ -15,7 +15,7 @@ export const pgettextQuery: QuerySpec = withComment({
             node: result.node,
             translation: {
                 ...result.translation,
-                msgctxt: contextNode.text,
+                context: contextNode.text,
             },
         };
     },

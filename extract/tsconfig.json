@@ -8,7 +8,7 @@
         "outDir": "dist",
         "rootDir": ".."
     },
-    "include": ["src/**/*.ts", "bin/**/*.ts", "index.ts", "../packages/extract/src/**/*.ts"],
+    "include": ["src/**/*.ts", "types/**/*.d.ts", "bin/**/*.ts", "index.ts"],
     "exclude": ["src/tests/fixtures", "src/plugins/core/tests/fixtures"],
     "references": [{ "path": "../translate" }]
 }

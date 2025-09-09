@@ -16,6 +16,7 @@
         "biome": "biome",
         "build": "npm run build --workspaces",
         "check": "npm run check --workspaces",
+        "format": "npm run format --workspaces",
         "typecheck": "npm run typecheck --workspaces",
         "test": "npm run test --workspaces",
         "release": "bumpp",

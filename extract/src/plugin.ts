@@ -6,8 +6,8 @@ export interface ExtractContext {
     entry: string;
     dest: string;
     config: ResolvedConfig;
-    /** Timestamp when extraction started. */
     generatedAt: Date;
+    locale: string;
 }
 
 export interface ResolveArgs {

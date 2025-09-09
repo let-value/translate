@@ -29,7 +29,7 @@ export const contextMsgQuery: QuerySpec = withComment({
             node: result.node,
             translation: {
                 ...result.translation,
-                msgctxt: contextNode.text,
+                context: contextNode.text,
             },
         };
     },

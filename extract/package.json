@@ -36,12 +36,10 @@
         "typescript": "5.9.2"
     },
     "scripts": {
-        "build": "tsdown src/index.ts bin/cli.ts --format esm,cjs --dts --out-dir dist --clean",
+        "build": "tsdown",
         "check": "biome check .",
+        "format": "biome check --write .",
         "typecheck": "tsc --build",
         "test": "node --test \"**/*.test.ts\""
-    },
-    "publishConfig": {
-        "registry": "https://npm.pkg.github.com"
     }
 }

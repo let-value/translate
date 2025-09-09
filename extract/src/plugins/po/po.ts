@@ -21,8 +21,9 @@ export function formatDate(date: Date): string {
     return `${year}-${month}-${day} ${hours}:${minutes}${sign}${offsetHours}${offsetMinutes}`;
 }
 
-export function collect(source: Translation[]): GetTextTranslationRecord {
+export function collect(source: Translation[], locale?: string): GetTextTranslationRecord {
     const translations: GetTextTranslationRecord = { "": {} };
+    const nplurals = locale ? getNPlurals(locale) : undefined;
 
     for (const { context, id, message, comments, obsolete, plural } of source) {
         const ctx = context || "";
@@ -30,11 +31,13 @@ export function collect(source: Translation[]): GetTextTranslationRecord {
             translations[ctx] = {};
         }
 
+        const length = plural ? (nplurals ?? message.length) : 1;
+
         translations[ctx][id] = {
             msgctxt: context || undefined,
             msgid: id,
             msgid_plural: plural,
-            msgstr: message.length ? message : [""],
+            msgstr: Array.from({ length }, () => ""),
             comments: comments,
             obsolete: obsolete,
         };
@@ -120,8 +123,8 @@ export function po(): ExtractorPlugin {
     return {
         name: "po",
         setup(build) {
-            build.onCollect({ filter: /.*/ }, ({ entrypoint, translations, ...rest }) => {
-                const record = collect(translations as Translation[]);
+            build.onCollect({ filter: /.*/ }, ({ entrypoint, translations, ...rest }, ctx) => {
+                const record = collect(translations as Translation[], ctx.locale);
                 const destination = `${basename(entrypoint, extname(entrypoint))}.po`;
 
                 return {
