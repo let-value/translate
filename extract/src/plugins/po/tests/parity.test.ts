@@ -1,10 +1,10 @@
 import assert from "node:assert/strict";
 import { promises as fs } from "node:fs";
-import { fileURLToPath } from "node:url";
 import { test } from "node:test";
+import { fileURLToPath } from "node:url";
 import * as gettextParser from "gettext-parser";
-import { collect, merge } from "../po.ts";
 import { parseFile } from "../../core/parse.ts";
+import { collect, merge } from "../po.ts";
 
 function normalize(po: gettextParser.GetTextTranslations) {
     const result: Record<string, Record<string, unknown>> = {};
@@ -33,8 +33,8 @@ test("matches xgettext output", async () => {
         translations.map((t) => ({
             ...t,
             context: (t as any).context ?? (t as any).msgctxt,
-            message: t.message.map(() => ""),
         })),
+        "en",
     );
     const out = merge(
         "en",
@@ -58,8 +58,8 @@ test("matches xgettext output for 4 plural forms", async () => {
         translations.map((t) => ({
             ...t,
             context: (t as any).context ?? (t as any).msgctxt,
-            message: t.message.map(() => ""),
         })),
+        "sl",
     );
     const out = merge(
         "sl",

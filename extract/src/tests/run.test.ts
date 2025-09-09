@@ -21,7 +21,7 @@ test("passes collected messages to generate hooks", async () => {
             build.onResolve({ filter: /.*/ }, () => ({ entrypoint, path }));
             build.onLoad({ filter: /.*/ }, (args) => ({ ...args, contents: "" }));
             build.onExtract({ filter: /.*/ }, (args) => ({ ...args, translations }));
-            build.onCollect({ filter: /.*/ }, (args) => ({ ...args, destination }));
+            build.onCollect({ filter: /.*/ }, (args, _ctx) => ({ ...args, destination }));
             build.onGenerate({ filter: /.*/ }, (args) => {
                 generated = args;
             });
@@ -66,7 +66,7 @@ test("skips resolving additional files when walk disabled", async () => {
                 build.resolvePath({ entrypoint, path: extra });
                 return { ...args, translations: [] };
             });
-            build.onCollect({ filter: /.*/ }, (args) => ({ ...args, destination: "out.po" }));
+            build.onCollect({ filter: /.*/ }, (args, _ctx) => ({ ...args, destination: "out.po" }));
         },
     };
 
