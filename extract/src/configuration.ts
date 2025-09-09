@@ -6,6 +6,9 @@ import { po } from "./plugins/po/po.ts";
 
 export type DestinationFn = (locale: string, entrypoint: string, path: string) => string;
 
+const defaultPlugins = { core, po };
+type DefaultPlugins = typeof defaultPlugins;
+
 export interface EntrypointConfig {
     entrypoint: string;
     destination?: DestinationFn;
@@ -13,7 +16,7 @@ export interface EntrypointConfig {
 }
 
 export interface UserConfig {
-    plugins?: ExtractorPlugin[] | ((plugins: ExtractorPlugin[]) => ExtractorPlugin[]);
+    plugins?: ExtractorPlugin[] | ((defaultPlugins: DefaultPlugins) => ExtractorPlugin[]);
     entrypoints: string | EntrypointConfig | Array<string | EntrypointConfig>;
     defaultLocale?: string;
     locales?: string[];
@@ -34,7 +37,6 @@ export interface ResolvedConfig {
     walk: boolean;
 }
 
-const defaultPlugins: ExtractorPlugin[] = [core(), po()];
 const defaultDestination: DestinationFn = (locale, _entrypoint, path) => join(locale, path);
 
 export function defineConfig(config: UserConfig): ResolvedConfig {
@@ -43,9 +45,9 @@ export function defineConfig(config: UserConfig): ResolvedConfig {
     if (typeof user === "function") {
         plugins = user(defaultPlugins);
     } else if (Array.isArray(user)) {
-        plugins = [...defaultPlugins, ...user];
+        plugins = [...Object.values(defaultPlugins).map((plugin) => plugin()), ...user];
     } else {
-        plugins = defaultPlugins;
+        plugins = Object.values(defaultPlugins).map((plugin) => plugin());
     }
 
     const raw = Array.isArray(config.entrypoints) ? config.entrypoints : [config.entrypoints];
