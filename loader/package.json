@@ -62,13 +62,11 @@
         "typescript": "5.9.2"
     },
     "scripts": {
-        "build": "tsdown src/index.ts src/rollup.ts src/vite.ts src/webpack.ts src/esbuild.ts src/rspack.ts src/bun.ts --format esm,cjs --dts --out-dir dist --clean && cp src/po.d.ts dist/po.d.ts",
+        "build": "tsdown && node ./scripts/copy.mjs",
         "check": "biome check .",
+        "format": "biome check --write .",
         "typecheck": "tsc --build",
         "test": "node --test \"**/*.test.ts\""
-    },
-    "publishConfig": {
-        "registry": "https://npm.pkg.github.com"
     },
     "peerDependencies": {
         "@types/bun": "1.2.21"
