@@ -124,6 +124,7 @@ export function po(): ExtractorPlugin {
     return {
         name: "po",
         setup(build) {
+            build.context.logger?.debug("po plugin initialized");
             build.onCollect({ filter: /.*/ }, ({ entrypoint, translations, destination, ...rest }, ctx) => {
                 const record = collect(translations as Translation[], ctx.locale);
                 const redirected = join(dirname(destination), `${basename(destination, extname(destination))}.po`);

@@ -11,6 +11,7 @@ export function react(): ExtractorPlugin {
     return {
         name: "react",
         setup(build) {
+            build.context.logger?.debug("react plugin initialized");
             build.onResolve({ filter: /.*/ }, ({ entrypoint, path }) => {
                 return {
                     entrypoint,

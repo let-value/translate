@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { join } from "node:path";
 import { test } from "node:test";
-import { defineConfig } from "../configuration.ts";
+import { type DestinationFn, defineConfig } from "../configuration.ts";
 import type { ExtractorPlugin } from "../plugin.ts";
 
 const mockPlugin: ExtractorPlugin = { name: "mock", setup() {} };
@@ -50,7 +50,7 @@ test("resolves locales and default locale", () => {
 });
 
 test("uses custom destination and obsolete strategy", () => {
-    const destination = (locale: string, entry: string, path: string) => `${locale}/${entry}/${path}`;
+    const destination: DestinationFn = ({ locale, entrypoint, path }) => `${locale}/${entrypoint}/${path}`;
     const cfg = defineConfig({
         entrypoints: "src/index.ts",
         destination,
@@ -61,7 +61,7 @@ test("uses custom destination and obsolete strategy", () => {
 });
 
 test("supports object entrypoints with overrides", () => {
-    const destination = (locale: string, _entry: string, path: string) => `${locale}/${path}`;
+    const destination: DestinationFn = ({ locale, path }) => `${locale}/${path}`;
     const cfg = defineConfig({
         entrypoints: [{ entrypoint: "src/index.ts", destination, obsolete: "remove" }],
     });
