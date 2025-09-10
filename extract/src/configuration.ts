@@ -5,6 +5,8 @@ import { core } from "./plugins/core/core.ts";
 import { po } from "./plugins/po/po.ts";
 
 export type DestinationFn = (locale: string, entrypoint: string, path: string) => string;
+export type ExcludeFn = (path: string) => boolean;
+export type Exclude = RegExp | ExcludeFn;
 
 const defaultPlugins = { core, po };
 type DefaultPlugins = typeof defaultPlugins;
@@ -13,6 +15,7 @@ export interface EntrypointConfig {
     entrypoint: string;
     destination?: DestinationFn;
     obsolete?: "mark" | "remove";
+    exclude?: Exclude | Exclude[];
 }
 
 export interface UserConfig {
@@ -23,9 +26,12 @@ export interface UserConfig {
     destination?: DestinationFn;
     obsolete?: "mark" | "remove";
     walk?: boolean;
+    exclude?: Exclude | Exclude[];
 }
 
-export interface ResolvedEntrypoint extends EntrypointConfig {}
+export interface ResolvedEntrypoint extends Omit<EntrypointConfig, "exclude"> {
+    exclude?: Exclude[];
+}
 
 export interface ResolvedConfig {
     plugins: ExtractorPlugin[];
@@ -35,9 +41,20 @@ export interface ResolvedConfig {
     destination: DestinationFn;
     obsolete: "mark" | "remove";
     walk: boolean;
+    exclude: Exclude[];
 }
 
 const defaultDestination: DestinationFn = (locale, _entrypoint, path) => join(locale, path);
+const defaultExclude: Exclude[] = [
+    /(?:^|[\\/])node_modules(?:[\\/]|$)/,
+    /(?:^|[\\/])dist(?:[\\/]|$)/,
+    /(?:^|[\\/])build(?:[\\/]|$)/,
+];
+
+function normalizeExclude(exclude?: Exclude | Exclude[]): Exclude[] {
+    if (!exclude) return [];
+    return Array.isArray(exclude) ? exclude : [exclude];
+}
 
 export function defineConfig(config: UserConfig): ResolvedConfig {
     let plugins: ExtractorPlugin[];
@@ -61,12 +78,14 @@ export function defineConfig(config: UserConfig): ResolvedConfig {
                 for (const path of paths) entrypoints.push({ entrypoint: path });
             }
         } else {
-            const { entrypoint, destination, obsolete } = ep;
+            const { entrypoint, destination, obsolete, exclude } = ep;
             const paths = globSync(entrypoint, { nodir: true });
+            const epExclude = exclude ? [...defaultExclude, ...normalizeExclude(exclude)] : undefined;
             if (paths.length === 0) {
-                entrypoints.push({ entrypoint, destination, obsolete });
+                entrypoints.push({ entrypoint, destination, obsolete, exclude: epExclude });
             } else {
-                for (const path of paths) entrypoints.push({ entrypoint: path, destination, obsolete });
+                for (const path of paths)
+                    entrypoints.push({ entrypoint: path, destination, obsolete, exclude: epExclude });
             }
         }
     }
@@ -76,5 +95,6 @@ export function defineConfig(config: UserConfig): ResolvedConfig {
     const destination = config.destination ?? defaultDestination;
     const obsolete = config.obsolete ?? "mark";
     const walk = config.walk ?? true;
-    return { plugins, entrypoints, defaultLocale, locales, destination, obsolete, walk };
+    const exclude = [...defaultExclude, ...normalizeExclude(config.exclude)];
+    return { plugins, entrypoints, defaultLocale, locales, destination, obsolete, walk, exclude };
 }

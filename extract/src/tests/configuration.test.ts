@@ -75,3 +75,23 @@ test("configures walk option", () => {
     const cfg2 = defineConfig({ entrypoints: "src/index.ts", walk: false });
     assert.equal(cfg2.walk, false);
 });
+
+test("provides default excludes", () => {
+    const cfg = defineConfig({ entrypoints: "src/index.ts" });
+    for (const p of ["foo/node_modules/bar.ts", "foo/dist/bar.ts", "foo/build/bar.ts"]) {
+        assert(cfg.exclude.some((e) => (e instanceof RegExp ? e.test(p) : e(p))));
+    }
+});
+
+test("supports exclude overrides", () => {
+    const cfg = defineConfig({
+        entrypoints: [{ entrypoint: "src/index.ts", exclude: /skip/ }],
+        exclude: /global/,
+    });
+    assert(cfg.exclude.some((e) => (e instanceof RegExp ? e.test("global") : e("global"))));
+    const epExclude = cfg.entrypoints[0].exclude;
+    assert(epExclude);
+    assert(epExclude.some((e) => (e instanceof RegExp ? e.test("skip") : e("skip"))));
+    assert(!epExclude.some((e) => (e instanceof RegExp ? e.test("global") : e("global"))));
+    assert(epExclude.some((e) => (e instanceof RegExp ? e.test("node_modules/foo") : e("node_modules/foo"))));
+});
