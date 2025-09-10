@@ -5,9 +5,8 @@ import type { Context, QuerySpec } from "./types.ts";
 
 export function getReference(node: Parser.SyntaxNode, { path }: Context) {
     const line = node.startPosition.row + 1;
-    const col = node.startPosition.column + 1;
     const rel = relative(process.cwd(), path).replace(/\\+/g, "/");
-    return `${rel}:${line}:${col}`;
+    return `${rel}:${line}`;
 }
 
 function getComment(node: Parser.SyntaxNode): string {

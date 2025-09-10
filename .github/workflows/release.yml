@@ -25,6 +25,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+          cache: npm
           registry-url: ${{ matrix.registry.url }}
           scope: '@let-value'
           token: ${{ secrets[matrix.registry.token] }}
