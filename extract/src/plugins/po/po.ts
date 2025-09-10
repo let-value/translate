@@ -72,12 +72,14 @@ export function merge(
 ): string {
     let headers: Record<string, string> = {};
     let translations: GetTextTranslationRecord = { "": {} };
+    let obsoleteTranslations: GetTextTranslationRecord = {};
     const nplurals = getNPlurals(locale);
 
     if (existing) {
         const parsed = gettextParser.po.parse(existing);
         headers = parsed.headers || {};
         translations = parsed.translations || { "": {} };
+        obsoleteTranslations = parsed.obsolete || {};
         for (const ctx of Object.keys(translations)) {
             for (const id of Object.keys(translations[ctx])) {
                 if (ctx === "" && id === "") continue;
@@ -119,7 +121,7 @@ export function merge(
     for (const [ctx, msgs] of Object.entries(collected)) {
         if (!translations[ctx]) translations[ctx] = {};
         for (const [id, entry] of Object.entries(msgs)) {
-            const existingEntry = translations[ctx][id];
+            const existingEntry = translations[ctx][id] ?? obsoleteTranslations[ctx]?.[id];
             if (existingEntry) {
                 entry.msgstr = existingEntry.msgstr;
                 entry.comments = {
@@ -131,6 +133,19 @@ export function merge(
             entry.msgstr = entry.msgstr.slice(0, nplurals);
             while (entry.msgstr.length < nplurals) entry.msgstr.push("");
             translations[ctx][id] = entry;
+            if (obsoleteTranslations[ctx]) delete obsoleteTranslations[ctx][id];
+        }
+    }
+
+    for (const ctx of Object.keys(translations)) {
+        for (const id of Object.keys(translations[ctx])) {
+            if (ctx === "" && id === "") continue;
+            const entry = translations[ctx][id];
+            if (entry.obsolete) {
+                if (!obsoleteTranslations[ctx]) obsoleteTranslations[ctx] = {};
+                obsoleteTranslations[ctx][id] = entry;
+                delete translations[ctx][id];
+            }
         }
     }
 
@@ -143,20 +158,13 @@ export function merge(
         "x-generator": "@let-value/translate-extract",
     };
 
-    if (obsolete === "remove") {
-        for (const ctx of Object.keys(translations)) {
-            for (const id of Object.keys(translations[ctx])) {
-                if (translations[ctx][id].obsolete) {
-                    delete translations[ctx][id];
-                }
-            }
-        }
-    }
-
     const poObj: GetTextTranslations = {
         charset: "utf-8",
         headers,
         translations,
+        ...(obsolete === "mark" && Object.keys(obsoleteTranslations).length
+            ? { obsolete: obsoleteTranslations }
+            : {}),
     };
 
     return gettextParser.po.compile(poObj).toString();
