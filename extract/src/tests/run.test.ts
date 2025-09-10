@@ -44,6 +44,42 @@ test("passes collected messages to generate hooks", async () => {
     });
 });
 
+test("runs all extract hooks for a file", async () => {
+    const entrypoint = "dummy.tsx";
+    const path = entrypoint;
+    const coreTranslations = [{ id: "core", message: [""] }];
+    const reactTranslations = [{ id: "react", message: [""] }];
+
+    const corePlugin: ExtractorPlugin = {
+        name: "core-plugin",
+        setup(build) {
+            build.onResolve({ filter: /.*/ }, () => ({ entrypoint, path }));
+            build.onLoad({ filter: /.*/ }, (args) => ({ ...args, contents: "" }));
+            build.onExtract({ filter: /.*/ }, (args) => ({ ...args, translations: coreTranslations }));
+            build.onCollect({ filter: /.*/ }, (args) => ({ ...args }));
+        },
+    };
+
+    const reactPlugin: ExtractorPlugin = {
+        name: "react-plugin",
+        setup(build) {
+            build.onResolve({ filter: /.*/ }, () => ({ entrypoint, path }));
+            build.onLoad({ filter: /.*/ }, (args) => ({ ...args, contents: "" }));
+            build.onExtract({ filter: /.*/ }, (args) => ({ ...args, translations: reactTranslations }));
+            build.onCollect({ filter: /.*/ }, (args) => ({ ...args }));
+        },
+    };
+
+    const config = defineConfig({ entrypoints: entrypoint, plugins: () => [corePlugin, reactPlugin] });
+    const results = await run(entrypoint, { config });
+
+    assert.equal(results.length, 2);
+    assert.deepEqual(
+        results.map((r) => r.translations),
+        [coreTranslations, reactTranslations],
+    );
+});
+
 test("skips resolving additional files when walk disabled", async () => {
     const entrypoint = "entry.ts";
     const extra = "extra.ts";

@@ -106,16 +106,17 @@ export async function run(entrypoint: string, { config, logger }: { config: Reso
         return undefined;
     }
 
-    async function applyExtract({ entrypoint, path, contents }: ExtractArgs): Promise<ExtractResult | undefined> {
+    async function applyExtract({ entrypoint, path, contents }: ExtractArgs): Promise<ExtractResult[]> {
+        const results: ExtractResult[] = [];
         for (const { filter, hook } of extracts) {
             if (!filter.test(path)) continue;
             const result = await hook({ entrypoint, path, contents }, context);
             if (result) {
                 logger?.debug({ entrypoint, path }, "extracted");
+                results.push(result);
             }
-            if (result) return result;
         }
-        return undefined;
+        return results;
     }
 
     async function applyCollect({
@@ -156,9 +157,9 @@ export async function run(entrypoint: string, { config, logger }: { config: Reso
         if (!loaded) continue;
 
         const extracted = await applyExtract(loaded);
-        if (!extracted) continue;
+        if (!extracted.length) continue;
 
-        extractedResults.push(extracted);
+        extractedResults.push(...extracted);
     }
 
     for (const locale of config.locales) {
