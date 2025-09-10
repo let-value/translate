@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
-import { spawn } from "child_process";
-import { readFileSync, writeFileSync } from "fs";
+import { spawn } from "node:child_process";
+import { readFileSync, writeFileSync } from "node:fs";
 
 const runCommand = (command, args = []) => {
     return new Promise((resolve, reject) => {
@@ -46,7 +46,7 @@ const fixVersions = async () => {
     const letValuePackages = workspacePackages.filter((pkg) => pkg.name.startsWith("@let-value/"));
 
     for (const packageInfo of letValuePackages) {
-        const packagePath = packageInfo.path + "/package.json";
+        const packagePath = `${packageInfo.path}/package.json`;
 
         const originalContent = readFileSync(packagePath, "utf8");
         const packageContent = JSON.parse(originalContent);
@@ -62,7 +62,7 @@ const fixVersions = async () => {
         if (packageContent.dependencies) {
             for (const [depName, depVersion] of Object.entries(packageContent.dependencies)) {
                 const isWorkspacePackage = letValuePackages.some((pkg) => pkg.name === depName);
-                if (isWorkspacePackage && (depVersion === "*" || !depVersion.includes(rootVersion))) {
+                if (isWorkspacePackage && depVersion !== rootVersion) {
                     packageContent.dependencies[depName] = `${rootVersion}`;
                     hasChanges = true;
                 }
@@ -73,7 +73,7 @@ const fixVersions = async () => {
         if (packageContent.devDependencies) {
             for (const [depName, depVersion] of Object.entries(packageContent.devDependencies)) {
                 const isWorkspacePackage = letValuePackages.some((pkg) => pkg.name === depName);
-                if (isWorkspacePackage && (depVersion === "*" || !depVersion.includes(rootVersion))) {
+                if (isWorkspacePackage && depVersion !== rootVersion) {
                     packageContent.devDependencies[depName] = `${rootVersion}`;
                     hasChanges = true;
                 }

@@ -24,7 +24,7 @@
         "test": "node --test"
     },
     "dependencies": {
-        "@let-value/translate": "1.0.6-beta.4",
+        "@let-value/translate": "1.0.6",
         "radash": "^12.1.1"
     },
     "devDependencies": {
