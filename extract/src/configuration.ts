@@ -1,21 +1,23 @@
-import { join } from "node:path";
+import { basename, dirname, extname, join } from "node:path";
 import { globSync } from "glob";
 import type { LevelWithSilent } from "pino";
 import type { ExtractorPlugin } from "./plugin.ts";
 import { core } from "./plugins/core/core.ts";
 import { po } from "./plugins/po/po.ts";
 
-export type DestinationFn = (locale: string, entrypoint: string, path: string) => string;
+export type DestinationFn = (args: { locale: string; entrypoint: string; path: string }) => string;
 export type ExcludeFn = (path: string) => boolean;
 export type Exclude = RegExp | ExcludeFn;
 
 const defaultPlugins = { core, po };
 type DefaultPlugins = typeof defaultPlugins;
 
+export type ObsoleteStrategy = "mark" | "remove";
+
 export interface EntrypointConfig {
     entrypoint: string;
     destination?: DestinationFn;
-    obsolete?: "mark" | "remove";
+    obsolete?: ObsoleteStrategy;
     exclude?: Exclude | Exclude[];
 }
 
@@ -25,7 +27,7 @@ export interface UserConfig {
     defaultLocale?: string;
     locales?: string[];
     destination?: DestinationFn;
-    obsolete?: "mark" | "remove";
+    obsolete?: ObsoleteStrategy;
     walk?: boolean;
     logLevel?: LevelWithSilent;
     exclude?: Exclude | Exclude[];
@@ -41,13 +43,15 @@ export interface ResolvedConfig {
     defaultLocale: string;
     locales: string[];
     destination: DestinationFn;
-    obsolete: "mark" | "remove";
+    obsolete: ObsoleteStrategy;
     walk: boolean;
     logLevel: LevelWithSilent;
     exclude: Exclude[];
 }
 
-const defaultDestination: DestinationFn = (locale, _entrypoint, path) => join(locale, path);
+const defaultDestination: DestinationFn = ({ entrypoint, locale }) =>
+    join(dirname(entrypoint), "translations", `${basename(entrypoint, extname(entrypoint))}.${locale}.po`);
+
 const defaultExclude: Exclude[] = [
     /(?:^|[\\/])node_modules(?:[\\/]|$)/,
     /(?:^|[\\/])dist(?:[\\/]|$)/,

@@ -13,6 +13,6 @@ test("sets POT-Creation-Date header from context timestamp", () => {
             translations: { "": {} },
         },
     ];
-    const out = merge("en", collected, undefined, "mark", timestamp);
+    const out = merge(collected, undefined, "mark", "en", timestamp);
     assert.ok(out.includes(`POT-Creation-Date: ${formatDate(timestamp)}`));
 });

@@ -5,11 +5,10 @@ type MaybePromise<T> = T | Promise<T>;
 
 export interface ExtractContext {
     entry: string;
-    dest: string;
     config: ResolvedConfig;
     generatedAt: Date;
     locale: string;
-    logger: Logger;
+    logger?: Logger;
 }
 
 export interface ResolveArgs {
@@ -40,7 +39,9 @@ export type ExtractResult = ResolveResult & {
 
 export type ExtractHook = (args: ExtractArgs, ctx: ExtractContext) => MaybePromise<ExtractResult | undefined>;
 
-export type CollectArgs = ExtractResult;
+export type CollectArgs = ExtractResult & {
+    destination: string;
+};
 
 export type CollectResult = ExtractResult & {
     destination: string;
@@ -51,7 +52,6 @@ export type CollectHook = (args: CollectArgs, ctx: ExtractContext) => MaybePromi
 export type GenerateArgs = {
     entrypoint: string;
     path: string;
-    locale: string;
     collected: CollectResult[];
 };
 

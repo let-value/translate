@@ -1,9 +1,10 @@
 import fs from "node:fs/promises";
-import { basename, dirname, extname } from "node:path";
+import { basename, dirname, extname, join } from "node:path";
 import type { GetTextTranslationRecord, GetTextTranslations } from "gettext-parser";
 import * as gettextParser from "gettext-parser";
 import { getFormula, getNPlurals } from "plural-forms";
 import { assign } from "radash";
+import type { ObsoleteStrategy } from "../../configuration.ts";
 import type { CollectResult, ExtractContext, ExtractorPlugin, GenerateArgs } from "../../plugin.ts";
 import type { Translation } from "../core/queries/types.ts";
 
@@ -47,11 +48,11 @@ export function collect(source: Translation[], locale?: string): GetTextTranslat
 }
 
 export function merge(
-    locale: string,
     sources: CollectResult[],
     existing: string | Buffer | undefined,
-    strategy: "mark" | "remove" = "mark",
-    timestamp: Date = new Date(),
+    obsolete: ObsoleteStrategy,
+    locale: string,
+    generatedAt: Date,
 ): string {
     let headers: Record<string, string> = {};
     let translations: GetTextTranslationRecord = { "": {} };
@@ -96,11 +97,11 @@ export function merge(
         "content-type": headers["content-type"] || "text/plain; charset=UTF-8",
         "plural-forms": `nplurals=${nplurals}; plural=${getFormula(locale)};`,
         language: locale,
-        "pot-creation-date": formatDate(timestamp),
+        "pot-creation-date": formatDate(generatedAt),
         "x-generator": "@let-value/translate-extract",
     };
 
-    if (strategy === "remove") {
+    if (obsolete === "remove") {
         for (const ctx of Object.keys(translations)) {
             for (const id of Object.keys(translations[ctx])) {
                 if (translations[ctx][id].obsolete) {
@@ -123,26 +124,23 @@ export function po(): ExtractorPlugin {
     return {
         name: "po",
         setup(build) {
-            build.onCollect({ filter: /.*/ }, ({ entrypoint, translations, ...rest }, ctx) => {
+            build.onCollect({ filter: /.*/ }, ({ entrypoint, translations, destination, ...rest }, ctx) => {
                 const record = collect(translations as Translation[], ctx.locale);
-                const destination = `${basename(entrypoint, extname(entrypoint))}.po`;
+                const redirected = join(dirname(destination), `${basename(destination, extname(destination))}.po`);
 
                 return {
                     ...rest,
                     entrypoint,
-                    destination,
+                    destination: redirected,
                     translations: record,
                 };
             });
-            build.onGenerate(
-                { filter: /.*\/po$/ },
-                async ({ path, locale, collected }: GenerateArgs, ctx: ExtractContext) => {
-                    const existing = await fs.readFile(path).catch(() => undefined);
-                    const out = merge(locale, collected, existing, ctx.config.obsolete, ctx.generatedAt);
-                    await fs.mkdir(dirname(path), { recursive: true });
-                    await fs.writeFile(path, out);
-                },
-            );
+            build.onGenerate({ filter: /.*\/po$/ }, async ({ path, collected }: GenerateArgs, ctx: ExtractContext) => {
+                const existing = await fs.readFile(path).catch(() => undefined);
+                const out = merge(collected, existing, ctx.config.obsolete, ctx.locale, ctx.generatedAt);
+                await fs.mkdir(dirname(path), { recursive: true });
+                await fs.writeFile(path, out);
+            });
         },
     };
 }

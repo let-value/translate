@@ -9,8 +9,8 @@ import { run } from "../run.ts";
 test("passes collected messages to generate hooks", async () => {
     const entrypoint = "dummy.ts";
     const path = entrypoint;
-    const destination = "messages.po";
     const locale = "en";
+    const destination = join("translations", "dummy.en.po");
     const translations = [{ id: "hello", message: [""] }];
 
     let generated: GenerateArgs | undefined;
@@ -21,7 +21,7 @@ test("passes collected messages to generate hooks", async () => {
             build.onResolve({ filter: /.*/ }, () => ({ entrypoint, path }));
             build.onLoad({ filter: /.*/ }, (args) => ({ ...args, contents: "" }));
             build.onExtract({ filter: /.*/ }, (args) => ({ ...args, translations }));
-            build.onCollect({ filter: /.*/ }, (args) => ({ ...args, destination }));
+            build.onCollect({ filter: /.*/ }, (args) => ({ ...args }));
             build.onGenerate({ filter: /.*/ }, (args) => {
                 generated = args;
             });
@@ -29,21 +29,19 @@ test("passes collected messages to generate hooks", async () => {
     };
 
     const config = defineConfig({ entrypoints: entrypoint, plugins: () => [plugin] });
-    await run(entrypoint, { dest: "", locale, config });
+    await run(entrypoint, { locale, config });
 
-    const finalPath = join(`${locale}/${destination}`);
     assert.deepEqual(generated, {
         collected: [
             {
-                destination: finalPath,
+                destination,
                 entrypoint,
                 path,
                 translations,
             },
         ],
         entrypoint,
-        locale,
-        path: finalPath,
+        path: destination,
     });
 });
 
@@ -71,7 +69,7 @@ test("skips resolving additional files when walk disabled", async () => {
     };
 
     const config = defineConfig({ entrypoints: entrypoint, walk: false, plugins: () => [plugin] });
-    await run(entrypoint, { dest: "", locale: "en", config });
+    await run(entrypoint, { locale: "en", config });
 
     assert.equal(resolvedExtra, false);
 });
@@ -104,7 +102,7 @@ test("skips resolving paths matching exclude", async () => {
         exclude: (p) => p === extra,
         plugins: () => [plugin],
     });
-    await run(entrypoint, { dest: "", locale: "en", config });
+    await run(entrypoint, { locale: "en", config });
 
     assert.equal(resolvedExtra, false);
 });

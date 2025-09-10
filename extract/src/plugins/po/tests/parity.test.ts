@@ -24,10 +24,10 @@ test("matches xgettext output", async () => {
     const { translations } = parseFile(fixture);
     const record = collect(translations, "en");
     const out = merge(
-        "en",
         [{ entrypoint: fixture, path: fixture, destination: "messages.po", translations: record }],
         undefined,
         "mark",
+        "en",
         new Date(),
     );
     const ours = gettextParser.po.parse(out);
@@ -43,10 +43,10 @@ test("matches xgettext output for 4 plural forms", async () => {
     const { translations } = parseFile(fixture);
     const record = collect(translations, "sl");
     const out = merge(
-        "sl",
         [{ entrypoint: fixture, path: fixture, destination: "messages.po", translations: record }],
         undefined,
         "mark",
+        "sl",
         new Date(),
     );
     const ours = gettextParser.po.parse(out);
