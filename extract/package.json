@@ -1,6 +1,6 @@
 {
     "name": "@let-value/translate-extract",
-    "version": "1.0.7",
+    "version": "1.0.8",
     "type": "module",
     "main": "dist/index.cjs",
     "module": "dist/index.js",
@@ -20,7 +20,7 @@
         "dist"
     ],
     "dependencies": {
-        "@let-value/translate": "1.0.7",
+        "@let-value/translate": "1.0.8",
         "gettext-parser": "8.0.0",
         "oxc-resolver": "11.7.1",
         "plural-forms": "0.5.5",
