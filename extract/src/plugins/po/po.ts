@@ -3,7 +3,6 @@ import { basename, dirname, extname, join } from "node:path";
 import type { GetTextTranslationRecord, GetTextTranslations } from "gettext-parser";
 import * as gettextParser from "gettext-parser";
 import { getFormula, getNPlurals } from "plural-forms";
-import { assign } from "radash";
 import type { ObsoleteStrategy } from "../../configuration.ts";
 import type { CollectResult, ExtractContext, ExtractorPlugin, GenerateArgs } from "../../plugin.ts";
 import type { Translation } from "../core/queries/types.ts";
@@ -34,13 +33,30 @@ export function collect(source: Translation[], locale?: string): GetTextTranslat
 
         const length = plural ? (nplurals ?? message.length) : 1;
 
+        const existing = translations[ctx][id];
+        const refs = new Set<string>();
+        if (existing?.comments?.reference) {
+            existing.comments.reference.split(/\r?\n|\r/).forEach((r) => {
+                refs.add(r);
+            });
+        }
+        if (comments?.reference) {
+            comments.reference.split(/\r?\n|\r/).forEach((r) => {
+                refs.add(r);
+            });
+        }
+
         translations[ctx][id] = {
             msgctxt: context || undefined,
             msgid: id,
             msgid_plural: plural,
-            msgstr: Array.from({ length }, () => ""),
-            comments: comments,
-            obsolete: obsolete,
+            msgstr: existing?.msgstr ?? Array.from({ length }, () => ""),
+            comments: {
+                ...existing?.comments,
+                ...comments,
+                reference: refs.size ? Array.from(refs).join("\n") : undefined,
+            },
+            obsolete: existing?.obsolete ?? obsolete,
         };
     }
 
@@ -70,9 +86,35 @@ export function merge(
         }
     }
 
-    const collected = sources.reduce((acc, { translations }) => assign(acc, translations as GetTextTranslationRecord), {
-        "": {},
-    } as GetTextTranslationRecord);
+    const collected: GetTextTranslationRecord = { "": {} };
+    for (const { translations: record } of sources) {
+        for (const [ctx, msgs] of Object.entries(record as GetTextTranslationRecord)) {
+            if (!collected[ctx]) collected[ctx] = {};
+            for (const [id, entry] of Object.entries(msgs)) {
+                const existing = collected[ctx][id];
+                const refs = new Set<string>();
+                if (existing?.comments?.reference) {
+                    existing.comments.reference.split(/\r?\n|\r/).forEach((r) => {
+                        refs.add(r);
+                    });
+                }
+                if (entry.comments?.reference) {
+                    entry.comments.reference.split(/\r?\n|\r/).forEach((r) => {
+                        refs.add(r);
+                    });
+                }
+                collected[ctx][id] = {
+                    ...existing,
+                    ...entry,
+                    comments: {
+                        ...existing?.comments,
+                        ...entry.comments,
+                        reference: refs.size ? Array.from(refs).join("\n") : undefined,
+                    },
+                };
+            }
+        }
+    }
 
     for (const [ctx, msgs] of Object.entries(collected)) {
         if (!translations[ctx]) translations[ctx] = {};
