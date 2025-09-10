@@ -27,6 +27,7 @@ export async function run(
     const entryConfig = config.entrypoints.find((e) => e.entrypoint === entrypoint);
     const destination = entryConfig?.destination ?? config.destination;
     const obsolete = entryConfig?.obsolete ?? config.obsolete;
+    const exclude = entryConfig?.exclude ?? config.exclude;
 
     const queue: ResolveArgs[] = [{ entrypoint, path: entrypoint }];
     const log = logger ?? createLogger(config.logLevel);
@@ -36,7 +37,7 @@ export async function run(
     const context: ExtractContext = {
         entry: entrypoint,
         dest: dest ?? process.cwd(),
-        config: { ...config, destination, obsolete },
+        config: { ...config, destination, obsolete, exclude },
         generatedAt: new Date(),
         locale,
         logger: log,
@@ -49,6 +50,11 @@ export async function run(
     const generates: { filter: RegExp; hook: GenerateHook }[] = [];
 
     function resolvePath(args: ResolveArgs) {
+        for (const ex of context.config.exclude) {
+            if (ex instanceof RegExp ? ex.test(args.path) : ex(args.path)) {
+                return;
+            }
+        }
         if (context.config.walk) {
             queue.push(args);
         }

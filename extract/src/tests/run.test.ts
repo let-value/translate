@@ -75,3 +75,36 @@ test("skips resolving additional files when walk disabled", async () => {
 
     assert.equal(resolvedExtra, false);
 });
+
+test("skips resolving paths matching exclude", async () => {
+    const entrypoint = "entry.ts";
+    const extra = "extra.ts";
+    let resolvedExtra = false;
+
+    const plugin: ExtractorPlugin = {
+        name: "mock",
+        setup(build) {
+            build.onResolve({ filter: /.*/ }, ({ path }) => {
+                if (path === extra) {
+                    resolvedExtra = true;
+                }
+                return { entrypoint, path };
+            });
+            build.onLoad({ filter: /.*/ }, (args) => ({ ...args, contents: "" }));
+            build.onExtract({ filter: /.*/ }, (args) => {
+                build.resolvePath({ entrypoint, path: extra });
+                return { ...args, translations: [] };
+            });
+            build.onCollect({ filter: /.*/ }, (args) => ({ ...args, destination: "out.po" }));
+        },
+    };
+
+    const config = defineConfig({
+        entrypoints: entrypoint,
+        exclude: (p) => p === extra,
+        plugins: () => [plugin],
+    });
+    await run(entrypoint, { dest: "", locale: "en", config });
+
+    assert.equal(resolvedExtra, false);
+});
