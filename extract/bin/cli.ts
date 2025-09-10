@@ -1,19 +1,36 @@
 #!/usr/bin/env node
-import fs from "node:fs";
+import { cosmiconfig } from "cosmiconfig";
+import type { ResolvedConfig } from "../src/configuration.ts";
+import { run } from "../src/run.ts";
 
 async function main() {
-    const [, , entry, locale = "en", out] = process.argv;
-    if (!entry) {
-        console.error("Usage: translate-extract <entry> [locale] [out]");
+    const explorer = cosmiconfig("translate", {
+        searchPlaces: [
+            "translate.config.ts",
+            "translate.config.js",
+            "translate-extract.config.ts",
+            "translate-extract.config.js",
+        ],
+    });
+
+    const result = await explorer.search();
+    if (!result || !result.config) {
+        console.error("No configuration file found");
         process.exit(1);
     }
 
-    const po = locale;
-    if (out) {
-        fs.writeFileSync(out, po);
-    } else {
-        process.stdout.write(po);
+    const config = result.config as ResolvedConfig;
+    const tasks: Promise<unknown>[] = [];
+    for (const locale of config.locales) {
+        for (const ep of config.entrypoints) {
+            tasks.push(run(ep.entrypoint, config.plugins, locale, { config }));
+        }
     }
+
+    await Promise.all(tasks);
 }
 
-void main();
+void main().catch((err) => {
+    console.error(err);
+    process.exit(1);
+});
