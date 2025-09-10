@@ -32,7 +32,7 @@ export async function run(
     logger?.info({ entrypoint, locale }, "starting extraction");
 
     const context: ExtractContext = {
-        entry: entrypoint,
+        entrypoint,
         config: { ...config, destination, obsolete, exclude },
         generatedAt: new Date(),
         locale,
@@ -89,7 +89,7 @@ export async function run(
             if (!filter.test(path)) continue;
             const result = await hook({ entrypoint, path }, context);
             if (result) {
-                logger?.debug({ entrypoint, path }, "resolved");
+                logger?.debug(result, "resolved");
             }
             if (result) return result;
         }

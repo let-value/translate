@@ -136,7 +136,7 @@ export function po(): ExtractorPlugin {
                     translations: record,
                 };
             });
-            build.onGenerate({ filter: /.*\/po$/ }, async ({ path, collected }: GenerateArgs, ctx: ExtractContext) => {
+            build.onGenerate({ filter: /\.po$/ }, async ({ path, collected }: GenerateArgs, ctx: ExtractContext) => {
                 const existing = await fs.readFile(path).catch(() => undefined);
                 const out = merge(collected, existing, ctx.config.obsolete, ctx.locale, ctx.generatedAt);
                 await fs.mkdir(dirname(path), { recursive: true });

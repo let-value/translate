@@ -4,7 +4,7 @@ import type { Logger } from "./logger.ts";
 type MaybePromise<T> = T | Promise<T>;
 
 export interface ExtractContext {
-    entry: string;
+    entrypoint: string;
     config: ResolvedConfig;
     generatedAt: Date;
     locale: string;
