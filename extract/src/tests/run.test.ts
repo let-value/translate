@@ -9,7 +9,6 @@ import { run } from "../run.ts";
 test("passes collected messages to generate hooks", async () => {
     const entrypoint = "dummy.ts";
     const path = entrypoint;
-    const locale = "en";
     const destination = join("translations", "dummy.en.po");
     const translations = [{ id: "hello", message: [""] }];
 
@@ -29,7 +28,7 @@ test("passes collected messages to generate hooks", async () => {
     };
 
     const config = defineConfig({ entrypoints: entrypoint, plugins: () => [plugin] });
-    await run(entrypoint, { locale, config });
+    await run(entrypoint, { config });
 
     assert.deepEqual(generated, {
         collected: [
@@ -69,7 +68,7 @@ test("skips resolving additional files when walk disabled", async () => {
     };
 
     const config = defineConfig({ entrypoints: entrypoint, walk: false, plugins: () => [plugin] });
-    await run(entrypoint, { locale: "en", config });
+    await run(entrypoint, { config });
 
     assert.equal(resolvedExtra, false);
 });
@@ -102,7 +101,43 @@ test("skips resolving paths matching exclude", async () => {
         exclude: (p) => p === extra,
         plugins: () => [plugin],
     });
-    await run(entrypoint, { locale: "en", config });
+    await run(entrypoint, { config });
 
     assert.equal(resolvedExtra, false);
+});
+
+test("generates outputs for all configured locales with single extraction", async () => {
+    const entrypoint = "dummy.ts";
+    const path = entrypoint;
+    const translations = [{ id: "hello", message: [""] }];
+
+    let extractCount = 0;
+    const generatedLocales: string[] = [];
+
+    const plugin: ExtractorPlugin = {
+        name: "mock",
+        setup(build) {
+            build.onResolve({ filter: /.*/ }, () => ({ entrypoint, path }));
+            build.onLoad({ filter: /.*/ }, (args) => ({ ...args, contents: "" }));
+            build.onExtract({ filter: /.*/ }, (args) => {
+                extractCount++;
+                return { ...args, translations };
+            });
+            build.onCollect({ filter: /.*/ }, (args) => ({ ...args }));
+            build.onGenerate({ filter: /.*/ }, (_args, ctx) => {
+                generatedLocales.push(ctx.locale);
+            });
+        },
+    };
+
+    const config = defineConfig({
+        entrypoints: entrypoint,
+        locales: ["en", "es"],
+        defaultLocale: "en",
+        plugins: () => [plugin],
+    });
+    await run(entrypoint, { config });
+
+    assert.equal(extractCount, 1);
+    assert.deepEqual(generatedLocales.sort(), ["en", "es"]);
 });
