@@ -4,9 +4,13 @@ export function buildTemplate(node: Parser.SyntaxNode): { text: string; error?: 
     const children = node.namedChildren.slice(1, -1);
     const strings: string[] = [""];
     const values: string[] = [];
-    for (const child of children) {
+    for (let i = 0; i < children.length; i++) {
+        const child = children[i];
         if (child.type === "jsx_text") {
-            strings[strings.length - 1] += child.text;
+            let text = child.text;
+            if (i === 0) text = text.replace(/^\s+/, "");
+            if (i === children.length - 1) text = text.replace(/\s+$/, "");
+            if (text) strings[strings.length - 1] += text;
         } else if (child.type === "jsx_expression") {
             const expr = child.namedChildren[0];
             if (!expr || expr.type !== "identifier") {

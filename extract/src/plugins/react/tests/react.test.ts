@@ -19,10 +19,19 @@ suite("react plugin", () => {
             message,
         }));
         assert.deepEqual(simple, [
+            { id: "Cookie Policy", message: ["Cookie Policy"], plural: undefined, context: undefined },
+            { id: "Terms of Service", message: ["Terms of Service"], plural: undefined, context: undefined },
+            { id: "Privacy Policy", message: ["Privacy Policy"], plural: undefined, context: undefined },
             { id: "hello", message: ["hello"], plural: undefined, context: undefined },
             { id: "hello ${name}", message: ["hello ${name}"], plural: undefined, context: undefined },
             { id: "run", message: ["run"], plural: undefined, context: "verb" },
             { id: "hello", message: ["hello"], plural: undefined, context: "ctx" },
+            {
+                id: "${termsOfService} • ${privacyPolicy} • ${cookiePolicy}",
+                message: ["${termsOfService} • ${privacyPolicy} • ${cookiePolicy}"],
+                plural: undefined,
+                context: undefined,
+            },
             { id: "one", plural: "many", message: ["one", "many"], context: undefined },
             {
                 id: "One ${name}",
