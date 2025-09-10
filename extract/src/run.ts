@@ -8,7 +8,6 @@ import type {
     ExtractBuild,
     ExtractContext,
     ExtractHook,
-    ExtractorPlugin,
     ExtractResult,
     GenerateHook,
     LoadArgs,
@@ -21,19 +20,17 @@ import type {
 
 export async function run(
     entrypoint: string,
-    plugins: ExtractorPlugin[],
-    locale: string,
-    opts: { dest?: string; config: ResolvedConfig },
+    { dest, locale, config }: { dest?: string; locale: string; config: ResolvedConfig },
 ) {
-    const entryConfig = opts.config.entrypoints.find((e) => e.entrypoint === entrypoint);
-    const destination = entryConfig?.destination ?? opts.config.destination;
-    const obsolete = entryConfig?.obsolete ?? opts.config.obsolete;
+    const entryConfig = config.entrypoints.find((e) => e.entrypoint === entrypoint);
+    const destination = entryConfig?.destination ?? config.destination;
+    const obsolete = entryConfig?.obsolete ?? config.obsolete;
 
     const queue: ResolveArgs[] = [{ entrypoint, path: entrypoint }];
     const context: ExtractContext = {
         entry: entrypoint,
-        dest: opts.dest ?? process.cwd(),
-        config: { ...opts.config, destination, obsolete },
+        dest: dest ?? process.cwd(),
+        config: { ...config, destination, obsolete },
         generatedAt: new Date(),
         locale,
     };
@@ -70,7 +67,7 @@ export async function run(
         context,
     };
 
-    for (const plugin of plugins) {
+    for (const plugin of config.plugins) {
         plugin.setup(build);
     }
 
