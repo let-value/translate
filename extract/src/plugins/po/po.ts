@@ -162,9 +162,7 @@ export function merge(
         charset: "utf-8",
         headers,
         translations,
-        ...(obsolete === "mark" && Object.keys(obsoleteTranslations).length
-            ? { obsolete: obsoleteTranslations }
-            : {}),
+        ...(obsolete === "mark" && Object.keys(obsoleteTranslations).length ? { obsolete: obsoleteTranslations } : {}),
     };
 
     return gettextParser.po.compile(poObj).toString();
