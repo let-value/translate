@@ -75,3 +75,13 @@ test("configures walk option", () => {
     const cfg2 = defineConfig({ entrypoints: "src/index.ts", walk: false });
     assert.equal(cfg2.walk, false);
 });
+
+test("defaults log level to info", () => {
+    const cfg = defineConfig({ entrypoints: "src/index.ts" });
+    assert.equal(cfg.logLevel, "info");
+});
+
+test("resolves provided log level", () => {
+    const cfg = defineConfig({ entrypoints: "src/index.ts", logLevel: "debug" });
+    assert.equal(cfg.logLevel, "debug");
+});

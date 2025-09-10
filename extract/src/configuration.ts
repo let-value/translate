@@ -1,5 +1,6 @@
 import { join } from "node:path";
 import { globSync } from "glob";
+import type { LevelWithSilent } from "pino";
 import type { ExtractorPlugin } from "./plugin.ts";
 import { core } from "./plugins/core/core.ts";
 import { po } from "./plugins/po/po.ts";
@@ -23,6 +24,7 @@ export interface UserConfig {
     destination?: DestinationFn;
     obsolete?: "mark" | "remove";
     walk?: boolean;
+    logLevel?: LevelWithSilent;
 }
 
 export interface ResolvedEntrypoint extends EntrypointConfig {}
@@ -35,6 +37,7 @@ export interface ResolvedConfig {
     destination: DestinationFn;
     obsolete: "mark" | "remove";
     walk: boolean;
+    logLevel: LevelWithSilent;
 }
 
 const defaultDestination: DestinationFn = (locale, _entrypoint, path) => join(locale, path);
@@ -76,5 +79,6 @@ export function defineConfig(config: UserConfig): ResolvedConfig {
     const destination = config.destination ?? defaultDestination;
     const obsolete = config.obsolete ?? "mark";
     const walk = config.walk ?? true;
-    return { plugins, entrypoints, defaultLocale, locales, destination, obsolete, walk };
+    const logLevel = config.logLevel ?? "info";
+    return { plugins, entrypoints, defaultLocale, locales, destination, obsolete, walk, logLevel };
 }
