@@ -45,11 +45,10 @@ async function main() {
     const config = result.config as ResolvedConfig;
     config.logLevel = (logLevel as LevelWithSilent | undefined) ?? config.logLevel;
     logger.level = config.logLevel;
+
     const tasks: Promise<unknown>[] = [];
-    for (const locale of config.locales) {
-        for (const ep of config.entrypoints) {
-            tasks.push(run(ep.entrypoint, { locale, config, logger }));
-        }
+    for (const ep of config.entrypoints) {
+        tasks.push(run(ep.entrypoint, { config, logger }));
     }
 
     await Promise.all(tasks);

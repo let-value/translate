@@ -18,10 +18,7 @@ import type {
     ResolveResult,
 } from "./plugin.ts";
 
-export async function run(
-    entrypoint: string,
-    { locale, config, logger }: { locale: string; config: ResolvedConfig; logger?: Logger },
-) {
+export async function run(entrypoint: string, { config, logger }: { config: ResolvedConfig; logger?: Logger }) {
     const entryConfig = config.entrypoints.find((e) => e.entrypoint === entrypoint);
     const destination = entryConfig?.destination ?? config.destination;
     const obsolete = entryConfig?.obsolete ?? config.obsolete;
@@ -29,13 +26,15 @@ export async function run(
 
     const queue: ResolveArgs[] = [{ entrypoint, path: entrypoint }];
 
-    logger?.info({ entrypoint, locale }, "starting extraction");
+    const defaultLocale = config.defaultLocale;
+
+    logger?.info({ entrypoint, locale: defaultLocale }, "starting extraction");
 
     const context: ExtractContext = {
         entrypoint,
         config: { ...config, destination, obsolete, exclude },
         generatedAt: new Date(),
-        locale,
+        locale: defaultLocale,
         logger,
     };
 
@@ -82,7 +81,6 @@ export async function run(
     }
 
     const visited = new Set<string>();
-    const results: ExtractResult[] = [];
 
     async function applyResolve({ entrypoint, path }: ResolveArgs): Promise<ResolveResult | undefined> {
         for (const { filter, hook } of resolves) {
@@ -145,7 +143,7 @@ export async function run(
         return undefined;
     }
 
-    const result: Record<string, CollectResult[]> = {};
+    const extractedResults: ExtractResult[] = [];
 
     while (queue.length) {
         // biome-ignore lint/style/noNonNullAssertion: queue is checked above
@@ -160,25 +158,33 @@ export async function run(
         const extracted = await applyExtract(loaded);
         if (!extracted) continue;
 
-        const destination = context.config.destination({ entrypoint, locale, path: resolved.path });
-        const collected = await applyCollect({ ...extracted, destination });
-        if (!collected) continue;
-
-        if (!result[collected.destination]) {
-            result[collected.destination] = [];
-        }
-
-        result[collected.destination].push(collected);
+        extractedResults.push(extracted);
     }
 
-    for (const [path, collected] of Object.entries(result)) {
-        for (const { filter, hook } of generates) {
-            if (!filter.test(path)) continue;
-            logger?.info({ path }, "generating output");
-            await hook({ entrypoint, path, collected }, context);
+    for (const locale of config.locales) {
+        context.locale = locale;
+        const collectedByDest: Record<string, CollectResult[]> = {};
+
+        for (const extracted of extractedResults) {
+            const destination = context.config.destination({ entrypoint, locale, path: extracted.path });
+            const collected = await applyCollect({ ...extracted, destination });
+            if (!collected) continue;
+
+            if (!collectedByDest[collected.destination]) {
+                collectedByDest[collected.destination] = [];
+            }
+            collectedByDest[collected.destination].push(collected);
+        }
+
+        for (const [path, collected] of Object.entries(collectedByDest)) {
+            for (const { filter, hook } of generates) {
+                if (!filter.test(path)) continue;
+                logger?.info({ path, locale }, "generating output");
+                await hook({ entrypoint, path, collected }, context);
+            }
         }
     }
 
-    logger?.info({ entrypoint, locale }, "extraction completed");
-    return results;
+    logger?.info({ entrypoint, locale: defaultLocale }, "extraction completed");
+    return extractedResults;
 }
