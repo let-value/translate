@@ -3,13 +3,23 @@ import { cosmiconfig } from "cosmiconfig";
 import type { ResolvedConfig } from "../src/configuration.ts";
 import { run } from "../src/run.ts";
 
+const moduleName = "translate";
+
 async function main() {
-    const explorer = cosmiconfig("translate", {
+    const explorer = cosmiconfig(moduleName, {
         searchPlaces: [
-            "translate.config.ts",
-            "translate.config.js",
-            "translate-extract.config.ts",
-            "translate-extract.config.js",
+            `.${moduleName}rc.js`,
+            `.${moduleName}rc.ts`,
+            `.${moduleName}rc.mjs`,
+            `.${moduleName}rc.cjs`,
+            `.config/${moduleName}rc.js`,
+            `.config/${moduleName}rc.ts`,
+            `.config/${moduleName}rc.mjs`,
+            `.config/${moduleName}rc.cjs`,
+            `${moduleName}.config.js`,
+            `${moduleName}.config.ts`,
+            `${moduleName}.config.mjs`,
+            `${moduleName}.config.cjs`,
         ],
     });
 
@@ -23,7 +33,7 @@ async function main() {
     const tasks: Promise<unknown>[] = [];
     for (const locale of config.locales) {
         for (const ep of config.entrypoints) {
-            tasks.push(run(ep.entrypoint, config.plugins, locale, { config }));
+            tasks.push(run(ep.entrypoint, { locale, config }));
         }
     }
 

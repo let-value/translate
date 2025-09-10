@@ -28,8 +28,8 @@ test("passes collected messages to generate hooks", async () => {
         },
     };
 
-    const config = defineConfig({ entrypoints: entrypoint });
-    await run(entrypoint, [plugin], "en", { dest: "", config });
+    const config = defineConfig({ entrypoints: entrypoint, plugins: () => [plugin] });
+    await run(entrypoint, { dest: "", locale, config });
 
     const finalPath = join(`${locale}/${destination}`);
     assert.deepEqual(generated, {
@@ -70,8 +70,8 @@ test("skips resolving additional files when walk disabled", async () => {
         },
     };
 
-    const config = defineConfig({ entrypoints: entrypoint, walk: false });
-    await run(entrypoint, [plugin], "en", { dest: "", config });
+    const config = defineConfig({ entrypoints: entrypoint, walk: false, plugins: () => [plugin] });
+    await run(entrypoint, { dest: "", locale: "en", config });
 
     assert.equal(resolvedExtra, false);
 });
