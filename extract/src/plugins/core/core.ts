@@ -10,6 +10,7 @@ export function core(): ExtractorPlugin {
     return {
         name: "core",
         setup(build) {
+            build.context.logger.debug("core plugin initialized");
             build.onResolve({ filter: /.*/ }, ({ entrypoint, path }) => {
                 return {
                     entrypoint,

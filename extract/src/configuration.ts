@@ -1,5 +1,6 @@
 import { join } from "node:path";
 import { globSync } from "glob";
+import type { LevelWithSilent } from "pino";
 import type { ExtractorPlugin } from "./plugin.ts";
 import { core } from "./plugins/core/core.ts";
 import { po } from "./plugins/po/po.ts";
@@ -26,6 +27,7 @@ export interface UserConfig {
     destination?: DestinationFn;
     obsolete?: "mark" | "remove";
     walk?: boolean;
+    logLevel?: LevelWithSilent;
     exclude?: Exclude | Exclude[];
 }
 
@@ -41,6 +43,7 @@ export interface ResolvedConfig {
     destination: DestinationFn;
     obsolete: "mark" | "remove";
     walk: boolean;
+    logLevel: LevelWithSilent;
     exclude: Exclude[];
 }
 
@@ -95,6 +98,7 @@ export function defineConfig(config: UserConfig): ResolvedConfig {
     const destination = config.destination ?? defaultDestination;
     const obsolete = config.obsolete ?? "mark";
     const walk = config.walk ?? true;
+    const logLevel = config.logLevel ?? "info";
     const exclude = [...defaultExclude, ...normalizeExclude(config.exclude)];
-    return { plugins, entrypoints, defaultLocale, locales, destination, obsolete, walk, exclude };
+    return { plugins, entrypoints, defaultLocale, locales, destination, obsolete, walk, logLevel, exclude };
 }

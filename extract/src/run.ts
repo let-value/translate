@@ -1,5 +1,7 @@
 import { join } from "node:path";
 import type { ResolvedConfig } from "./configuration.ts";
+import type { Logger } from "./logger.ts";
+import { createLogger } from "./logger.ts";
 import type {
     CollectArgs,
     CollectHook,
@@ -20,7 +22,7 @@ import type {
 
 export async function run(
     entrypoint: string,
-    { dest, locale, config }: { dest?: string; locale: string; config: ResolvedConfig },
+    { dest, locale, config, logger }: { dest?: string; locale: string; config: ResolvedConfig; logger?: Logger },
 ) {
     const entryConfig = config.entrypoints.find((e) => e.entrypoint === entrypoint);
     const destination = entryConfig?.destination ?? config.destination;
@@ -28,12 +30,17 @@ export async function run(
     const exclude = entryConfig?.exclude ?? config.exclude;
 
     const queue: ResolveArgs[] = [{ entrypoint, path: entrypoint }];
+    const log = logger ?? createLogger(config.logLevel);
+
+    log.info({ entrypoint, locale }, "starting extraction");
+
     const context: ExtractContext = {
         entry: entrypoint,
         dest: dest ?? process.cwd(),
         config: { ...config, destination, obsolete, exclude },
         generatedAt: new Date(),
         locale,
+        logger: log,
     };
 
     const resolves: { filter: RegExp; hook: ResolveHook }[] = [];
@@ -74,6 +81,7 @@ export async function run(
     };
 
     for (const plugin of config.plugins) {
+        log.debug({ plugin: plugin.name }, "setting up plugin");
         plugin.setup(build);
     }
 
@@ -84,6 +92,9 @@ export async function run(
         for (const { filter, hook } of resolves) {
             if (!filter.test(path)) continue;
             const result = await hook({ entrypoint, path }, context);
+            if (result) {
+                log.debug({ path: result.path }, "resolved");
+            }
             if (result) return result;
         }
         return undefined;
@@ -93,6 +104,9 @@ export async function run(
         for (const { filter, hook } of loads) {
             if (!filter.test(path)) continue;
             const result = await hook({ entrypoint, path }, context);
+            if (result) {
+                log.debug({ path: result.path }, "loaded");
+            }
             if (result) return result;
         }
         return undefined;
@@ -102,6 +116,9 @@ export async function run(
         for (const { filter, hook } of extracts) {
             if (!filter.test(path)) continue;
             const result = await hook({ entrypoint, path, contents }, context);
+            if (result) {
+                log.debug({ path: result.path }, "extracted");
+            }
             if (result) return result;
         }
         return undefined;
@@ -111,6 +128,9 @@ export async function run(
         for (const { filter, hook } of collects) {
             if (!filter.test(path)) continue;
             const result = await hook({ entrypoint, path, translations }, context);
+            if (result) {
+                log.debug({ destination: result.destination }, "collected");
+            }
             if (result) return result;
         }
         return undefined;
@@ -147,9 +167,11 @@ export async function run(
         const fullPath = join(context.dest, path);
         for (const { filter, hook } of generates) {
             if (!filter.test(fullPath)) continue;
+            log.info({ path: fullPath }, "generating output");
             await hook({ entrypoint, locale, path: fullPath, collected }, context);
         }
     }
 
+    log.info({ entrypoint, locale }, "extraction completed");
     return results;
 }

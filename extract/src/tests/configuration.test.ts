@@ -95,3 +95,13 @@ test("supports exclude overrides", () => {
     assert(!epExclude.some((e) => (e instanceof RegExp ? e.test("global") : e("global"))));
     assert(epExclude.some((e) => (e instanceof RegExp ? e.test("node_modules/foo") : e("node_modules/foo"))));
 });
+
+test("defaults log level to info", () => {
+    const cfg = defineConfig({ entrypoints: "src/index.ts" });
+    assert.equal(cfg.logLevel, "info");
+});
+
+test("resolves provided log level", () => {
+    const cfg = defineConfig({ entrypoints: "src/index.ts", logLevel: "debug" });
+    assert.equal(cfg.logLevel, "debug");
+});

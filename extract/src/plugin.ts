@@ -1,4 +1,5 @@
 import type { ResolvedConfig } from "./configuration.ts";
+import type { Logger } from "./logger.ts";
 
 type MaybePromise<T> = T | Promise<T>;
 
@@ -8,6 +9,7 @@ export interface ExtractContext {
     config: ResolvedConfig;
     generatedAt: Date;
     locale: string;
+    logger: Logger;
 }
 
 export interface ResolveArgs {

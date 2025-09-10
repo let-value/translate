@@ -1,11 +1,24 @@
 #!/usr/bin/env node
+import { parseArgs } from "node:util";
 import { cosmiconfig } from "cosmiconfig";
 import type { ResolvedConfig } from "../src/configuration.ts";
+import { createLogger, type LevelWithSilent } from "../src/logger.ts";
 import { run } from "../src/run.ts";
 
 const moduleName = "translate";
 
 async function main() {
+    const {
+        values: { logLevel },
+    } = parseArgs({
+        args: process.argv.slice(2),
+        options: {
+            logLevel: { type: "string", short: "l" },
+        },
+    });
+
+    const logger = createLogger(logLevel as LevelWithSilent | undefined);
+
     const explorer = cosmiconfig(moduleName, {
         searchPlaces: [
             `.${moduleName}rc.js`,
@@ -25,15 +38,17 @@ async function main() {
 
     const result = await explorer.search();
     if (!result || !result.config) {
-        console.error("No configuration file found");
+        logger.error("No configuration file found");
         process.exit(1);
     }
 
     const config = result.config as ResolvedConfig;
+    config.logLevel = (logLevel as LevelWithSilent | undefined) ?? config.logLevel;
+    logger.level = config.logLevel;
     const tasks: Promise<unknown>[] = [];
     for (const locale of config.locales) {
         for (const ep of config.entrypoints) {
-            tasks.push(run(ep.entrypoint, { locale, config }));
+            tasks.push(run(ep.entrypoint, { locale, config, logger }));
         }
     }
 
@@ -41,6 +56,7 @@ async function main() {
 }
 
 void main().catch((err) => {
-    console.error(err);
+    const logger = createLogger();
+    logger.error(err);
     process.exit(1);
 });
