@@ -14,7 +14,7 @@ import {
     type PluralInput,
     type PluralMessage,
 } from "./messages.ts";
-import { pluralFunc, type StrictStaticString, substitute } from "./utils.ts";
+import { normalizeTranslations, pluralFunc, type StrictStaticString, substitute } from "./utils.ts";
 
 type TranslationModule = GetTextTranslations | { default: GetTextTranslations };
 type TranslationLoader = () => Promise<TranslationModule>;
@@ -37,12 +37,12 @@ export class LocaleTranslator {
 
     constructor(locale: Locale, translations?: GetTextTranslations) {
         this.locale = locale;
-        this.translations = translations;
+        this.translations = translations ? normalizeTranslations(translations) : undefined;
     }
 
     private translateMessage({ msgid, msgstr, values }: Message, msgctxt = ""): string {
         const translated = this.translations?.translations?.[msgctxt]?.[msgid];
-        const result = translated?.msgstr ? translated.msgstr[0] : msgstr;
+        const result = translated?.msgstr?.[0] || msgstr;
         return values ? substitute(result, values) : result;
     }
 
@@ -51,7 +51,7 @@ export class LocaleTranslator {
         const index = pluralFunc(this.locale)(n);
         const form = forms[index] ?? forms[forms.length - 1];
         const translated = entry?.msgstr?.[index];
-        const result = translated?.length ? translated : form.msgstr;
+        const result = translated || form.msgstr;
         const usedVals = form.values?.length ? form.values : forms[0].values;
         return usedVals?.length ? substitute(result, usedVals) : result;
     }
@@ -157,6 +157,7 @@ export class Translator<T extends TranslationRecord = TranslationRecord> {
     constructor(translations: T, parent?: Translator) {
         this.parent = parent;
         for (const [locale, value] of Object.entries(translations) as [Locale, TranslationEntry][]) {
+            if (!value) continue;
             if (typeof value === "function") {
                 this.loaders[locale] = value;
             } else if ("then" in value) {
