@@ -48,12 +48,18 @@ export class LocaleTranslator {
 
     private translatePlural({ forms, n }: PluralMessage, msgctxt = ""): string {
         const entry = this.translations?.translations?.[msgctxt]?.[forms[0].msgid];
-        const index = pluralFunc(this.locale)(n);
-        const form = forms[index] ?? forms[forms.length - 1];
+        const pf = pluralFunc(this.locale);
+        const index = pf(n);
+        const singularIndex = pf(1);
+        const baseForm = forms[index] ?? forms[forms.length - 1];
         const translated = entry?.msgstr?.[index];
-        const result = translated?.length ? translated : form.msgstr;
-        const usedVals = form.values?.length ? form.values : forms[0].values;
-        return usedVals?.length ? substitute(result, usedVals) : result;
+        if (translated?.length) {
+            const used = baseForm.values?.length ? baseForm.values : forms[0].values;
+            return used?.length ? substitute(translated, used) : translated;
+        }
+        const fallbackForm = index === singularIndex ? forms[0] : baseForm;
+        const usedVals = fallbackForm.values?.length ? fallbackForm.values : forms[0].values;
+        return usedVals?.length ? substitute(fallbackForm.msgstr, usedVals) : fallbackForm.msgstr;
     }
 
     message = <T extends string>(...args: MessageInput<T>): string => {

@@ -7,7 +7,8 @@
         "loader",
         "translate",
         "extract",
-        "react"
+        "react",
+        "e2e"
     ],
     "engines": {
         "node": ">=22"
