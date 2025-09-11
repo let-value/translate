@@ -1,6 +1,6 @@
 import fs from "node:fs/promises";
 import { message } from "@let-value/translate";
-import { LocaleProvider, TranslationsProvider, useTranslations } from "@let-value/translate-react";
+import { LocaleProvider, Message, Plural, TranslationsProvider, useTranslations } from "@let-value/translate-react";
 import * as gettextParser from "gettext-parser";
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
@@ -24,14 +24,16 @@ export async function runApp(locale: string, count: number) {
         const t = useTranslations();
         const translated = t.message(deferred);
         const def = t.message(descriptor);
-        const greeting = t.message`こんにちは、${name}！`;
-        const items = t.ngettext(message`りんご`, message`${count} りんご`, count);
         return (
             <div>
                 <div id="translated">{translated}</div>
                 <div id="def">{def}</div>
-                <div id="greeting">{greeting}</div>
-                <div id="items">{items}</div>
+                <div id="greeting">
+                    <Message>こんにちは、{name}！</Message>
+                </div>
+                <div id="items">
+                    <Plural number={count} forms={["りんご", <>{count} りんご</>]} />
+                </div>
             </div>
         );
     }

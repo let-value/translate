@@ -3,7 +3,7 @@ import fs from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
-import { defineConfig, run } from "@let-value/translate-extract";
+import { defineConfig, run, react as reactPlugin } from "@let-value/translate-extract";
 import * as gettextParser from "gettext-parser";
 import ts from "typescript";
 import { pathToFileURL } from "node:url";
@@ -18,6 +18,7 @@ async function extract() {
         entrypoints: appPath,
         locales: ["en", "ru", "sl", "sk"],
         defaultLocale: "ja",
+        plugins: (p) => [p.core(), p.po(), reactPlugin()],
     });
     await run(appPath, { config });
 }
