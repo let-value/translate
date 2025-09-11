@@ -1,11 +1,11 @@
 {
     "name": "@let-value/translate-e2e",
-    "version": "1.0.9-beta.3",
+    "version": "1.0.9",
     "private": true,
     "type": "module",
     "dependencies": {
-        "@let-value/translate": "1.0.9-beta.3",
-        "@let-value/translate-extract": "1.0.9-beta.3",
+        "@let-value/translate": "1.0.9",
+        "@let-value/translate-extract": "1.0.9",
         "gettext-parser": "8.0.0"
     },
     "scripts": {
