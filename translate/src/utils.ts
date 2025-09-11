@@ -85,6 +85,9 @@ const defaultPluralFunc = (n: number) => (n !== 1 ? 1 : 0);
 export const pluralFunc = memo(function pluralFunc(locale: Locale) {
     try {
         const length = Number(getNPlurals(locale));
+        if (length === 1) {
+            return () => 0;
+        }
         const pluralFunc = getPluralFunc(locale);
         const forms = Array.from({ length }, (_, i) => String(i));
         return (n: number) => {
