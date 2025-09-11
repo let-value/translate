@@ -14,6 +14,7 @@ const translations = {
     en: load("en"),
     ru: load("ru"),
     ja: load("ja"),
+    sk: load("sk"),
 };
 
 test("plural handles English plurals", () => {
@@ -33,6 +34,15 @@ test("plural handles Japanese singular form for any number", () => {
     const t = new Translator(translations).getLocale("ja");
     for (const n of [0, 1, 2, 5]) {
         assert.equal(t.plural(message`${n} apple`, message`${n} apples`, n), "りんご");
+    }
+});
+
+test("plural handles Slovak plurals for any number", () => {
+    const t = new Translator(translations).getLocale("sk");
+    for (let n = 0; n < 200; n++) {
+        const expected =
+            n === 1 ? `${n} jablko` : n >= 2 && n <= 4 ? `${n} jablká` : `${n} jabĺk`;
+        assert.equal(t.plural(message`${n} apple`, message`${n} apples`, n), expected);
     }
 });
 

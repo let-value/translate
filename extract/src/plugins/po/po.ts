@@ -46,11 +46,14 @@ export function collect(source: Translation[], locale?: string): GetTextTranslat
             });
         }
 
+        const msgstr = existing?.msgstr ? existing.msgstr.slice(0, length) : Array.from({ length }, () => "");
+        while (msgstr.length < length) msgstr.push("");
+
         translations[ctx][id] = {
             msgctxt: context || undefined,
             msgid: id,
             msgid_plural: plural,
-            msgstr: existing?.msgstr ?? Array.from({ length }, () => ""),
+            msgstr,
             comments: {
                 ...existing?.comments,
                 ...comments,

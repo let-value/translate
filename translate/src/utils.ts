@@ -92,9 +92,9 @@ export const pluralFunc = memo(function pluralFunc(locale: Locale) {
         const forms = Array.from({ length }, (_, i) => String(i));
         return (n: number) => {
             const idx = Number(pluralFunc(n, forms));
-            if (idx < 0) return 0;
+            if (!Number.isFinite(idx) || idx < 0) return 0;
             if (idx >= length) return length - 1;
-            return idx;
+            return Math.floor(idx);
         };
     } catch {
         return defaultPluralFunc;
