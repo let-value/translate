@@ -16,7 +16,7 @@ async function extract() {
     await fs.rm(translationsDir, { recursive: true, force: true });
     const config = defineConfig({
         entrypoints: appPath,
-        locales: ["en", "ru", "sl"],
+        locales: ["en", "ru", "sl", "sk"],
         defaultLocale: "ja",
     });
     await run(appPath, { config });
@@ -120,7 +120,7 @@ test("node app works end to end", async (t) => {
         translated: "Zamujeno sporočilo",
         def: "Privzeto sporočilo",
         greeting: "Živjo, ${name}!",
-        forms: ["jabolko", "${count} jabolka", "${count} jabolki", "jabolk"],
+        forms: ["jabolk", "jabolko", "${count} jabolka", "${count} jabolki"],
     });
     result = await runApp("sl", 1);
     assert.equal(result.translated, "Zamujeno sporočilo");
@@ -133,6 +133,33 @@ test("node app works end to end", async (t) => {
     assert.equal(result.items, "3 jabolki");
     result = await runApp("sl", 5);
     assert.equal(result.items, "jabolk");
+
+    // Slovak before translation
+    result = await runApp("sk", 1);
+    assert.equal(result.translated, "延期されたメッセージ");
+    assert.equal(result.def, "デフォルトメッセージ");
+    assert.equal(result.greeting, "こんにちは、World！");
+    assert.equal(result.items, "りんご");
+    result = await runApp("sk", 2);
+    assert.equal(result.items, "2 りんご");
+    result = await runApp("sk", 5);
+    assert.equal(result.items, "5 りんご");
+
+    await update("sk", {
+        translated: "Odložená správa",
+        def: "Predvolená správa",
+        greeting: "Ahoj, ${name}!",
+        forms: ["jablko", "${count} jablká", "${count} jabĺk"],
+    });
+    result = await runApp("sk", 1);
+    assert.equal(result.translated, "Odložená správa");
+    assert.equal(result.def, "Predvolená správa");
+    assert.equal(result.greeting, "Ahoj, World!");
+    assert.equal(result.items, "jablko");
+    result = await runApp("sk", 2);
+    assert.equal(result.items, "2 jablká");
+    result = await runApp("sk", 5);
+    assert.equal(result.items, "5 jabĺk");
 
     // Missing translations fallback
     result = await runApp("fr", 2);
