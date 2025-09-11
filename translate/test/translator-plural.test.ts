@@ -13,6 +13,7 @@ function load(locale: string) {
 const translations = {
     en: load("en"),
     ru: load("ru"),
+    ja: load("ja"),
 };
 
 test("plural handles English plurals", () => {
@@ -26,6 +27,13 @@ test("plural handles Russian plurals", async () => {
     assert.equal(t.plural(message`${1} apple`, message`${1} apples`, 1), "1 яблоко");
     assert.equal(t.plural(message`${2} apple`, message`${2} apples`, 2), "2 яблока");
     assert.equal(t.plural(message`${5} apple`, message`${5} apples`, 5), "5 яблок");
+});
+
+test("plural handles Japanese singular form for any number", () => {
+    const t = new Translator(translations).getLocale("ja");
+    for (const n of [0, 1, 2, 5]) {
+        assert.equal(t.plural(message`${n} apple`, message`${n} apples`, n), "りんご");
+    }
 });
 
 test("plural supports plural helper", () => {
