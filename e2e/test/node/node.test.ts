@@ -1,14 +1,14 @@
 import assert from "node:assert/strict";
 import fs from "node:fs/promises";
-import { join, dirname } from "node:path";
-import { fileURLToPath } from "node:url";
+import { dirname, join } from "node:path";
 import { test } from "node:test";
-import * as gettextParser from "gettext-parser";
+import { fileURLToPath } from "node:url";
 import { defineConfig, run } from "@let-value/translate-extract";
+import * as gettextParser from "gettext-parser";
 
-import { runApp } from "./app/app.ts";
+import { runApp } from "./app.ts";
 
-const appPath = fileURLToPath(new URL("./app/app.ts", import.meta.url));
+const appPath = fileURLToPath(new URL("./app.ts", import.meta.url));
 const appDir = dirname(appPath);
 const translationsDir = join(appDir, "translations");
 
@@ -22,24 +22,18 @@ async function extract() {
     await run(appPath, { config });
 }
 
-async function update(locale: string, greeting: string, forms: string[]) {
+async function update(
+    locale: string,
+    { translated, def, greeting, forms }: { translated: string; def: string; greeting: string; forms: string[] },
+) {
     const file = join(translationsDir, `app.${locale}.po`);
     const po = gettextParser.po.parse(await fs.readFile(file));
     const msgs = po.translations[""];
-    const helloKey = "こんにちは、${name}！";
-    const hello = msgs[helloKey]!;
-    delete msgs[helloKey];
-    hello.msgid = "こんにちは、${0}！";
-    hello.msgstr[0] = greeting;
-    msgs["こんにちは、${0}！"] = hello;
 
-    const pluralKey = "りんご";
-    const entry = msgs[pluralKey]!;
-    delete msgs[pluralKey];
-    entry.msgid = "りんご";
-    entry.msgid_plural = "${0} りんご";
-    entry.msgstr = forms;
-    msgs["りんご"] = entry;
+    msgs["延期されたメッセージ"].msgstr = [translated];
+    msgs["messageId"].msgstr = [def];
+    msgs["こんにちは、${name}！"].msgstr = [greeting];
+    msgs["りんご"].msgstr = forms;
 
     await fs.writeFile(file, gettextParser.po.compile(po));
 }
@@ -52,6 +46,8 @@ test("node app works end to end", async (t) => {
 
     // Default locale - Japanese
     let result = await runApp("ja", 1);
+    assert.equal(result.translated, "延期されたメッセージ");
+    assert.equal(result.def, "デフォルトメッセージ");
     assert.equal(result.greeting, "こんにちは、World！");
     assert.equal(result.items, "りんご");
     result = await runApp("ja", 2);
@@ -59,13 +55,22 @@ test("node app works end to end", async (t) => {
 
     // English before translation
     result = await runApp("en", 1);
+    assert.equal(result.translated, "延期されたメッセージ");
+    assert.equal(result.def, "デフォルトメッセージ");
     assert.equal(result.greeting, "こんにちは、World！");
     assert.equal(result.items, "りんご");
     result = await runApp("en", 2);
     assert.equal(result.items, "2 りんご");
 
-    await update("en", "Hello, ${0}!", ["apple", "${0} apples"]);
+    await update("en", {
+        translated: "Deferred message",
+        def: "Default message",
+        greeting: "Hello, ${name}!",
+        forms: ["apple", "${count} apples"],
+    });
     result = await runApp("en", 1);
+    assert.equal(result.translated, "Deferred message");
+    assert.equal(result.def, "Default message");
     assert.equal(result.greeting, "Hello, World!");
     assert.equal(result.items, "apple");
     result = await runApp("en", 2);
@@ -73,6 +78,8 @@ test("node app works end to end", async (t) => {
 
     // Russian before translation
     result = await runApp("ru", 1);
+    assert.equal(result.translated, "延期されたメッセージ");
+    assert.equal(result.def, "デフォルトメッセージ");
     assert.equal(result.greeting, "こんにちは、World！");
     assert.equal(result.items, "りんご");
     result = await runApp("ru", 2);
@@ -80,8 +87,15 @@ test("node app works end to end", async (t) => {
     result = await runApp("ru", 5);
     assert.equal(result.items, "5 りんご");
 
-    await update("ru", "Привет, ${0}!", ["яблоко", "${0} яблока", "${0} яблок"]);
+    await update("ru", {
+        translated: "Отложенное сообщение",
+        def: "Сообщение по умолчанию",
+        greeting: "Привет, ${name}!",
+        forms: ["яблоко", "${count} яблока", "${count} яблок"],
+    });
     result = await runApp("ru", 1);
+    assert.equal(result.translated, "Отложенное сообщение");
+    assert.equal(result.def, "Сообщение по умолчанию");
     assert.equal(result.greeting, "Привет, World!");
     assert.equal(result.items, "яблоко");
     result = await runApp("ru", 2);
@@ -91,6 +105,8 @@ test("node app works end to end", async (t) => {
 
     // Slovenian before translation
     result = await runApp("sl", 1);
+    assert.equal(result.translated, "延期されたメッセージ");
+    assert.equal(result.def, "デフォルトメッセージ");
     assert.equal(result.greeting, "こんにちは、World！");
     assert.equal(result.items, "1 りんご");
     result = await runApp("sl", 2);
@@ -100,12 +116,15 @@ test("node app works end to end", async (t) => {
     result = await runApp("sl", 5);
     assert.equal(result.items, "りんご");
 
-    await update(
-        "sl",
-        "Živjo, ${0}!",
-        ["jabolk", "jabolko", "${0} jabolka", "${0} jabolki"],
-    );
+    await update("sl", {
+        translated: "Zamujeno sporočilo",
+        def: "Privzeto sporočilo",
+        greeting: "Živjo, ${name}!",
+        forms: ["jabolko", "${count} jabolka", "${count} jabolki", "jabolk"],
+    });
     result = await runApp("sl", 1);
+    assert.equal(result.translated, "Zamujeno sporočilo");
+    assert.equal(result.def, "Privzeto sporočilo");
     assert.equal(result.greeting, "Živjo, World!");
     assert.equal(result.items, "jabolko");
     result = await runApp("sl", 2);
@@ -117,6 +136,8 @@ test("node app works end to end", async (t) => {
 
     // Missing translations fallback
     result = await runApp("fr", 2);
+    assert.equal(result.translated, "延期されたメッセージ");
+    assert.equal(result.def, "デフォルトメッセージ");
     assert.equal(result.greeting, "こんにちは、World！");
     assert.equal(result.items, "2 りんご");
 });

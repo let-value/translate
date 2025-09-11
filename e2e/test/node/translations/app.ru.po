@@ -1,0 +1,27 @@
+msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=utf-8\n"
+"Plural-Forms: nplurals=3; plural=(n % 10 == 1 && n % 100 != 11 ? 0 : n % 10 "
+">= 2 && n % 10 <= 4 && (n % 100 < 10 || n % 100 >= 20) ? 1 : 2);\n"
+"Language: ru\n"
+"POT-Creation-Date: 2025-09-11 18:24+0500\n"
+"x-generator: @let-value/translate-extract\n"
+
+#: test/node/app.ts:17
+msgid "延期されたメッセージ"
+msgstr "Отложенное сообщение"
+
+#: test/node/app.ts:18
+msgid "messageId"
+msgstr "Сообщение по умолчанию"
+
+#: test/node/app.ts:24
+msgid "こんにちは、${name}！"
+msgstr "Привет, ${name}!"
+
+#: test/node/app.ts:25
+msgid "りんご"
+msgid_plural "${count} りんご"
+msgstr[0] "яблоко"
+msgstr[1] "${count} яблока"
+msgstr[2] "${count} яблок"

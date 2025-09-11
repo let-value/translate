@@ -1,3 +1,4 @@
+import type { GetTextTranslations } from "gettext-parser";
 import { getNPlurals, getPluralFunc } from "plural-forms";
 import type { Locale } from "./config.ts";
 
@@ -28,7 +29,55 @@ export function memo<T extends (...args: any[]) => any>(fn: T): T {
 }
 
 export function substitute(text: string, values: unknown[] = []): string {
-    return text.replace(/\$\{(\d+)\}/g, (_, i) => String(values[Number(i)]));
+    const placeholders: string[] = [];
+
+    return text.replace(/\$\{([^}]+)\}/g, (match, placeholder) => {
+        if (/^\d+$/.test(placeholder)) {
+            const index = Number(placeholder);
+            return index < values.length ? String(values[index]) : match;
+        }
+
+        let index = placeholders.indexOf(placeholder);
+        if (index === -1) {
+            index = placeholders.length;
+            placeholders.push(placeholder);
+        }
+
+        return index < values.length ? String(values[index]) : match;
+    });
+}
+
+export function normalizeMessageId(msgid: string): string {
+    const placeholders: string[] = [];
+    return msgid.replace(/\$\{([^}]+)\}/g, (match, placeholder) => {
+        if (/^\d+$/.test(placeholder)) {
+            return match;
+        }
+
+        let index = placeholders.indexOf(placeholder);
+        if (index === -1) {
+            index = placeholders.length;
+            placeholders.push(placeholder);
+        }
+        return `\${${index}}`;
+    });
+}
+
+export function normalizeTranslations(translations: GetTextTranslations): GetTextTranslations {
+    const normalized: GetTextTranslations = {
+        ...translations,
+        translations: {},
+    };
+
+    for (const [context, messages] of Object.entries(translations.translations)) {
+        normalized.translations[context] = {};
+        for (const [msgid, entry] of Object.entries(messages)) {
+            const normalizedId = normalizeMessageId(msgid);
+            normalized.translations[context][normalizedId] = entry;
+        }
+    }
+
+    return normalized;
 }
 
 const defaultPluralFunc = (n: number) => (n !== 1 ? 1 : 0);

@@ -1,0 +1,28 @@
+msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=utf-8\n"
+"Plural-Forms: nplurals=4; plural=(n % 100 == 1 ? 1 : n % 100 == 2 ? 2 : n % "
+"100 == 3 || n % 100 == 4 ? 3 : 0);\n"
+"Language: sl\n"
+"POT-Creation-Date: 2025-09-11 18:24+0500\n"
+"x-generator: @let-value/translate-extract\n"
+
+#: test/node/app.ts:17
+msgid "延期されたメッセージ"
+msgstr "Zamujeno sporočilo"
+
+#: test/node/app.ts:18
+msgid "messageId"
+msgstr "Privzeto sporočilo"
+
+#: test/node/app.ts:24
+msgid "こんにちは、${name}！"
+msgstr "Živjo, ${name}!"
+
+#: test/node/app.ts:25
+msgid "りんご"
+msgid_plural "${count} りんご"
+msgstr[0] "jabolko"
+msgstr[1] "${count} jabolka"
+msgstr[2] "${count} jabolki"
+msgstr[3] "jabolk"
