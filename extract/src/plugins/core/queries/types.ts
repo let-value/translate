@@ -17,6 +17,11 @@ export interface Translation {
     obsolete?: boolean;
 }
 
+export interface Warning {
+    error: string;
+    reference: string;
+}
+
 export interface MessageMatch {
     node: Parser.SyntaxNode;
     translation?: Translation;

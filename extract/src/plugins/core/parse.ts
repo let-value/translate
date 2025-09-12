@@ -9,11 +9,12 @@ import TS from "tree-sitter-typescript";
 import { getReference } from "./queries/comment.ts";
 import { importQuery } from "./queries/import.ts";
 import { queries } from "./queries/index.ts";
-import type { Context, Translation } from "./queries/types.ts";
+import type { Context, Translation, Warning } from "./queries/types.ts";
 
 export interface ParseResult {
     translations: Translation[];
     imports: string[];
+    warnings: Warning[];
 }
 
 function getLanguage(ext: string) {
@@ -55,6 +56,7 @@ export function parseSource(source: string, path: string): ParseResult {
     const tree = parser.parse(source);
 
     const translations: Translation[] = [];
+    const warnings: Warning[] = [];
     const imports: string[] = [];
 
     const seen = new Set<number>();
@@ -85,7 +87,10 @@ export function parseSource(source: string, path: string): ParseResult {
             }
 
             if (error) {
-                console.warn(`Parsing error at ${reference}: ${error}`);
+                warnings.push({
+                    error,
+                    reference,
+                });
             }
         }
     }
@@ -98,5 +103,5 @@ export function parseSource(source: string, path: string): ParseResult {
         }
     }
 
-    return { translations, imports };
+    return { translations, imports, warnings };
 }

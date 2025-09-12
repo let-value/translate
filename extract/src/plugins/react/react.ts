@@ -23,12 +23,15 @@ export function react(): ExtractorPlugin {
                 return { entrypoint, path, contents };
             });
             build.onExtract({ filter }, ({ entrypoint, path, contents }) => {
-                const { translations, imports } = parseSource(contents, path);
+                const { translations, imports, warnings } = parseSource(contents, path);
                 if (build.context.config.walk) {
                     const paths = resolveImports(path, imports);
                     for (const p of paths) {
                         build.resolvePath({ entrypoint, path: p });
                     }
+                }
+                for (const warning of warnings) {
+                    build.context.logger?.warn(`${warning.error} at ${warning.reference}`);
                 }
                 return {
                     entrypoint,

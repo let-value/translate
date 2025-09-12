@@ -1,6 +1,6 @@
 /** biome-ignore-all lint/correctness/useUniqueElementIds: true */
 import fs from "node:fs/promises";
-import { inspect } from "node:util";
+
 import {
     LocaleProvider,
     Message,
@@ -21,8 +21,6 @@ const descriptor = message({ id: "messageId", message: "デフォルトメッセ
 
 function App({ count }: { count: number }) {
     const t = useTranslations();
-
-    console.log(inspect(t.translations, { depth: 10 }));
 
     return (
         <div>
@@ -51,7 +49,7 @@ export async function runApp(locale: string, count: number) {
     const element = (
         <LocaleProvider locale={locale as never}>
             <TranslationsProvider translations={{ [locale]: translations }}>
-                <App locale={locale} count={count} />
+                <App count={count} />
             </TranslationsProvider>
         </LocaleProvider>
     );

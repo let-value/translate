@@ -6,12 +6,13 @@ import { getParser } from "../core/parse.ts";
 import { getReference } from "../core/queries/comment.ts";
 import { importQuery } from "../core/queries/import.ts";
 import { queries as coreQueries } from "../core/queries/index.ts";
-import type { Context, Translation } from "../core/queries/types.ts";
+import type { Context, Translation, Warning } from "../core/queries/types.ts";
 import { queries as reactQueries } from "./queries/index.ts";
 
 export interface ParseResult {
     translations: Translation[];
     imports: string[];
+    warnings: Warning[];
 }
 
 export function parseFile(filePath: string): ParseResult {
@@ -26,6 +27,7 @@ export function parseSource(source: string, path: string): ParseResult {
     const tree = parser.parse(source);
 
     const translations: Translation[] = [];
+    const warnings: Warning[] = [];
     const imports: string[] = [];
     const seen = new Set<number>();
 
@@ -48,7 +50,10 @@ export function parseSource(source: string, path: string): ParseResult {
                 });
             }
             if (error) {
-                console.warn(`Parsing error at ${reference}: ${error}`);
+                warnings.push({
+                    error,
+                    reference,
+                });
             }
         }
     }
@@ -59,5 +64,5 @@ export function parseSource(source: string, path: string): ParseResult {
         if (imp) imports.push(imp);
     }
 
-    return { translations, imports };
+    return { translations, imports, warnings };
 }
