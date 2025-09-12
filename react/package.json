@@ -11,6 +11,7 @@
             "import": "./dist/index.js",
             "require": "./dist/index.cjs"
         },
+        "./test/*": "./test/*",
         "./package.json": "./package.json"
     },
     "files": [

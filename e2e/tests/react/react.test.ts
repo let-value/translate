@@ -3,13 +3,12 @@ import assert from "node:assert/strict";
 import fs from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { test } from "node:test";
-import { fileURLToPath } from "node:url";
-import { defineConfig, run } from "@let-value/translate-extract";
+import { fileURLToPath, pathToFileURL } from "node:url";
+import { defineConfig, react, run } from "@let-value/translate-extract";
 import * as gettextParser from "gettext-parser";
+import ts from "typescript";
 
-import { runApp } from "./app.ts";
-
-const appPath = fileURLToPath(new URL("./app.ts", import.meta.url));
+const appPath = fileURLToPath(new URL("./app.tsx", import.meta.url));
 const appDir = dirname(appPath);
 const translationsDir = join(appDir, "translations");
 
@@ -19,8 +18,33 @@ async function extract() {
         entrypoints: appPath,
         locales: ["en", "ru", "sl", "sk"],
         defaultLocale: "ja",
+        plugins: [react()],
     });
     await run(appPath, { config });
+}
+
+async function loadRunApp() {
+    const source = await fs.readFile(appPath, "utf8");
+    const { outputText } = ts.transpileModule(source, {
+        compilerOptions: {
+            module: ts.ModuleKind.ES2022,
+            target: ts.ScriptTarget.ES2022,
+            jsx: ts.JsxEmit.React,
+        },
+    });
+    const jsPath = join(appDir, "app.mjs");
+    await fs.writeFile(jsPath, outputText);
+    return (await import(pathToFileURL(jsPath).href)) as {
+        runApp(
+            locale: string,
+            count: number,
+        ): Promise<{
+            translated: string;
+            def: string;
+            greeting: string;
+            items: string;
+        }>;
+    };
 }
 
 async function update(
@@ -39,11 +63,13 @@ async function update(
     await fs.writeFile(file, gettextParser.po.compile(po));
 }
 
-test("node app works end to end", async (t) => {
+test("react app works end to end", async (t) => {
     await extract();
-    t.after(async () => {
-        await fs.rm(translationsDir, { recursive: true, force: true });
-    });
+    // t.after(async () => {
+    //     await fs.rm(translationsDir, { recursive: true, force: true });
+    // });
+
+    const { runApp } = await loadRunApp();
 
     // Default locale - Japanese
     let result = await runApp("ja", 1);

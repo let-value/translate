@@ -1,4 +1,6 @@
 import { Writable } from "node:stream";
+import type { ReactNode } from "react";
+import { renderToPipeableStream } from "react-dom/server";
 
 export class StringWritable extends Writable {
     chunks: Buffer[];
@@ -53,4 +55,9 @@ export class StringWritable extends Writable {
 
         return super.end(callback);
     }
+}
+
+export async function render(node: ReactNode) {
+    const { pipe } = renderToPipeableStream(node);
+    return await pipe(new StringWritable()).promise;
 }
