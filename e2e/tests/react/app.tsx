@@ -59,7 +59,8 @@ export async function runApp(locale: string, count: number) {
     const html = await render(element);
 
     function match(id: string) {
-        return html.match(new RegExp(`<div id="${id}">([^<]*)</div>`))?.[1] ?? "";
+        const clean = html.replace(/<!--[^>]*-->/g, "");
+        return clean.match(new RegExp(`<div id="${id}">([^<]*)</div>`))?.[1] ?? "";
     }
 
     return {
