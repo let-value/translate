@@ -50,9 +50,7 @@ export class LocaleTranslator {
         const entry = this.translations?.translations?.[msgctxt]?.[forms[0].msgid];
         const index = pluralFunc(this.locale)(n);
         const form = forms[index] ?? forms[forms.length - 1];
-        const translated = entry?.msgstr
-            ? entry.msgstr[index] ?? entry.msgstr[entry.msgstr.length - 1]
-            : undefined;
+        const translated = entry?.msgstr ? (entry.msgstr[index] ?? entry.msgstr[entry.msgstr.length - 1]) : undefined;
         const result = translated || form.msgstr;
         const usedVals = form.values?.length ? form.values : forms[0].values;
         return usedVals?.length ? substitute(result, usedVals) : result;

@@ -2,20 +2,12 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { message as msg, Translator } from "@let-value/translate";
 import type { GetTextTranslations } from "gettext-parser";
-import { createElement, Fragment, type ReactNode } from "react";
-import { renderToPipeableStream } from "react-dom/server";
+import { createElement, Fragment } from "react";
 
 import { Message, Plural, TranslationsProvider } from "../src/components/index.ts";
-import { StringWritable } from "./utils.ts";
+import { render } from "./utils.ts";
 
 const translations: GetTextTranslations = { charset: "utf-8", headers: {}, translations: { "": {} } };
-
-async function render(node: ReactNode) {
-    const { pipe } = renderToPipeableStream(
-        createElement(TranslationsProvider, { translations: { en: translations } }, node),
-    );
-    return await pipe(new StringWritable()).promise;
-}
 
 function normalize(html: string) {
     return html.replace(/<!-- -->/g, "");
@@ -37,7 +29,9 @@ test("Message matches translate message function", async () => {
     ] as const;
 
     for (const { el, expected } of cases) {
-        const result = normalize(await render(el));
+        const result = normalize(
+            await render(createElement(TranslationsProvider, { translations: { en: translations } }, el)),
+        );
         assert.equal(result, `<!--$-->${expected}<!--/$-->`);
     }
 });
@@ -69,10 +63,19 @@ test("Plural matches translate plural function", async () => {
             }),
             expected: locale.context`count`.plural(msg`One`, msg`Many`, 2),
         },
+        {
+            el: createElement(Plural, {
+                number: 2,
+                forms: ["りんご", createElement(Fragment, null, 2, " りんご")],
+            }),
+            expected: locale.plural(msg`りんご`, msg`2 りんご`, 2),
+        },
     ] as const;
 
     for (const { el, expected } of cases) {
-        const result = normalize(await render(el));
+        const result = normalize(
+            await render(createElement(TranslationsProvider, { translations: { en: translations } }, el)),
+        );
         assert.equal(result, `<!--$-->${expected}<!--/$-->`);
     }
 });

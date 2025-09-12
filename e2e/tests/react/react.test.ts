@@ -1,12 +1,12 @@
+/** biome-ignore-all lint/complexity/useLiteralKeys: jp */
 import assert from "node:assert/strict";
 import fs from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { test } from "node:test";
-import { fileURLToPath } from "node:url";
-import { defineConfig, run, react as reactPlugin } from "@let-value/translate-extract";
+import { fileURLToPath, pathToFileURL } from "node:url";
+import { defineConfig, react, run } from "@let-value/translate-extract";
 import * as gettextParser from "gettext-parser";
 import ts from "typescript";
-import { pathToFileURL } from "node:url";
 
 const appPath = fileURLToPath(new URL("./app.tsx", import.meta.url));
 const appDir = dirname(appPath);
@@ -18,7 +18,7 @@ async function extract() {
         entrypoints: appPath,
         locales: ["en", "ru", "sl", "sk"],
         defaultLocale: "ja",
-        plugins: (p) => [p.core(), p.po(), reactPlugin()],
+        plugins: [react()],
     });
     await run(appPath, { config });
 }
@@ -35,7 +35,10 @@ async function loadRunApp() {
     const jsPath = join(appDir, "app.mjs");
     await fs.writeFile(jsPath, outputText);
     return (await import(pathToFileURL(jsPath).href)) as {
-        runApp(locale: string, count: number): Promise<{
+        runApp(
+            locale: string,
+            count: number,
+        ): Promise<{
             translated: string;
             def: string;
             greeting: string;
@@ -62,9 +65,9 @@ async function update(
 
 test("react app works end to end", async (t) => {
     await extract();
-    t.after(async () => {
-        await fs.rm(translationsDir, { recursive: true, force: true });
-    });
+    // t.after(async () => {
+    //     await fs.rm(translationsDir, { recursive: true, force: true });
+    // });
 
     const { runApp } = await loadRunApp();
 
@@ -192,4 +195,3 @@ test("react app works end to end", async (t) => {
     assert.equal(result.greeting, "こんにちは、World！");
     assert.equal(result.items, "2 りんご");
 });
-

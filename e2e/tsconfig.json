@@ -8,8 +8,5 @@
         "outDir": "dist"
     },
     "include": ["test/**/*.ts"],
-    "references": [
-        { "path": "../translate" },
-        { "path": "../extract" }
-    ]
+    "references": [{ "path": "../translate" }, { "path": "../extract" }]
 }

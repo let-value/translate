@@ -1,11 +1,42 @@
+/** biome-ignore-all lint/correctness/useUniqueElementIds: true */
 import fs from "node:fs/promises";
-import { message } from "@let-value/translate";
-import { LocaleProvider, Message, Plural, TranslationsProvider, useTranslations } from "@let-value/translate-react";
+import { inspect } from "node:util";
+import {
+    LocaleProvider,
+    Message,
+    message,
+    Plural,
+    TranslationsProvider,
+    useTranslations,
+} from "@let-value/translate-react";
+import { render } from "@let-value/translate-react/test/utils.ts";
 import * as gettextParser from "gettext-parser";
+// biome-ignore lint/correctness/noUnusedImports: need for jsx
 import React from "react";
-import { renderToStaticMarkup } from "react-dom/server";
 
 const name = "World";
+
+const deferred = message`延期されたメッセージ`;
+const descriptor = message({ id: "messageId", message: "デフォルトメッセージ" });
+
+function App({ count }: { count: number }) {
+    const t = useTranslations();
+
+    console.log(inspect(t.translations, { depth: 10 }));
+
+    return (
+        <div>
+            <div id="translated">{t.message(deferred)}</div>
+            <div id="def">{t.message(descriptor)}</div>
+            <div id="greeting">
+                <Message>こんにちは、{name}！</Message>
+            </div>
+            <div id="items">
+                <Plural number={count} forms={["りんご", <>{count} りんご</>]} />
+            </div>
+        </div>
+    );
+}
 
 export async function runApp(locale: string, count: number) {
     let translations: gettextParser.GetTextTranslations | undefined;
@@ -17,36 +48,15 @@ export async function runApp(locale: string, count: number) {
         // No translations available
     }
 
-    const deferred = message`延期されたメッセージ`;
-    const descriptor = message({ id: "messageId", message: "デフォルトメッセージ" });
-
-    function App() {
-        const t = useTranslations();
-        const translated = t.message(deferred);
-        const def = t.message(descriptor);
-        return (
-            <div>
-                <div id="translated">{translated}</div>
-                <div id="def">{def}</div>
-                <div id="greeting">
-                    <Message>こんにちは、{name}！</Message>
-                </div>
-                <div id="items">
-                    <Plural number={count} forms={["りんご", <>{count} りんご</>]} />
-                </div>
-            </div>
-        );
-    }
-
     const element = (
-        <TranslationsProvider translations={{ [locale]: translations }}>
-            <LocaleProvider locale={locale as never}>
-                <App />
-            </LocaleProvider>
-        </TranslationsProvider>
+        <LocaleProvider locale={locale as never}>
+            <TranslationsProvider translations={{ [locale]: translations }}>
+                <App locale={locale} count={count} />
+            </TranslationsProvider>
+        </LocaleProvider>
     );
 
-    const html = renderToStaticMarkup(element);
+    const html = await render(element);
 
     function match(id: string) {
         return html.match(new RegExp(`<div id="${id}">([^<]*)</div>`))?.[1] ?? "";
@@ -59,4 +69,3 @@ export async function runApp(locale: string, count: number) {
         items: match("items"),
     };
 }
-

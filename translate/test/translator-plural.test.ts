@@ -40,8 +40,7 @@ test("plural handles Japanese singular form for any number", () => {
 test("plural handles Slovak plurals for any number", () => {
     const t = new Translator(translations).getLocale("sk");
     for (let n = 0; n < 200; n++) {
-        const expected =
-            n === 1 ? `${n} jablko` : n >= 2 && n <= 4 ? `${n} jablká` : `${n} jabĺk`;
+        const expected = n === 1 ? `${n} jablko` : n >= 2 && n <= 4 ? `${n} jablká` : `${n} jabĺk`;
         assert.equal(t.plural(message`${n} apple`, message`${n} apples`, n), expected);
     }
 });

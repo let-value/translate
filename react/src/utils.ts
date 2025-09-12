@@ -1,4 +1,4 @@
-import { Children, Fragment, isValidElement, type ReactNode } from "react";
+import { Children, Fragment, isValidElement, type PropsWithChildren, type ReactNode } from "react";
 
 export function buildTemplateFromChildren(children: ReactNode): {
     strings: string[];
@@ -8,7 +8,7 @@ export function buildTemplateFromChildren(children: ReactNode): {
         const result: ReactNode[] = [];
         Children.forEach(nodes, (child) => {
             if (isValidElement(child) && child.type === Fragment) {
-                result.push(...flatten(child.props.children));
+                result.push(...flatten((child.props as PropsWithChildren).children));
             } else {
                 result.push(child);
             }
