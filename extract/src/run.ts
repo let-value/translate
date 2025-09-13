@@ -1,22 +1,19 @@
 import type { ResolvedConfig } from "./configuration.ts";
 import type { Logger } from "./logger.ts";
-import type {
-    CollectArgs,
-    CollectHook,
-    CollectResult,
-    ExtractArgs,
-    ExtractBuild,
-    ExtractContext,
-    ExtractHook,
-    ExtractResult,
-    GenerateHook,
-    LoadArgs,
-    LoadHook,
-    LoadResult,
-    ResolveArgs,
-    ResolveHook,
-    ResolveResult,
-} from "./plugin.ts";
+import type { Build, FileRef, Hook, HookApi, PipelineContext } from "./plugin.ts";
+import { ResultGraph } from "./plugin.ts";
+
+function createDeferred() {
+    let resolve!: () => void;
+    const promise = new Promise<void>((r) => {
+        resolve = r;
+    });
+    return { promise, resolve };
+}
+
+interface Task extends FileRef {
+    data?: unknown;
+}
 
 export async function run(entrypoint: string, { config, logger }: { config: ResolvedConfig; logger?: Logger }) {
     const entryConfig = config.entrypoints.find((e) => e.entrypoint === entrypoint);
@@ -24,13 +21,11 @@ export async function run(entrypoint: string, { config, logger }: { config: Reso
     const obsolete = entryConfig?.obsolete ?? config.obsolete;
     const exclude = entryConfig?.exclude ?? config.exclude;
 
-    const queue: ResolveArgs[] = [{ entrypoint, path: entrypoint }];
-
     const defaultLocale = config.defaultLocale;
 
     logger?.info({ entrypoint, locale: defaultLocale }, "starting extraction");
 
-    const context: ExtractContext = {
+    const context: PipelineContext = {
         entrypoint,
         config: { ...config, destination, obsolete, exclude },
         generatedAt: new Date(),
@@ -38,40 +33,39 @@ export async function run(entrypoint: string, { config, logger }: { config: Reso
         logger,
     };
 
-    const resolves: { filter: RegExp; hook: ResolveHook }[] = [];
-    const loads: { filter: RegExp; hook: LoadHook }[] = [];
-    const extracts: { filter: RegExp; hook: ExtractHook }[] = [];
-    const collects: { filter: RegExp; hook: CollectHook }[] = [];
-    const generates: { filter: RegExp; hook: GenerateHook }[] = [];
+    const hooks: Record<"resolve" | "load" | "process", { namespace: string; filter?: RegExp; hook: Hook }[]> = {
+        resolve: [],
+        load: [],
+        process: [],
+    };
 
-    function resolvePath(args: ResolveArgs) {
-        for (const ex of context.config.exclude) {
-            if (ex instanceof RegExp ? ex.test(args.path) : ex(args.path)) {
-                return;
+    const pending = new Map<string, number>();
+    const queue: Task[] = [];
+
+    function emit(ref: FileRef & { data?: unknown }) {
+        const namespace = ref.namespace ?? "source";
+        const path = ref.path;
+        if (namespace === "source") {
+            for (const ex of context.config.exclude) {
+                if (ex instanceof RegExp ? ex.test(path) : ex(path)) return;
             }
+            if (!context.config.walk && path !== entrypoint) return;
         }
-        if (context.config.walk) {
-            queue.push(args);
-        }
+        queue.push({ path, namespace, data: ref.data });
+        pending.set(namespace, (pending.get(namespace) ?? 0) + 1);
     }
 
-    const build: ExtractBuild = {
-        onResolve({ filter }, hook) {
-            resolves.push({ filter, hook });
+    const build: Build = {
+        onResolve({ filter = /.*/, namespace = "source" }, hook) {
+            hooks.resolve.push({ namespace, filter, hook });
         },
-        onLoad({ filter }, hook) {
-            loads.push({ filter, hook });
+        onLoad({ filter = /.*/, namespace = "source" }, hook) {
+            hooks.load.push({ namespace, filter, hook });
         },
-        onExtract({ filter }, hook) {
-            extracts.push({ filter, hook });
+        onProcess({ filter = /.*/, namespace = "source" }, hook) {
+            hooks.process.push({ namespace, filter, hook });
         },
-        onCollect({ filter }, hook) {
-            collects.push({ filter, hook });
-        },
-        onGenerate({ filter }, hook) {
-            generates.push({ filter, hook });
-        },
-        resolvePath,
+        emit,
         context,
     };
 
@@ -80,112 +74,76 @@ export async function run(entrypoint: string, { config, logger }: { config: Reso
         plugin.setup(build);
     }
 
-    const visited = new Set<string>();
+    emit({ path: entrypoint, namespace: "source" });
 
-    async function applyResolve({ entrypoint, path }: ResolveArgs): Promise<ResolveResult | undefined> {
-        for (const { filter, hook } of resolves) {
-            if (!filter.test(path)) continue;
-            const result = await hook({ entrypoint, path }, context);
-            if (result) {
-                logger?.debug(result, "resolved");
-            }
-            if (result) return result;
+    const defers = new Map<string, { promise: Promise<void>; resolve: () => void }>();
+    function getDeferred(ns: string) {
+        let d = defers.get(ns);
+        if (!d) {
+            d = createDeferred();
+            defers.set(ns, d);
         }
-        return undefined;
+        return d;
     }
 
-    async function applyLoad({ entrypoint, path }: LoadArgs): Promise<LoadResult | undefined> {
-        for (const { filter, hook } of loads) {
-            if (!filter.test(path)) continue;
-            const result = await hook({ entrypoint, path }, context);
-            if (result) {
-                logger?.debug({ entrypoint, path }, "loaded");
-            }
-            if (result) return result;
-        }
-        return undefined;
-    }
+    const graph = new ResultGraph();
 
-    async function applyExtract({ entrypoint, path, contents }: ExtractArgs): Promise<ExtractResult[]> {
-        const results: ExtractResult[] = [];
-        for (const { filter, hook } of extracts) {
-            if (!filter.test(path)) continue;
-            const result = await hook({ entrypoint, path, contents }, context);
-            if (result) {
-                logger?.debug({ entrypoint, path }, "extracted");
-                results.push(result);
+    const api: HookApi = {
+        context,
+        graph,
+        emit,
+        defer(namespace) {
+            if ((pending.get(namespace) ?? 0) === 0) return Promise.resolve();
+            return getDeferred(namespace).promise;
+        },
+    };
+
+    const visitedSource = new Set<string>();
+
+    async function apply(stage: "resolve" | "load" | "process", task: Task) {
+        let { path, namespace, data } = task;
+        for (const { namespace: ns, filter, hook } of hooks[stage]) {
+            if (ns !== namespace) continue;
+            if (filter && !filter.test(path)) continue;
+            const result = await hook({ file: { path, namespace }, data }, api);
+            if (result !== undefined) {
+                if (stage === "resolve") {
+                    path = result as string;
+                } else if (stage === "load") {
+                    data = result;
+                } else if (stage === "process") {
+                    graph.add(namespace, path, result);
+                }
             }
         }
-        return results;
+        task.path = path;
+        task.data = data;
     }
-
-    async function applyCollect({
-        entrypoint,
-        path,
-        translations,
-        destination,
-    }: CollectArgs): Promise<CollectResult | undefined> {
-        for (const { filter, hook } of collects) {
-            if (!filter.test(path)) continue;
-            const result = await hook({ entrypoint, path, translations, destination }, context);
-            if (result) {
-                logger?.debug(
-                    {
-                        entrypoint,
-                        path,
-                        destination,
-                        ...(destination !== result.destination && { redirected: result.destination }),
-                    },
-                    "collected",
-                );
-            }
-            if (result) return result;
-        }
-        return undefined;
-    }
-
-    const extractedResults: ExtractResult[] = [];
 
     while (queue.length) {
-        // biome-ignore lint/style/noNonNullAssertion: queue is checked above
-        const args = queue.shift()!;
-        const resolved = await applyResolve(args);
-        if (!resolved || visited.has(resolved.path)) continue;
-        visited.add(resolved.path);
-
-        const loaded = await applyLoad(resolved);
-        if (!loaded) continue;
-
-        const extracted = await applyExtract(loaded);
-        if (!extracted.length) continue;
-
-        extractedResults.push(...extracted);
-    }
-
-    for (const locale of config.locales) {
-        context.locale = locale;
-        const collectedByDest: Record<string, CollectResult[]> = {};
-
-        for (const extracted of extractedResults) {
-            const destination = context.config.destination({ entrypoint, locale, path: extracted.path });
-            const collected = await applyCollect({ ...extracted, destination });
-            if (!collected) continue;
-
-            if (!collectedByDest[collected.destination]) {
-                collectedByDest[collected.destination] = [];
+        const task = queue.shift()!;
+        if (task.namespace === "source") {
+            if (visitedSource.has(task.path)) {
+                const count = (pending.get(task.namespace) ?? 1) - 1;
+                pending.set(task.namespace, count);
+                if (count === 0) getDeferred(task.namespace).resolve();
+                continue;
             }
-            collectedByDest[collected.destination].push(collected);
+            visitedSource.add(task.path);
         }
-
-        for (const [path, collected] of Object.entries(collectedByDest)) {
-            for (const { filter, hook } of generates) {
-                if (!filter.test(path)) continue;
-                logger?.info({ path, locale }, "generating output");
-                await hook({ entrypoint, path, collected }, context);
-            }
+        await apply("resolve", task);
+        await apply("load", task);
+        await apply("process", task);
+        const ns = task.namespace;
+        const count = (pending.get(ns) ?? 1) - 1;
+        pending.set(ns, count);
+        if (count === 0) {
+            const d = defers.get(ns);
+            d?.resolve();
         }
     }
 
     logger?.info({ entrypoint, locale: defaultLocale }, "extraction completed");
-    return extractedResults;
+
+    return graph;
 }

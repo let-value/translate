@@ -8,8 +8,8 @@ import {
     Plural,
     TranslationsProvider,
     useTranslations,
-} from "@let-value/translate-react";
-import { render } from "@let-value/translate-react/test/utils.ts";
+} from "../../../react/src/index.ts";
+import { render } from "../../../react/src/test/utils.ts";
 import * as gettextParser from "gettext-parser";
 // biome-ignore lint/correctness/noUnusedImports: need for jsx
 import React from "react";

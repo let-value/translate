@@ -1,5 +1,5 @@
 import fs from "node:fs/promises";
-import { message, Translator } from "@let-value/translate";
+import { message, Translator } from "../../../translate/src/index.ts";
 import * as gettextParser from "gettext-parser";
 
 const name = "World";
