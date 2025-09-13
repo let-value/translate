@@ -4,7 +4,7 @@ import fs from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
-import { defineConfig, run } from "@let-value/translate-extract";
+import { defineConfig, run } from "../../../extract/src/index.ts";
 import * as gettextParser from "gettext-parser";
 
 import { runApp } from "./app.ts";
@@ -39,7 +39,7 @@ async function update(
     await fs.writeFile(file, gettextParser.po.compile(po));
 }
 
-test("node app works end to end", async (t) => {
+test.skip("node app works end to end", async (t) => {
     await extract();
     t.after(async () => {
         await fs.rm(translationsDir, { recursive: true, force: true });

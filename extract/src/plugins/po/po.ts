@@ -1,11 +1,17 @@
 import fs from "node:fs/promises";
 import { basename, dirname, extname, join } from "node:path";
+
 import type { GetTextTranslationRecord, GetTextTranslations } from "gettext-parser";
 import * as gettextParser from "gettext-parser";
 import { getFormula, getNPlurals } from "plural-forms";
+
 import type { ObsoleteStrategy } from "../../configuration.ts";
-import type { CollectResult, ExtractContext, ExtractorPlugin, GenerateArgs } from "../../plugin.ts";
+import type { Plugin } from "../../plugin.ts";
 import type { Translation } from "../core/queries/types.ts";
+
+export interface Collected {
+    translations: GetTextTranslationRecord;
+}
 
 export function formatDate(date: Date): string {
     const pad = (n: number) => n.toString().padStart(2, "0");
@@ -67,7 +73,7 @@ export function collect(source: Translation[], locale?: string): GetTextTranslat
 }
 
 export function merge(
-    sources: CollectResult[],
+    sources: Collected[],
     existing: string | Buffer | undefined,
     obsolete: ObsoleteStrategy,
     locale: string,
@@ -93,7 +99,7 @@ export function merge(
 
     const collected: GetTextTranslationRecord = { "": {} };
     for (const { translations: record } of sources) {
-        for (const [ctx, msgs] of Object.entries(record as GetTextTranslationRecord)) {
+        for (const [ctx, msgs] of Object.entries(record)) {
             if (!collected[ctx]) collected[ctx] = {};
             for (const [id, entry] of Object.entries(msgs)) {
                 const existing = collected[ctx][id];
@@ -171,28 +177,50 @@ export function merge(
     return gettextParser.po.compile(poObj).toString();
 }
 
-export function po(): ExtractorPlugin {
+export function po(): Plugin {
     return {
         name: "po",
         setup(build) {
             build.context.logger?.debug("po plugin initialized");
-            build.onCollect({ filter: /.*/ }, ({ entrypoint, translations, destination, ...rest }, ctx) => {
-                const record = collect(translations as Translation[], ctx.locale);
-                const redirected = join(dirname(destination), `${basename(destination, extname(destination))}.po`);
+            const collections = new Map<string, Translation[]>();
+            const processed = new Set<string>();
+            build.onProcess({ namespace: "translate", filter: /.*/ }, async ({ file, data }, api) => {
+                const list = collections.get(file.path) ?? [];
+                list.push(...((data as Translation[]) ?? []));
+                collections.set(file.path, list);
 
-                return {
-                    ...rest,
-                    entrypoint,
-                    destination: redirected,
-                    translations: record,
-                };
-            });
-            build.onGenerate({ filter: /\.po$/ }, async ({ path, collected }: GenerateArgs, ctx: ExtractContext) => {
-                const existing = await fs.readFile(path).catch(() => undefined);
-                const out = merge(collected, existing, ctx.config.obsolete, ctx.locale, ctx.generatedAt);
-                await fs.mkdir(dirname(path), { recursive: true });
-                await fs.writeFile(path, out);
+                await api.defer("source");
+                if (processed.has(file.path)) return;
+                processed.add(file.path);
+
+                const translations = collections.get(file.path)!;
+                for (const locale of api.context.config.locales) {
+                    api.context.locale = locale;
+                    const record = collect(translations, locale);
+                    const destination = api.context.config.destination({
+                        entrypoint: api.context.entrypoint,
+                        locale,
+                        path: file.path,
+                    });
+                    const redirected = join(
+                        dirname(destination),
+                        `${basename(destination, extname(destination))}.po`,
+                    );
+                    const existing = await fs.readFile(redirected).catch(() => undefined);
+                    const out = merge(
+                        [{ translations: record }],
+                        existing,
+                        api.context.config.obsolete,
+                        locale,
+                        api.context.generatedAt,
+                    );
+                    await fs.mkdir(dirname(redirected), { recursive: true });
+                    await fs.writeFile(redirected, out);
+                    api.graph.add("translate", redirected, out);
+                    api.emit({ path: redirected, namespace: "cleanup" });
+                }
             });
         },
     };
 }
+
