@@ -20,7 +20,7 @@ async function extract() {
         defaultLocale: "ja",
         plugins: [react()],
     });
-    await run(appPath, { config });
+    await run(config.entrypoints[0], { config });
 }
 
 async function loadRunApp() {

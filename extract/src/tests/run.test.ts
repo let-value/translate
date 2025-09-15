@@ -9,31 +9,46 @@ test("runs all process hooks for a file", async () => {
     const entrypoint = "dummy.tsx";
     const coreTranslations = [{ id: "core", message: [""] }];
     const reactTranslations = [{ id: "react", message: [""] }];
+    const collected: unknown[] = [];
 
     const corePlugin: Plugin = {
         name: "core-plugin",
         setup(build) {
-            build.onResolve({ filter: /.*/ }, (args) => args);
-            build.onLoad({ filter: /.*/ }, (args) => ({ ...args, data: "" }));
-            build.onProcess({ filter: /.*/ }, (args) => ({ ...args, data: coreTranslations }));
+            build.onResolve({ filter: /.*/, namespace: "source" }, (args) => args);
+            build.onLoad({ filter: /.*/, namespace: "source" }, (args) => ({ ...args, data: "" }));
+            build.onProcess({ filter: /.*/, namespace: "source" }, (args) => {
+                collected.push(coreTranslations);
+                return { ...args, data: coreTranslations };
+            });
         },
     };
 
     const reactPlugin: Plugin = {
         name: "react-plugin",
         setup(build) {
-            build.onResolve({ filter: /.*/ }, ({ file }) => file.path);
-            build.onLoad({ filter: /.*/ }, () => "");
-            build.onProcess({ filter: /.*/ }, () => reactTranslations);
+            build.onResolve({ filter: /.*/, namespace: "source" }, ({ entrypoint, path, namespace }) => ({
+                entrypoint,
+                path,
+                namespace,
+            }));
+            build.onLoad({ filter: /.*/, namespace: "source" }, ({ entrypoint, path, namespace }) => ({
+                entrypoint,
+                path,
+                namespace,
+                data: "",
+            }));
+            build.onProcess({ filter: /.*/, namespace: "source" }, (args) => {
+                collected.push(reactTranslations);
+                return { ...args, data: reactTranslations };
+            });
         },
     };
 
     const config = defineConfig({ entrypoints: entrypoint, plugins: () => [corePlugin, reactPlugin] });
-    const graph = await run(entrypoint, { config });
+    await run(config.entrypoints[0], { config });
 
-    const results = graph.get("source", entrypoint)!;
-    assert.equal(results.length, 2);
-    assert.deepEqual(results, [coreTranslations, reactTranslations]);
+    assert.equal(collected.length, 2);
+    assert.deepEqual(collected, [coreTranslations, reactTranslations]);
 });
 
 test("skips resolving additional files when walk disabled", async () => {
@@ -44,19 +59,28 @@ test("skips resolving additional files when walk disabled", async () => {
     const plugin: Plugin = {
         name: "mock",
         setup(build) {
-            build.onResolve({ filter: /.*/ }, ({ file }) => {
-                if (file.path === extra) resolvedExtra = true;
-                return file.path;
+            build.onResolve({ filter: /.*/, namespace: "source" }, ({ entrypoint, path, namespace }) => {
+                if (path === extra) resolvedExtra = true;
+                return { entrypoint, path, namespace };
             });
-            build.onLoad({ filter: /.*/ }, () => "");
-            build.onProcess({ filter: /.*/ }, (_args, api) => {
-                api.emit({ path: extra, namespace: "source" });
+            build.onLoad({ filter: /.*/, namespace: "source" }, ({ entrypoint, path, namespace }) => ({
+                entrypoint,
+                path,
+                namespace,
+                data: "",
+            }));
+            build.onProcess({ filter: /.*/, namespace: "source" }, (args) => {
+                build.resolve({
+                    entrypoint: args.entrypoint,
+                    path: extra,
+                    namespace: "source",
+                });
             });
         },
     };
 
     const config = defineConfig({ entrypoints: entrypoint, walk: false, plugins: () => [plugin] });
-    await run(entrypoint, { config });
+    await run(config.entrypoints[0], { config });
 
     assert.equal(resolvedExtra, false);
 });
@@ -69,13 +93,22 @@ test("skips resolving paths matching exclude", async () => {
     const plugin: Plugin = {
         name: "mock",
         setup(build) {
-            build.onResolve({ filter: /.*/ }, ({ file }) => {
-                if (file.path === extra) resolvedExtra = true;
-                return file.path;
+            build.onResolve({ filter: /.*/, namespace: "source" }, ({ entrypoint, path, namespace }) => {
+                if (path === extra) resolvedExtra = true;
+                return { entrypoint, path, namespace };
             });
-            build.onLoad({ filter: /.*/ }, () => "");
-            build.onProcess({ filter: /.*/ }, (_args, api) => {
-                api.emit({ path: extra, namespace: "source" });
+            build.onLoad({ filter: /.*/, namespace: "source" }, ({ entrypoint, path, namespace }) => ({
+                entrypoint,
+                path,
+                namespace,
+                data: "",
+            }));
+            build.onProcess({ filter: /.*/, namespace: "source" }, (args) => {
+                build.resolve({
+                    entrypoint: args.entrypoint,
+                    path: extra,
+                    namespace: "source",
+                });
             });
         },
     };
@@ -85,7 +118,7 @@ test("skips resolving paths matching exclude", async () => {
         exclude: (p) => p === extra,
         plugins: () => [plugin],
     });
-    await run(entrypoint, { config });
+    await run(config.entrypoints[0], { config });
 
     assert.equal(resolvedExtra, false);
 });

@@ -19,19 +19,36 @@ test("removes empty stray translation files", async () => {
     const plugin: Plugin = {
         name: "mock",
         setup(build) {
-            build.onResolve({ filter: /.*/ }, ({ file }) => file);
-            build.onLoad({ filter: /.*/ }, () => "");
-            build.onProcess({ filter: /.*/ }, async (_args, api) => {
+            build.onResolve({ filter: /.*/, namespace: "source" }, ({ entrypoint, path, namespace }) => ({
+                entrypoint,
+                path,
+                namespace,
+            }));
+            build.onLoad({ filter: /.*/, namespace: "source" }, ({ entrypoint, path, namespace }) => ({
+                entrypoint,
+                path,
+                namespace,
+                data: "",
+            }));
+            build.onProcess({ filter: /.*/, namespace: "source" }, async (args) => {
                 await fs.mkdir(dirname(generated), { recursive: true });
                 await fs.writeFile(generated, "");
-                api.graph.add("translate", generated, "");
-                api.emit({ path: generated, namespace: "cleanup" });
+                build.resolve({
+                    entrypoint: args.entrypoint,
+                    path: generated,
+                    namespace: "translate",
+                });
+                build.resolve({
+                    entrypoint: args.entrypoint,
+                    path: generated,
+                    namespace: "cleanup",
+                });
             });
         },
     };
 
     const config = defineConfig({ entrypoints: entrypoint, plugins: () => [plugin, cleanup()] });
-    await run(entrypoint, { config });
+    await run(config.entrypoints[0], { config });
 
     const exists = await fs.access(stray).then(() => true).catch(() => false);
     assert.equal(exists, false);

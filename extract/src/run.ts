@@ -12,7 +12,6 @@ import type {
     ResolveArgs,
     ResolveHook,
 } from "./plugin.ts";
-import { ResultGraph } from "./plugin.ts";
 
 type Task =
     | {
@@ -29,26 +28,20 @@ type Task =
       };
 
 class Defer {
-    pending: number;
-    promise: Promise<void>;
-    resolve!: (value: void | PromiseLike<void>) => void;
-    reject!: (reason?: unknown) => void;
-
-    constructor() {
-        this.pending = 0;
-        this.promise = new Promise<void>((resolve, reject) => {
-            this.resolve = resolve;
-            this.reject = reject;
-        });
-    }
+    pending = 0;
+    promise: Promise<void> = Promise.resolve();
+    resolve?: () => void;
 
     enqueue() {
-        this.pending++;
+        if (this.pending++ === 0) {
+            this.promise = new Promise<void>((res) => {
+                this.resolve = res;
+            });
+        }
     }
     dequeue() {
-        this.pending--;
-        if (this.pending <= 0) {
-            this.resolve();
+        if (this.pending > 0 && --this.pending === 0) {
+            this.resolve?.();
         }
     }
 }
@@ -92,6 +85,15 @@ export async function run(
     }
 
     function resolve(args: ResolveArgs) {
+        if (
+            args.path !== args.entrypoint &&
+            (!context.config.walk ||
+                context.config.exclude.some((ex) =>
+                    typeof ex === "function" ? ex(args.path) : ex.test(args.path),
+                ))
+        ) {
+            return;
+        }
         queue.push({ type: "resolve", args });
         getDeferred(args.namespace).enqueue();
     }
@@ -143,40 +145,43 @@ export async function run(
         }
     }
 
-    while (queue.length) {
-        const task = queue.shift();
-        if (!task) {
-            break;
+    while (queue.length || Array.from(pending.values()).some((d) => d.pending > 0)) {
+        while (queue.length) {
+            const task = queue.shift();
+            if (!task) {
+                break;
+            }
+
+            const { type } = task;
+            let args = task.args;
+
+            for (const {
+                filter: { filter, namespace },
+                hook,
+            } of hooks[type]) {
+                if (namespace !== args.namespace) continue;
+                if (filter && !filter.test(args.path)) continue;
+
+                const result = await hook(args as never);
+                if (result !== undefined) {
+                    args = result as never;
+                }
+            }
+
+            if (args !== undefined) {
+                if (type === "resolve") {
+                    load(args as never);
+                } else if (type === "load") {
+                    process(args as never);
+                }
+            }
+
+            getDeferred(task.args.namespace).dequeue();
         }
 
-        const { type, args } = task;
-
-        for (const {
-            filter: { filter, namespace },
-            hook,
-        } of hooks[type]) {
-            if (namespace !== args.namespace) continue;
-            if (filter && !filter.test(args.path)) continue;
-
-            const result = await hook(args as never);
-
-            if (result === undefined) {
-                return;
-            }
-
-            if (type === "resolve") {
-                load(result as never);
-            }
-
-            if (type === "load") {
-                process(result as never);
-            }
-
-            getDeferred(args.namespace).dequeue();
-        }
+        await Promise.all(Array.from(pending.values()).map((d) => d.promise));
+        await Promise.resolve();
     }
-
-    await Promise.all(Array.from(pending.values()).map((d) => d.promise));
 
     logger?.info({ entrypoint, locale: defaultLocale }, "extraction completed");
 }

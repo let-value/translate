@@ -20,7 +20,7 @@ async function extract() {
         locales: ["en", "ru", "sl", "sk"],
         defaultLocale: "ja",
     });
-    await run(appPath, { config });
+    await run(config.entrypoints[0], { config });
 }
 
 async function update(
