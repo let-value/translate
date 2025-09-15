@@ -1,83 +1,54 @@
 import assert from "node:assert/strict";
-import { join } from "node:path";
 import { test } from "node:test";
 
 import { defineConfig } from "../configuration.ts";
-import type { ExtractorPlugin, GenerateArgs } from "../plugin.ts";
+import type { Plugin } from "../plugin.ts";
 import { run } from "../run.ts";
 
-test("passes collected messages to generate hooks", async () => {
-    const entrypoint = "dummy.ts";
-    const path = entrypoint;
-    const destination = join("translations", "dummy.en.po");
-    const translations = [{ id: "hello", message: [""] }];
+test("runs all process hooks for a file", async () => {
+    const entrypoint = "dummy.tsx";
+    const coreTranslations = [{ id: "core", message: [""] }];
+    const reactTranslations = [{ id: "react", message: [""] }];
+    const collected: unknown[] = [];
 
-    let generated: GenerateArgs | undefined;
-
-    const plugin: ExtractorPlugin = {
-        name: "mock",
+    const corePlugin: Plugin = {
+        name: "core-plugin",
         setup(build) {
-            build.onResolve({ filter: /.*/ }, () => ({ entrypoint, path }));
-            build.onLoad({ filter: /.*/ }, (args) => ({ ...args, contents: "" }));
-            build.onExtract({ filter: /.*/ }, (args) => ({ ...args, translations }));
-            build.onCollect({ filter: /.*/ }, (args) => ({ ...args }));
-            build.onGenerate({ filter: /.*/ }, (args) => {
-                generated = args;
+            build.onResolve({ filter: /.*/, namespace: "source" }, (args) => args);
+            build.onLoad({ filter: /.*/, namespace: "source" }, (args) => ({ ...args, data: "" }));
+            build.onProcess({ filter: /.*/, namespace: "source" }, (args) => {
+                collected.push(coreTranslations);
+                return { ...args, data: coreTranslations };
             });
         },
     };
 
-    const config = defineConfig({ entrypoints: entrypoint, plugins: () => [plugin] });
-    await run(entrypoint, { config });
-
-    assert.deepEqual(generated, {
-        collected: [
-            {
-                destination,
-                entrypoint,
-                path,
-                translations,
-            },
-        ],
-        entrypoint,
-        path: destination,
-    });
-});
-
-test("runs all extract hooks for a file", async () => {
-    const entrypoint = "dummy.tsx";
-    const path = entrypoint;
-    const coreTranslations = [{ id: "core", message: [""] }];
-    const reactTranslations = [{ id: "react", message: [""] }];
-
-    const corePlugin: ExtractorPlugin = {
-        name: "core-plugin",
-        setup(build) {
-            build.onResolve({ filter: /.*/ }, () => ({ entrypoint, path }));
-            build.onLoad({ filter: /.*/ }, (args) => ({ ...args, contents: "" }));
-            build.onExtract({ filter: /.*/ }, (args) => ({ ...args, translations: coreTranslations }));
-            build.onCollect({ filter: /.*/ }, (args) => ({ ...args }));
-        },
-    };
-
-    const reactPlugin: ExtractorPlugin = {
+    const reactPlugin: Plugin = {
         name: "react-plugin",
         setup(build) {
-            build.onResolve({ filter: /.*/ }, () => ({ entrypoint, path }));
-            build.onLoad({ filter: /.*/ }, (args) => ({ ...args, contents: "" }));
-            build.onExtract({ filter: /.*/ }, (args) => ({ ...args, translations: reactTranslations }));
-            build.onCollect({ filter: /.*/ }, (args) => ({ ...args }));
+            build.onResolve({ filter: /.*/, namespace: "source" }, ({ entrypoint, path, namespace }) => ({
+                entrypoint,
+                path,
+                namespace,
+            }));
+            build.onLoad({ filter: /.*/, namespace: "source" }, ({ entrypoint, path, namespace }) => ({
+                entrypoint,
+                path,
+                namespace,
+                data: "",
+            }));
+            build.onProcess({ filter: /.*/, namespace: "source" }, (args) => {
+                collected.push(reactTranslations);
+                return { ...args, data: reactTranslations };
+            });
         },
     };
 
     const config = defineConfig({ entrypoints: entrypoint, plugins: () => [corePlugin, reactPlugin] });
-    const results = await run(entrypoint, { config });
+    await run(config.entrypoints[0], { config });
 
-    assert.equal(results.length, 2);
-    assert.deepEqual(
-        results.map((r) => r.translations),
-        [coreTranslations, reactTranslations],
-    );
+    assert.equal(collected.length, 2);
+    assert.deepEqual(collected, [coreTranslations, reactTranslations]);
 });
 
 test("skips resolving additional files when walk disabled", async () => {
@@ -85,26 +56,32 @@ test("skips resolving additional files when walk disabled", async () => {
     const extra = "extra.ts";
     let resolvedExtra = false;
 
-    const plugin: ExtractorPlugin = {
+    const plugin: Plugin = {
         name: "mock",
         setup(build) {
-            build.onResolve({ filter: /.*/ }, ({ path }) => {
-                if (path === extra) {
-                    resolvedExtra = true;
-                }
-                return { entrypoint, path };
+            build.onResolve({ filter: /.*/, namespace: "source" }, ({ entrypoint, path, namespace }) => {
+                if (path === extra) resolvedExtra = true;
+                return { entrypoint, path, namespace };
             });
-            build.onLoad({ filter: /.*/ }, (args) => ({ ...args, contents: "" }));
-            build.onExtract({ filter: /.*/ }, (args) => {
-                build.resolvePath({ entrypoint, path: extra });
-                return { ...args, translations: [] };
+            build.onLoad({ filter: /.*/, namespace: "source" }, ({ entrypoint, path, namespace }) => ({
+                entrypoint,
+                path,
+                namespace,
+                data: "",
+            }));
+            build.onProcess({ filter: /.*/, namespace: "source" }, (args) => {
+                build.resolve({
+                    entrypoint: args.entrypoint,
+                    path: extra,
+                    namespace: "source",
+                });
+                return undefined;
             });
-            build.onCollect({ filter: /.*/ }, (args) => ({ ...args, destination: "out.po" }));
         },
     };
 
     const config = defineConfig({ entrypoints: entrypoint, walk: false, plugins: () => [plugin] });
-    await run(entrypoint, { config });
+    await run(config.entrypoints[0], { config });
 
     assert.equal(resolvedExtra, false);
 });
@@ -114,21 +91,27 @@ test("skips resolving paths matching exclude", async () => {
     const extra = "extra.ts";
     let resolvedExtra = false;
 
-    const plugin: ExtractorPlugin = {
+    const plugin: Plugin = {
         name: "mock",
         setup(build) {
-            build.onResolve({ filter: /.*/ }, ({ path }) => {
-                if (path === extra) {
-                    resolvedExtra = true;
-                }
-                return { entrypoint, path };
+            build.onResolve({ filter: /.*/, namespace: "source" }, ({ entrypoint, path, namespace }) => {
+                if (path === extra) resolvedExtra = true;
+                return { entrypoint, path, namespace };
             });
-            build.onLoad({ filter: /.*/ }, (args) => ({ ...args, contents: "" }));
-            build.onExtract({ filter: /.*/ }, (args) => {
-                build.resolvePath({ entrypoint, path: extra });
-                return { ...args, translations: [] };
+            build.onLoad({ filter: /.*/, namespace: "source" }, ({ entrypoint, path, namespace }) => ({
+                entrypoint,
+                path,
+                namespace,
+                data: "",
+            }));
+            build.onProcess({ filter: /.*/, namespace: "source" }, (args) => {
+                build.resolve({
+                    entrypoint: args.entrypoint,
+                    path: extra,
+                    namespace: "source",
+                });
+                return undefined;
             });
-            build.onCollect({ filter: /.*/ }, (args) => ({ ...args, destination: "out.po" }));
         },
     };
 
@@ -137,43 +120,7 @@ test("skips resolving paths matching exclude", async () => {
         exclude: (p) => p === extra,
         plugins: () => [plugin],
     });
-    await run(entrypoint, { config });
+    await run(config.entrypoints[0], { config });
 
     assert.equal(resolvedExtra, false);
-});
-
-test("generates outputs for all configured locales with single extraction", async () => {
-    const entrypoint = "dummy.ts";
-    const path = entrypoint;
-    const translations = [{ id: "hello", message: [""] }];
-
-    let extractCount = 0;
-    const generatedLocales: string[] = [];
-
-    const plugin: ExtractorPlugin = {
-        name: "mock",
-        setup(build) {
-            build.onResolve({ filter: /.*/ }, () => ({ entrypoint, path }));
-            build.onLoad({ filter: /.*/ }, (args) => ({ ...args, contents: "" }));
-            build.onExtract({ filter: /.*/ }, (args) => {
-                extractCount++;
-                return { ...args, translations };
-            });
-            build.onCollect({ filter: /.*/ }, (args) => ({ ...args }));
-            build.onGenerate({ filter: /.*/ }, (_args, ctx) => {
-                generatedLocales.push(ctx.locale);
-            });
-        },
-    };
-
-    const config = defineConfig({
-        entrypoints: entrypoint,
-        locales: ["en", "es"],
-        defaultLocale: "en",
-        plugins: () => [plugin],
-    });
-    await run(entrypoint, { config });
-
-    assert.equal(extractCount, 1);
-    assert.deepEqual(generatedLocales.sort(), ["en", "es"]);
 });

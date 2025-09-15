@@ -1,78 +1,134 @@
-import type { ResolvedConfig } from "./configuration.ts";
+import { globSync } from "glob";
+import type { ResolvedConfig, ResolvedEntrypoint } from "./configuration.ts";
 import type { Logger } from "./logger.ts";
 import type {
-    CollectArgs,
-    CollectHook,
-    CollectResult,
-    ExtractArgs,
-    ExtractBuild,
-    ExtractContext,
-    ExtractHook,
-    ExtractResult,
-    GenerateHook,
+    Build,
+    Context,
+    Filter,
     LoadArgs,
     LoadHook,
-    LoadResult,
+    ProcessArgs,
+    ProcessHook,
     ResolveArgs,
     ResolveHook,
-    ResolveResult,
 } from "./plugin.ts";
 
-export async function run(entrypoint: string, { config, logger }: { config: ResolvedConfig; logger?: Logger }) {
-    const entryConfig = config.entrypoints.find((e) => e.entrypoint === entrypoint);
-    const destination = entryConfig?.destination ?? config.destination;
-    const obsolete = entryConfig?.obsolete ?? config.obsolete;
-    const exclude = entryConfig?.exclude ?? config.exclude;
+type Task =
+    | {
+          type: "resolve";
+          args: ResolveArgs;
+      }
+    | {
+          type: "load";
+          args: LoadArgs;
+      }
+    | {
+          type: "process";
+          args: ProcessArgs;
+      };
 
-    const queue: ResolveArgs[] = [{ entrypoint, path: entrypoint }];
+class Defer {
+    pending = 0;
+    promise: Promise<void> = Promise.resolve();
+    resolve?: () => void;
+
+    enqueue() {
+        if (this.pending++ === 0) {
+            this.promise = new Promise<void>((res) => {
+                this.resolve = res;
+            });
+        }
+    }
+    dequeue() {
+        if (this.pending > 0 && --this.pending === 0) {
+            this.resolve?.();
+        }
+    }
+}
+
+export async function run(
+    entrypoint: ResolvedEntrypoint,
+    { config, logger }: { config: ResolvedConfig; logger?: Logger },
+) {
+    const destination = entrypoint?.destination ?? config.destination;
+    const obsolete = entrypoint?.obsolete ?? config.obsolete;
+    const exclude = entrypoint?.exclude ?? config.exclude;
 
     const defaultLocale = config.defaultLocale;
 
-    logger?.info({ entrypoint, locale: defaultLocale }, "starting extraction");
+    logger?.info({ entrypoint }, "starting extraction");
 
-    const context: ExtractContext = {
-        entrypoint,
+    const resolvers: { filter: Filter; hook: ResolveHook }[] = [];
+    const loaders: { filter: Filter; hook: LoadHook }[] = [];
+    const processors: { filter: Filter; hook: ProcessHook }[] = [];
+    const hooks = {
+        resolve: resolvers,
+        load: loaders,
+        process: processors,
+    };
+
+    const pending = new Map<string, Defer>();
+    const queue: Task[] = [];
+
+    function getDeferred(namespace: string) {
+        let d = pending.get(namespace);
+        if (d === undefined) {
+            d = new Defer();
+            pending.set(namespace, d);
+        }
+        return d;
+    }
+
+    function defer(namespace: string) {
+        const d = getDeferred(namespace);
+        return d.promise;
+    }
+
+    function resolve(args: ResolveArgs) {
+        if (
+            args.path !== args.entrypoint &&
+            (!context.config.walk ||
+                context.config.exclude.some((ex) =>
+                    typeof ex === "function" ? ex(args.path) : ex.test(args.path),
+                ))
+        ) {
+            return;
+        }
+        queue.push({ type: "resolve", args });
+        getDeferred(args.namespace).enqueue();
+    }
+
+    function load(args: LoadArgs) {
+        queue.push({ type: "load", args });
+        getDeferred(args.namespace).enqueue();
+    }
+
+    function process(args: ProcessArgs) {
+        queue.push({ type: "process", args });
+        getDeferred(args.namespace).enqueue();
+    }
+
+    const context: Context = {
         config: { ...config, destination, obsolete, exclude },
         generatedAt: new Date(),
-        locale: defaultLocale,
         logger,
     };
 
-    const resolves: { filter: RegExp; hook: ResolveHook }[] = [];
-    const loads: { filter: RegExp; hook: LoadHook }[] = [];
-    const extracts: { filter: RegExp; hook: ExtractHook }[] = [];
-    const collects: { filter: RegExp; hook: CollectHook }[] = [];
-    const generates: { filter: RegExp; hook: GenerateHook }[] = [];
-
-    function resolvePath(args: ResolveArgs) {
-        for (const ex of context.config.exclude) {
-            if (ex instanceof RegExp ? ex.test(args.path) : ex(args.path)) {
-                return;
-            }
-        }
-        if (context.config.walk) {
-            queue.push(args);
-        }
-    }
-
-    const build: ExtractBuild = {
-        onResolve({ filter }, hook) {
-            resolves.push({ filter, hook });
-        },
-        onLoad({ filter }, hook) {
-            loads.push({ filter, hook });
-        },
-        onExtract({ filter }, hook) {
-            extracts.push({ filter, hook });
-        },
-        onCollect({ filter }, hook) {
-            collects.push({ filter, hook });
-        },
-        onGenerate({ filter }, hook) {
-            generates.push({ filter, hook });
-        },
-        resolvePath,
+    const build: Build = {
         context,
+        resolve,
+        load,
+        process,
+        defer,
+        onResolve(filter, hook) {
+            resolvers.push({ filter, hook });
+        },
+        onLoad(filter, hook) {
+            loaders.push({ filter, hook });
+        },
+        onProcess(filter, hook) {
+            processors.push({ filter, hook });
+        },
     };
 
     for (const plugin of config.plugins) {
@@ -80,112 +136,52 @@ export async function run(entrypoint: string, { config, logger }: { config: Reso
         plugin.setup(build);
     }
 
-    const visited = new Set<string>();
-
-    async function applyResolve({ entrypoint, path }: ResolveArgs): Promise<ResolveResult | undefined> {
-        for (const { filter, hook } of resolves) {
-            if (!filter.test(path)) continue;
-            const result = await hook({ entrypoint, path }, context);
-            if (result) {
-                logger?.debug(result, "resolved");
-            }
-            if (result) return result;
+    const paths = globSync(entrypoint.entrypoint, { nodir: true });
+    if (paths.length === 0) {
+        resolve({ entrypoint: entrypoint.entrypoint, path: entrypoint.entrypoint, namespace: "source" });
+    } else {
+        for (const path of paths) {
+            resolve({ entrypoint: entrypoint.entrypoint, path, namespace: "source" });
         }
-        return undefined;
     }
 
-    async function applyLoad({ entrypoint, path }: LoadArgs): Promise<LoadResult | undefined> {
-        for (const { filter, hook } of loads) {
-            if (!filter.test(path)) continue;
-            const result = await hook({ entrypoint, path }, context);
-            if (result) {
-                logger?.debug({ entrypoint, path }, "loaded");
+    while (queue.length || Array.from(pending.values()).some((d) => d.pending > 0)) {
+        while (queue.length) {
+            const task = queue.shift();
+            if (!task) {
+                break;
             }
-            if (result) return result;
-        }
-        return undefined;
-    }
 
-    async function applyExtract({ entrypoint, path, contents }: ExtractArgs): Promise<ExtractResult[]> {
-        const results: ExtractResult[] = [];
-        for (const { filter, hook } of extracts) {
-            if (!filter.test(path)) continue;
-            const result = await hook({ entrypoint, path, contents }, context);
-            if (result) {
-                logger?.debug({ entrypoint, path }, "extracted");
-                results.push(result);
+            const { type } = task;
+            let args = task.args;
+
+            for (const {
+                filter: { filter, namespace },
+                hook,
+            } of hooks[type]) {
+                if (namespace !== args.namespace) continue;
+                if (filter && !filter.test(args.path)) continue;
+
+                const result = await hook(args as never);
+                if (result !== undefined) {
+                    args = result as never;
+                }
             }
-        }
-        return results;
-    }
 
-    async function applyCollect({
-        entrypoint,
-        path,
-        translations,
-        destination,
-    }: CollectArgs): Promise<CollectResult | undefined> {
-        for (const { filter, hook } of collects) {
-            if (!filter.test(path)) continue;
-            const result = await hook({ entrypoint, path, translations, destination }, context);
-            if (result) {
-                logger?.debug(
-                    {
-                        entrypoint,
-                        path,
-                        destination,
-                        ...(destination !== result.destination && { redirected: result.destination }),
-                    },
-                    "collected",
-                );
+            if (args !== undefined) {
+                if (type === "resolve") {
+                    load(args as never);
+                } else if (type === "load") {
+                    process(args as never);
+                }
             }
-            if (result) return result;
-        }
-        return undefined;
-    }
 
-    const extractedResults: ExtractResult[] = [];
-
-    while (queue.length) {
-        // biome-ignore lint/style/noNonNullAssertion: queue is checked above
-        const args = queue.shift()!;
-        const resolved = await applyResolve(args);
-        if (!resolved || visited.has(resolved.path)) continue;
-        visited.add(resolved.path);
-
-        const loaded = await applyLoad(resolved);
-        if (!loaded) continue;
-
-        const extracted = await applyExtract(loaded);
-        if (!extracted.length) continue;
-
-        extractedResults.push(...extracted);
-    }
-
-    for (const locale of config.locales) {
-        context.locale = locale;
-        const collectedByDest: Record<string, CollectResult[]> = {};
-
-        for (const extracted of extractedResults) {
-            const destination = context.config.destination({ entrypoint, locale, path: extracted.path });
-            const collected = await applyCollect({ ...extracted, destination });
-            if (!collected) continue;
-
-            if (!collectedByDest[collected.destination]) {
-                collectedByDest[collected.destination] = [];
-            }
-            collectedByDest[collected.destination].push(collected);
+            getDeferred(task.args.namespace).dequeue();
         }
 
-        for (const [path, collected] of Object.entries(collectedByDest)) {
-            for (const { filter, hook } of generates) {
-                if (!filter.test(path)) continue;
-                logger?.info({ path, locale }, "generating output");
-                await hook({ entrypoint, path, collected }, context);
-            }
-        }
+        await Promise.all(Array.from(pending.values()).map((d) => d.promise));
+        await Promise.resolve();
     }
 
     logger?.info({ entrypoint, locale: defaultLocale }, "extraction completed");
-    return extractedResults;
 }

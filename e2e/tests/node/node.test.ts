@@ -4,8 +4,8 @@ import fs from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
-import { defineConfig, run } from "@let-value/translate-extract";
 import * as gettextParser from "gettext-parser";
+import { defineConfig, run } from "../../../extract/src/index.ts";
 
 import { runApp } from "./app.ts";
 
@@ -20,7 +20,7 @@ async function extract() {
         locales: ["en", "ru", "sl", "sk"],
         defaultLocale: "ja",
     });
-    await run(appPath, { config });
+    await run(config.entrypoints[0], { config });
 }
 
 async function update(

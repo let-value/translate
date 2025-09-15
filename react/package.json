@@ -11,7 +11,6 @@
             "import": "./dist/index.js",
             "require": "./dist/index.cjs"
         },
-        "./test/*": "./test/*",
         "./package.json": "./package.json"
     },
     "files": [
@@ -29,6 +28,7 @@
         "radash": "^12.1.1"
     },
     "devDependencies": {
+        "@let-value/translate-e2e": "1.0.9",
         "@types/gettext-parser": "8.0.0",
         "@types/react": "19.1.12",
         "@types/react-dom": "19.1.9",

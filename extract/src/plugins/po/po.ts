@@ -1,11 +1,17 @@
 import fs from "node:fs/promises";
-import { basename, dirname, extname, join } from "node:path";
+import { dirname } from "node:path";
+
 import type { GetTextTranslationRecord, GetTextTranslations } from "gettext-parser";
 import * as gettextParser from "gettext-parser";
 import { getFormula, getNPlurals } from "plural-forms";
+
 import type { ObsoleteStrategy } from "../../configuration.ts";
-import type { CollectResult, ExtractContext, ExtractorPlugin, GenerateArgs } from "../../plugin.ts";
+import type { Plugin } from "../../plugin.ts";
 import type { Translation } from "../core/queries/types.ts";
+
+export interface Collected {
+    translations: GetTextTranslationRecord;
+}
 
 export function formatDate(date: Date): string {
     const pad = (n: number) => n.toString().padStart(2, "0");
@@ -67,7 +73,7 @@ export function collect(source: Translation[], locale?: string): GetTextTranslat
 }
 
 export function merge(
-    sources: CollectResult[],
+    sources: Collected[],
     existing: string | Buffer | undefined,
     obsolete: ObsoleteStrategy,
     locale: string,
@@ -93,7 +99,7 @@ export function merge(
 
     const collected: GetTextTranslationRecord = { "": {} };
     for (const { translations: record } of sources) {
-        for (const [ctx, msgs] of Object.entries(record as GetTextTranslationRecord)) {
+        for (const [ctx, msgs] of Object.entries(record)) {
             if (!collected[ctx]) collected[ctx] = {};
             for (const [id, entry] of Object.entries(msgs)) {
                 const existing = collected[ctx][id];
@@ -171,27 +177,87 @@ export function merge(
     return gettextParser.po.compile(poObj).toString();
 }
 
-export function po(): ExtractorPlugin {
+const namespace = "translate";
+
+export function po(): Plugin {
     return {
         name: "po",
         setup(build) {
             build.context.logger?.debug("po plugin initialized");
-            build.onCollect({ filter: /.*/ }, ({ entrypoint, translations, destination, ...rest }, ctx) => {
-                const record = collect(translations as Translation[], ctx.locale);
-                const redirected = join(dirname(destination), `${basename(destination, extname(destination))}.po`);
+            const collections = new Map<
+                string,
+                {
+                    locale: string;
+                    translations: Translation[];
+                }
+            >();
+            let dispatched = false;
 
+            build.onResolve({ filter: /.*/, namespace }, async ({ entrypoint, path, data }) => {
+                if (!data || !Array.isArray(data)) {
+                    return undefined;
+                }
+
+                for (const locale of build.context.config.locales) {
+                    const destination = build.context.config.destination({ entrypoint, locale, path });
+                    if (!collections.has(destination)) {
+                        collections.set(destination, { locale, translations: [] });
+                    }
+
+                    collections.get(destination)?.translations.push(...data);
+                }
+
+                build.defer("source").then(() => {
+                    if (dispatched) {
+                        return;
+                    }
+                    dispatched = true;
+
+                    for (const path of collections.keys()) {
+                        build.load({ entrypoint, path, namespace });
+                    }
+                });
+
+                return undefined;
+            });
+
+            build.onLoad({ filter: /.*\.po$/, namespace }, async ({ entrypoint, path }) => {
+                const data = await fs.readFile(path).catch(() => undefined);
                 return {
-                    ...rest,
                     entrypoint,
-                    destination: redirected,
-                    translations: record,
+                    path,
+                    namespace,
+                    data,
                 };
             });
-            build.onGenerate({ filter: /\.po$/ }, async ({ path, collected }: GenerateArgs, ctx: ExtractContext) => {
-                const existing = await fs.readFile(path).catch(() => undefined);
-                const out = merge(collected, existing, ctx.config.obsolete, ctx.locale, ctx.generatedAt);
+
+            build.onProcess({ filter: /.*\.po$/, namespace }, async ({ entrypoint, path, data }) => {
+                const collected = collections.get(path);
+                if (!collected) {
+                    build.context.logger?.warn({ path }, "no translations collected for this path");
+                    return undefined;
+                }
+
+                const { locale, translations } = collected;
+
+                const record = collect(translations, locale);
+
+                const out = merge(
+                    [{ translations: record }],
+                    data as never,
+                    build.context.config.obsolete,
+                    locale,
+                    build.context.generatedAt,
+                );
                 await fs.mkdir(dirname(path), { recursive: true });
                 await fs.writeFile(path, out);
+
+                build.resolve({
+                    entrypoint,
+                    path,
+                    namespace: "cleanup",
+                    data: translations,
+                });
             });
         },
     };

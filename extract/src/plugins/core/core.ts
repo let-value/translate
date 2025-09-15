@@ -1,46 +1,60 @@
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
-import type { ExtractorPlugin } from "../../plugin.ts";
+
+import type { Plugin } from "../../plugin.ts";
 import { parseSource } from "./parse.ts";
+import type { Translation } from "./queries/types.ts";
 import { resolveImports } from "./resolve.ts";
 
 const filter = /\.([cm]?tsx?|jsx?)$/;
+const namespace = "source";
 
-export function core(): ExtractorPlugin {
+export function core(): Plugin<string, Translation[]> {
     return {
         name: "core",
         setup(build) {
             build.context.logger?.debug("core plugin initialized");
-            build.onResolve({ filter: /.*/ }, ({ entrypoint, path }) => {
+            build.onResolve({ filter, namespace }, ({ entrypoint, path }) => {
                 return {
                     entrypoint,
+                    namespace,
                     path: resolve(path),
                 };
             });
-            build.onLoad({ filter }, async ({ entrypoint, path }) => {
-                const contents = await readFile(path, "utf8");
-                return { entrypoint, path, contents };
-            });
-            build.onExtract({ filter }, ({ entrypoint, path, contents }) => {
-                const { translations, imports, warnings } = parseSource(contents, path);
-                if (build.context.config.walk) {
-                    const paths = resolveImports(path, imports);
-                    for (const path of paths) {
-                        build.resolvePath({
-                            entrypoint,
-                            path,
-                        });
-                    }
-                }
-                for (const warning of warnings) {
-                    build.context.logger?.warn(`${warning.error} at ${warning.reference}`);
-                }
+
+            build.onLoad({ filter, namespace }, async ({ entrypoint, path }) => {
+                const data = await readFile(path, "utf8");
                 return {
                     entrypoint,
                     path,
-                    translations,
+                    namespace,
+                    data,
                 };
             });
+
+            build.onProcess({ filter, namespace }, ({ entrypoint, path, data }) => {
+                const { translations, imports, warnings } = parseSource(data, path);
+
+                if (build.context.config.walk) {
+                    const paths = resolveImports(path, imports);
+                    for (const path of paths) {
+                        build.resolve({ entrypoint, path, namespace });
+                    }
+                }
+
+                for (const warning of warnings) {
+                    build.context.logger?.warn(`${warning.error} at ${warning.reference}`);
+                }
+
+                build.resolve({
+                    entrypoint,
+                    path,
+                    namespace: "translate",
+                    data: translations,
+                });
+
+                return undefined;
+            });
         },
-    } satisfies ExtractorPlugin;
+    };
 }

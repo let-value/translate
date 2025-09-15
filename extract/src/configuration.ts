@@ -1,7 +1,7 @@
 import { basename, dirname, extname, join } from "node:path";
-import { globSync } from "glob";
 import type { LevelWithSilent } from "pino";
-import type { ExtractorPlugin } from "./plugin.ts";
+
+import type { Plugin } from "./plugin.ts";
 import { core } from "./plugins/core/core.ts";
 import { po } from "./plugins/po/po.ts";
 
@@ -22,7 +22,7 @@ export interface EntrypointConfig {
 }
 
 export interface UserConfig {
-    plugins?: ExtractorPlugin[] | ((defaultPlugins: DefaultPlugins) => ExtractorPlugin[]);
+    plugins?: Plugin[] | ((defaultPlugins: DefaultPlugins) => Plugin[]);
     entrypoints: string | EntrypointConfig | Array<string | EntrypointConfig>;
     defaultLocale?: string;
     locales?: string[];
@@ -38,7 +38,7 @@ export interface ResolvedEntrypoint extends Omit<EntrypointConfig, "exclude"> {
 }
 
 export interface ResolvedConfig {
-    plugins: ExtractorPlugin[];
+    plugins: Plugin[];
     entrypoints: ResolvedEntrypoint[];
     defaultLocale: string;
     locales: string[];
@@ -64,7 +64,7 @@ function normalizeExclude(exclude?: Exclude | Exclude[]): Exclude[] {
 }
 
 export function defineConfig(config: UserConfig): ResolvedConfig {
-    let plugins: ExtractorPlugin[];
+    let plugins: Plugin[];
     const user = config.plugins;
     if (typeof user === "function") {
         plugins = user(defaultPlugins);
@@ -78,22 +78,11 @@ export function defineConfig(config: UserConfig): ResolvedConfig {
     const entrypoints: ResolvedEntrypoint[] = [];
     for (const ep of raw) {
         if (typeof ep === "string") {
-            const paths = globSync(ep, { nodir: true });
-            if (paths.length === 0) {
-                entrypoints.push({ entrypoint: ep });
-            } else {
-                for (const path of paths) entrypoints.push({ entrypoint: path });
-            }
+            entrypoints.push({ entrypoint: ep });
         } else {
             const { entrypoint, destination, obsolete, exclude } = ep;
-            const paths = globSync(entrypoint, { nodir: true });
             const epExclude = exclude ? [...defaultExclude, ...normalizeExclude(exclude)] : undefined;
-            if (paths.length === 0) {
-                entrypoints.push({ entrypoint, destination, obsolete, exclude: epExclude });
-            } else {
-                for (const path of paths)
-                    entrypoints.push({ entrypoint: path, destination, obsolete, exclude: epExclude });
-            }
+            entrypoints.push({ entrypoint, destination, obsolete, exclude: epExclude });
         }
     }
 

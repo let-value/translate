@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import * as gettextParser from "gettext-parser";
-import type { CollectResult } from "../../plugin.ts";
+import type { GetTextTranslationRecord } from "gettext-parser";
 import { merge } from "./po.ts";
 
 const date = new Date("2024-01-01T00:00:00Z");
@@ -20,8 +20,14 @@ function createExisting() {
     return po.toString();
 }
 
-function runMerge(sources: CollectResult[], existing: string | undefined, strategy: "mark" | "remove") {
-    return merge(sources, existing, strategy, "en", date);
+function runMerge(sources: GetTextTranslationRecord[], existing: string | undefined, strategy: "mark" | "remove") {
+    return merge(
+        sources.map((translations) => ({ translations })),
+        existing,
+        strategy,
+        "en",
+        date,
+    );
 }
 
 test("marks missing translations as obsolete", () => {

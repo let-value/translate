@@ -3,71 +3,75 @@ import type { Logger } from "./logger.ts";
 
 type MaybePromise<T> = T | Promise<T>;
 
-export interface ExtractContext {
-    entrypoint: string;
+export interface Context {
     config: ResolvedConfig;
     generatedAt: Date;
-    locale: string;
     logger?: Logger;
 }
 
-export interface ResolveArgs {
+export interface ResolveArgs<TInput = unknown> {
     entrypoint: string;
     path: string;
+    namespace: string;
+    data?: TInput;
 }
 
-export type ResolveResult = ResolveArgs & {
+export interface ResolveResult<TInput = unknown> {
     entrypoint: string;
     path: string;
-};
-
-export type ResolveHook = (args: ResolveArgs, ctx: ExtractContext) => MaybePromise<ResolveResult>;
-
-export type LoadArgs = ResolveResult;
-
-export type LoadResult = LoadArgs & {
-    contents: string;
-};
-
-export type LoadHook = (args: LoadArgs, ctx: ExtractContext) => MaybePromise<LoadResult | undefined>;
-
-export type ExtractArgs = LoadResult;
-
-export type ExtractResult = ResolveResult & {
-    translations: unknown;
-};
-
-export type ExtractHook = (args: ExtractArgs, ctx: ExtractContext) => MaybePromise<ExtractResult | undefined>;
-
-export type CollectArgs = ExtractResult & {
-    destination: string;
-};
-
-export type CollectResult = ExtractResult & {
-    destination: string;
-};
-
-export type CollectHook = (args: CollectArgs, ctx: ExtractContext) => MaybePromise<CollectResult | undefined>;
-
-export type GenerateArgs = {
-    entrypoint: string;
-    path: string;
-    collected: CollectResult[];
-};
-
-export type GenerateHook = (args: GenerateArgs, ctx: ExtractContext) => MaybePromise<void>;
-
-export interface ExtractBuild {
-    onResolve(options: { filter: RegExp }, hook: ResolveHook): void;
-    onLoad(options: { filter: RegExp }, hook: LoadHook): void;
-    onExtract(options: { filter: RegExp }, hook: ExtractHook): void;
-    onCollect(options: { filter: RegExp }, hook: CollectHook): void;
-    onGenerate(options: { filter: RegExp }, hook: GenerateHook): void;
-    resolvePath(args: ResolveArgs): void;
-    context: ExtractContext;
+    namespace: string;
+    data?: TInput;
 }
 
-export interface ExtractorPlugin {
+export interface LoadArgs<TInput = unknown> {
+    entrypoint: string;
+    path: string;
+    namespace: string;
+    data?: TInput;
+}
+
+export interface LoadResult<TInput = unknown> {
+    entrypoint: string;
+    path: string;
+    namespace: string;
+    data: TInput;
+}
+
+export interface ProcessArgs<TInput = unknown> {
+    entrypoint: string;
+    path: string;
+    namespace: string;
+    data: TInput;
+}
+
+export interface ProcessResult<TOutput = unknown> {
+    entrypoint: string;
+    path: string;
+    namespace: string;
+    data: TOutput;
+}
+
+export type Filter = { filter: RegExp; namespace?: string };
+export type ResolveHook<TInput = unknown> = (
+    args: ResolveArgs<TInput>,
+) => MaybePromise<ResolveResult<TInput> | undefined>;
+export type LoadHook<TInput = unknown> = (args: LoadArgs<TInput>) => MaybePromise<LoadResult<TInput> | undefined>;
+export type ProcessHook<TInput = unknown, TOutput = unknown> = (
+    args: ProcessArgs<TInput>,
+) => MaybePromise<ProcessResult<TOutput> | undefined>;
+
+export interface Build<TInput = unknown, TOutput = unknown> {
+    context: Context;
+    resolve(args: ResolveArgs<unknown>): void;
+    load(args: LoadArgs<unknown>): void;
+    process(args: ProcessArgs<unknown>): void;
+    defer(namespace: string): Promise<void>;
+    onResolve(options: Filter, hook: ResolveHook<TInput>): void;
+    onLoad(options: Filter, hook: LoadHook<TInput>): void;
+    onProcess(options: Filter, hook: ProcessHook<TInput, TOutput>): void;
+}
+
+export interface Plugin<TInput = unknown, TOutput = unknown> {
     name: string;
-    setup(build: ExtractBuild): void;
+    setup(build: Build<TInput, TOutput>): void;
 }

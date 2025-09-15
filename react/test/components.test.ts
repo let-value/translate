@@ -1,11 +1,11 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { message as msg, Translator } from "@let-value/translate";
+import { render } from "@let-value/translate-e2e/tests/utils.ts";
 import type { GetTextTranslations } from "gettext-parser";
 import { createElement, Fragment } from "react";
 
 import { Message, Plural, TranslationsProvider } from "../src/components/index.ts";
-import { render } from "./utils.ts";
 
 const translations: GetTextTranslations = { charset: "utf-8", headers: {}, translations: { "": {} } };
 

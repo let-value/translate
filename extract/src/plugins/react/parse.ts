@@ -4,14 +4,13 @@ import Parser from "tree-sitter";
 
 import { getParser } from "../core/parse.ts";
 import { getReference } from "../core/queries/comment.ts";
-import { importQuery } from "../core/queries/import.ts";
+
 import { queries as coreQueries } from "../core/queries/index.ts";
 import type { Context, Translation, Warning } from "../core/queries/types.ts";
 import { queries as reactQueries } from "./queries/index.ts";
 
 export interface ParseResult {
     translations: Translation[];
-    imports: string[];
     warnings: Warning[];
 }
 
@@ -28,7 +27,6 @@ export function parseSource(source: string, path: string): ParseResult {
 
     const translations: Translation[] = [];
     const warnings: Warning[] = [];
-    const imports: string[] = [];
     const seen = new Set<number>();
 
     for (const spec of [...coreQueries, ...reactQueries]) {
@@ -58,11 +56,5 @@ export function parseSource(source: string, path: string): ParseResult {
         }
     }
 
-    const importTreeQuery = new Parser.Query(language, importQuery.pattern);
-    for (const match of importTreeQuery.matches(tree.rootNode)) {
-        const imp = importQuery.extract(match);
-        if (imp) imports.push(imp);
-    }
-
-    return { translations, imports, warnings };
+    return { translations, warnings };
 }
