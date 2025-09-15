@@ -2,9 +2,9 @@ import assert from "node:assert/strict";
 import { join } from "node:path";
 import { test } from "node:test";
 import { type DestinationFn, defineConfig } from "../configuration.ts";
-import type { ExtractorPlugin } from "../plugin.ts";
+import type { Plugin } from "../plugin.ts";
 
-const mockPlugin: ExtractorPlugin = { name: "mock", setup() {} };
+const mockPlugin: Plugin = { name: "mock", setup() {} };
 
 test("appends plugins when array provided", () => {
     const cfg = defineConfig({ entrypoints: "src/index.ts", plugins: [mockPlugin] });

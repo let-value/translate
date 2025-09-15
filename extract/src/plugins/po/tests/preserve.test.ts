@@ -16,7 +16,7 @@ test("preserves existing translations and comments", async () => {
     const record = collect(translations, "en");
 
     const out = merge(
-        [{ entrypoint: fixture, path: fixture, destination: "messages.po", translations: record }],
+        [{ translations: record }],
         existing,
         "mark",
         "en",

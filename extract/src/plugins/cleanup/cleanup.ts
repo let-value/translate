@@ -11,11 +11,17 @@ export function cleanup(): Plugin {
         setup(build) {
             build.context.logger?.debug("cleanup plugin initialized");
             const processedDirs = new Set<string>();
-            build.onProcess({ namespace: "cleanup", filter: /.*/ }, async ({ file }, api) => {
-                await api.defer("translate");
-                const generated = new Set(api.graph.entries("translate").map(([f]) => f));
-                const dir = dirname(file.path);
-                if (processedDirs.has(dir)) return;
+            const generated = new Set<string>();
+
+            build.onResolve({ namespace: "cleanup", filter: /.*/ }, (args) => {
+                generated.add(args.path);
+                return args;
+            });
+
+            build.onProcess({ namespace: "cleanup", filter: /.*/ }, async ({ path }) => {
+                await build.defer("translate");
+                const dir = dirname(path);
+                if (processedDirs.has(dir)) return undefined;
                 processedDirs.add(dir);
                 const files = await fs.readdir(dir).catch(() => []);
                 for (const f of files.filter((p) => p.endsWith(".po"))) {
@@ -29,12 +35,13 @@ export function cleanup(): Plugin {
                             Object.keys(msgs).some((id) => !(ctx === "" && id === "")),
                         );
                     if (hasTranslations) {
-                        api.context.logger?.warn({ path: full }, "stray translation file");
+                        build.context.logger?.warn({ path: full }, "stray translation file");
                     } else {
                         await fs.unlink(full);
-                        api.context.logger?.info({ path: full }, "removed empty translation file");
+                        build.context.logger?.info({ path: full }, "removed empty translation file");
                     }
                 }
+                return undefined;
             });
         },
     };

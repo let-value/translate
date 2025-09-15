@@ -51,33 +51,6 @@ export interface ProcessResult<TOutput = unknown> {
     data: TOutput;
 }
 
-export class ResultGraph {
-    data = new Map<string, Map<string, unknown[]>>();
-
-    add(namespace: string, path: string, result: unknown): void {
-        if (!this.data.has(namespace)) {
-            this.data.set(namespace, new Map());
-        }
-        // biome-ignore lint/style/noNonNullAssertion: true
-        const map = this.data.get(namespace)!;
-        if (!map.has(path)) {
-            map.set(path, []);
-        }
-        // biome-ignore lint/style/noNonNullAssertion: true
-        map.get(path)!.push(result);
-    }
-
-    get<T = unknown>(namespace: string, path: string): T[] | undefined {
-        return this.data.get(namespace)?.get(path) as T[] | undefined;
-    }
-
-    entries<T = unknown>(namespace: string): Array<[string, T[]]> {
-        const nsMap = this.data.get(namespace);
-        if (!nsMap) return [];
-        return Array.from(nsMap.entries()) as Array<[string, T[]]>;
-    }
-}
-
 export type Filter = { filter: RegExp; namespace?: string };
 export type ResolveHook<TInput = unknown> = (
     args: ResolveArgs<TInput>,

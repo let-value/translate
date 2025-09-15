@@ -213,7 +213,7 @@ export function po(): Plugin {
                     }
                     dispatched = true;
 
-                    for (const path of Object.keys(collections)) {
+                    for (const path of collections.keys()) {
                         build.load({ entrypoint, path, namespace });
                     }
                 });
@@ -233,7 +233,7 @@ export function po(): Plugin {
 
             build.onProcess({ filter: /.*\.po$/, namespace }, async ({ entrypoint, path, data }) => {
                 const collected = collections.get(path);
-                if (!collected || !data) {
+                if (!collected) {
                     build.context.logger?.warn({ path }, "no translations collected for this path");
                     return undefined;
                 }
