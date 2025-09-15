@@ -21,7 +21,13 @@ function createExisting() {
 }
 
 function runMerge(sources: GetTextTranslationRecord[], existing: string | undefined, strategy: "mark" | "remove") {
-    return merge(sources, existing, strategy, "en", date);
+    return merge(
+        sources.map((translations) => ({ translations })),
+        existing,
+        strategy,
+        "en",
+        date,
+    );
 }
 
 test("marks missing translations as obsolete", () => {

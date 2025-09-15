@@ -21,7 +21,7 @@ export function cleanup(): Plugin {
             build.onProcess({ namespace: "cleanup", filter: /.*/ }, async ({ path }) => {
                 await build.defer("translate");
                 const dir = dirname(path);
-                if (processedDirs.has(dir)) return;
+                if (processedDirs.has(dir)) return undefined;
                 processedDirs.add(dir);
                 const files = await fs.readdir(dir).catch(() => []);
                 for (const f of files.filter((p) => p.endsWith(".po"))) {
@@ -41,6 +41,7 @@ export function cleanup(): Plugin {
                         build.context.logger?.info({ path: full }, "removed empty translation file");
                     }
                 }
+                return undefined;
             });
         },
     };

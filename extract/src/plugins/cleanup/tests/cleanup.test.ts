@@ -43,6 +43,7 @@ test("removes empty stray translation files", async () => {
                     path: generated,
                     namespace: "cleanup",
                 });
+                return undefined;
             });
         },
     };

@@ -16,8 +16,8 @@ test("deduplicates messages and preserves references", () => {
 
     const out = merge(
         [
-            { entrypoint: "a.js", path: "a.js", destination: "messages.po", translations: recA },
-            { entrypoint: "b.js", path: "b.js", destination: "messages.po", translations: recB },
+            { translations: recA },
+            { translations: recB },
         ],
         undefined,
         "mark",

@@ -75,6 +75,7 @@ test("skips resolving additional files when walk disabled", async () => {
                     path: extra,
                     namespace: "source",
                 });
+                return undefined;
             });
         },
     };
@@ -109,6 +110,7 @@ test("skips resolving paths matching exclude", async () => {
                     path: extra,
                     namespace: "source",
                 });
+                return undefined;
             });
         },
     };
