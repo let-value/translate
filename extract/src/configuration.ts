@@ -1,6 +1,6 @@
 import { basename, dirname, extname, join } from "node:path";
-import { globSync } from "glob";
 import type { LevelWithSilent } from "pino";
+
 import type { Plugin } from "./plugin.ts";
 import { core } from "./plugins/core/core.ts";
 import { po } from "./plugins/po/po.ts";
@@ -78,22 +78,11 @@ export function defineConfig(config: UserConfig): ResolvedConfig {
     const entrypoints: ResolvedEntrypoint[] = [];
     for (const ep of raw) {
         if (typeof ep === "string") {
-            const paths = globSync(ep, { nodir: true });
-            if (paths.length === 0) {
-                entrypoints.push({ entrypoint: ep });
-            } else {
-                for (const path of paths) entrypoints.push({ entrypoint: path });
-            }
+            entrypoints.push({ entrypoint: ep });
         } else {
             const { entrypoint, destination, obsolete, exclude } = ep;
-            const paths = globSync(entrypoint, { nodir: true });
             const epExclude = exclude ? [...defaultExclude, ...normalizeExclude(exclude)] : undefined;
-            if (paths.length === 0) {
-                entrypoints.push({ entrypoint, destination, obsolete, exclude: epExclude });
-            } else {
-                for (const path of paths)
-                    entrypoints.push({ entrypoint: path, destination, obsolete, exclude: epExclude });
-            }
+            entrypoints.push({ entrypoint, destination, obsolete, exclude: epExclude });
         }
     }
 

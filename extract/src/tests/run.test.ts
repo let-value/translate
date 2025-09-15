@@ -13,9 +13,9 @@ test("runs all process hooks for a file", async () => {
     const corePlugin: Plugin = {
         name: "core-plugin",
         setup(build) {
-            build.onResolve({ filter: /.*/ }, ({ file }) => file.path);
-            build.onLoad({ filter: /.*/ }, () => "");
-            build.onProcess({ filter: /.*/ }, () => coreTranslations);
+            build.onResolve({ filter: /.*/ }, (args) => args);
+            build.onLoad({ filter: /.*/ }, (args) => ({ ...args, data: "" }));
+            build.onProcess({ filter: /.*/ }, (args) => ({ ...args, data: coreTranslations }));
         },
     };
 

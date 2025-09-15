@@ -1,5 +1,5 @@
 import fs from "node:fs/promises";
-import { basename, dirname, extname, join } from "node:path";
+import { dirname } from "node:path";
 
 import type { GetTextTranslationRecord, GetTextTranslations } from "gettext-parser";
 import * as gettextParser from "gettext-parser";
@@ -177,50 +177,88 @@ export function merge(
     return gettextParser.po.compile(poObj).toString();
 }
 
+const namespace = "translate";
+
 export function po(): Plugin {
     return {
         name: "po",
         setup(build) {
             build.context.logger?.debug("po plugin initialized");
-            const collections = new Map<string, Translation[]>();
-            const processed = new Set<string>();
-            build.onProcess({ namespace: "translate", filter: /.*/ }, async ({ file, data }, api) => {
-                const list = collections.get(file.path) ?? [];
-                list.push(...((data as Translation[]) ?? []));
-                collections.set(file.path, list);
-
-                await api.defer("source");
-                if (processed.has(file.path)) return;
-                processed.add(file.path);
-
-                const translations = collections.get(file.path)!;
-                for (const locale of api.context.config.locales) {
-                    api.context.locale = locale;
-                    const record = collect(translations, locale);
-                    const destination = api.context.config.destination({
-                        entrypoint: api.context.entrypoint,
-                        locale,
-                        path: file.path,
-                    });
-                    const redirected = join(
-                        dirname(destination),
-                        `${basename(destination, extname(destination))}.po`,
-                    );
-                    const existing = await fs.readFile(redirected).catch(() => undefined);
-                    const out = merge(
-                        [{ translations: record }],
-                        existing,
-                        api.context.config.obsolete,
-                        locale,
-                        api.context.generatedAt,
-                    );
-                    await fs.mkdir(dirname(redirected), { recursive: true });
-                    await fs.writeFile(redirected, out);
-                    api.graph.add("translate", redirected, out);
-                    api.emit({ path: redirected, namespace: "cleanup" });
+            const collections = new Map<
+                string,
+                {
+                    locale: string;
+                    translations: Translation[];
                 }
+            >();
+            let dispatched = false;
+
+            build.onResolve({ filter: /.*/, namespace }, async ({ entrypoint, path, data }) => {
+                if (!data || !Array.isArray(data)) {
+                    return undefined;
+                }
+
+                for (const locale of build.context.config.locales) {
+                    const destination = build.context.config.destination({ entrypoint, locale, path });
+                    if (!collections.has(destination)) {
+                        collections.set(destination, { locale, translations: [] });
+                    }
+
+                    collections.get(destination)?.translations.push(...data);
+                }
+
+                build.defer("source").then(() => {
+                    if (dispatched) {
+                        return;
+                    }
+                    dispatched = true;
+
+                    for (const path of Object.keys(collections)) {
+                        build.load({ entrypoint, path, namespace });
+                    }
+                });
+
+                return undefined;
+            });
+
+            build.onLoad({ filter: /.*\.po$/, namespace }, async ({ entrypoint, path }) => {
+                const data = await fs.readFile(path).catch(() => undefined);
+                return {
+                    entrypoint,
+                    path,
+                    namespace,
+                    data,
+                };
+            });
+
+            build.onProcess({ filter: /.*\.po$/, namespace }, async ({ entrypoint, path, data }) => {
+                const collected = collections.get(path);
+                if (!collected || !data) {
+                    build.context.logger?.warn({ path }, "no translations collected for this path");
+                    return undefined;
+                }
+
+                const { locale, translations } = collected;
+
+                const record = collect(translations, locale);
+
+                const out = merge(
+                    [{ translations: record }],
+                    data as never,
+                    build.context.config.obsolete,
+                    locale,
+                    build.context.generatedAt,
+                );
+                await fs.mkdir(dirname(path), { recursive: true });
+                await fs.writeFile(path, out);
+
+                build.resolve({
+                    entrypoint,
+                    path,
+                    namespace: "cleanup",
+                    data: translations,
+                });
             });
         },
     };
 }
-

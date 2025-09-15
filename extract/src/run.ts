@@ -1,72 +1,132 @@
-import type { ResolvedConfig } from "./configuration.ts";
+import { globSync } from "glob";
+import type { ResolvedConfig, ResolvedEntrypoint } from "./configuration.ts";
 import type { Logger } from "./logger.ts";
-import type { Build, FileRef, Hook, HookApi, PipelineContext } from "./plugin.ts";
+import type {
+    Build,
+    Context,
+    Filter,
+    LoadArgs,
+    LoadHook,
+    ProcessArgs,
+    ProcessHook,
+    ResolveArgs,
+    ResolveHook,
+} from "./plugin.ts";
 import { ResultGraph } from "./plugin.ts";
 
-function createDeferred() {
-    let resolve!: () => void;
-    const promise = new Promise<void>((r) => {
-        resolve = r;
-    });
-    return { promise, resolve };
+type Task =
+    | {
+          type: "resolve";
+          args: ResolveArgs;
+      }
+    | {
+          type: "load";
+          args: LoadArgs;
+      }
+    | {
+          type: "process";
+          args: ProcessArgs;
+      };
+
+class Defer {
+    pending: number;
+    promise: Promise<void>;
+    resolve!: (value: void | PromiseLike<void>) => void;
+    reject!: (reason?: unknown) => void;
+
+    constructor() {
+        this.pending = 0;
+        this.promise = new Promise<void>((resolve, reject) => {
+            this.resolve = resolve;
+            this.reject = reject;
+        });
+    }
+
+    enqueue() {
+        this.pending++;
+    }
+    dequeue() {
+        this.pending--;
+        if (this.pending <= 0) {
+            this.resolve();
+        }
+    }
 }
 
-interface Task extends FileRef {
-    data?: unknown;
-}
-
-export async function run(entrypoint: string, { config, logger }: { config: ResolvedConfig; logger?: Logger }) {
-    const entryConfig = config.entrypoints.find((e) => e.entrypoint === entrypoint);
-    const destination = entryConfig?.destination ?? config.destination;
-    const obsolete = entryConfig?.obsolete ?? config.obsolete;
-    const exclude = entryConfig?.exclude ?? config.exclude;
+export async function run(
+    entrypoint: ResolvedEntrypoint,
+    { config, logger }: { config: ResolvedConfig; logger?: Logger },
+) {
+    const destination = entrypoint?.destination ?? config.destination;
+    const obsolete = entrypoint?.obsolete ?? config.obsolete;
+    const exclude = entrypoint?.exclude ?? config.exclude;
 
     const defaultLocale = config.defaultLocale;
 
-    logger?.info({ entrypoint, locale: defaultLocale }, "starting extraction");
+    logger?.info({ entrypoint }, "starting extraction");
 
-    const context: PipelineContext = {
-        entrypoint,
+    const resolvers: { filter: Filter; hook: ResolveHook }[] = [];
+    const loaders: { filter: Filter; hook: LoadHook }[] = [];
+    const processors: { filter: Filter; hook: ProcessHook }[] = [];
+    const hooks = {
+        resolve: resolvers,
+        load: loaders,
+        process: processors,
+    };
+
+    const pending = new Map<string, Defer>();
+    const queue: Task[] = [];
+
+    function getDeferred(namespace: string) {
+        let d = pending.get(namespace);
+        if (d === undefined) {
+            d = new Defer();
+            pending.set(namespace, d);
+        }
+        return d;
+    }
+
+    function defer(namespace: string) {
+        const d = getDeferred(namespace);
+        return d.promise;
+    }
+
+    function resolve(args: ResolveArgs) {
+        queue.push({ type: "resolve", args });
+        getDeferred(args.namespace).enqueue();
+    }
+
+    function load(args: LoadArgs) {
+        queue.push({ type: "load", args });
+        getDeferred(args.namespace).enqueue();
+    }
+
+    function process(args: ProcessArgs) {
+        queue.push({ type: "process", args });
+        getDeferred(args.namespace).enqueue();
+    }
+
+    const context: Context = {
         config: { ...config, destination, obsolete, exclude },
         generatedAt: new Date(),
-        locale: defaultLocale,
         logger,
     };
 
-    const hooks: Record<"resolve" | "load" | "process", { namespace: string; filter?: RegExp; hook: Hook }[]> = {
-        resolve: [],
-        load: [],
-        process: [],
-    };
-
-    const pending = new Map<string, number>();
-    const queue: Task[] = [];
-
-    function emit(ref: FileRef & { data?: unknown }) {
-        const namespace = ref.namespace ?? "source";
-        const path = ref.path;
-        if (namespace === "source") {
-            for (const ex of context.config.exclude) {
-                if (ex instanceof RegExp ? ex.test(path) : ex(path)) return;
-            }
-            if (!context.config.walk && path !== entrypoint) return;
-        }
-        queue.push({ path, namespace, data: ref.data });
-        pending.set(namespace, (pending.get(namespace) ?? 0) + 1);
-    }
-
     const build: Build = {
-        onResolve({ filter = /.*/, namespace = "source" }, hook) {
-            hooks.resolve.push({ namespace, filter, hook });
-        },
-        onLoad({ filter = /.*/, namespace = "source" }, hook) {
-            hooks.load.push({ namespace, filter, hook });
-        },
-        onProcess({ filter = /.*/, namespace = "source" }, hook) {
-            hooks.process.push({ namespace, filter, hook });
-        },
-        emit,
         context,
+        resolve,
+        load,
+        process,
+        defer,
+        onResolve(filter, hook) {
+            resolvers.push({ filter, hook });
+        },
+        onLoad(filter, hook) {
+            loaders.push({ filter, hook });
+        },
+        onProcess(filter, hook) {
+            processors.push({ filter, hook });
+        },
     };
 
     for (const plugin of config.plugins) {
@@ -74,76 +134,49 @@ export async function run(entrypoint: string, { config, logger }: { config: Reso
         plugin.setup(build);
     }
 
-    emit({ path: entrypoint, namespace: "source" });
-
-    const defers = new Map<string, { promise: Promise<void>; resolve: () => void }>();
-    function getDeferred(ns: string) {
-        let d = defers.get(ns);
-        if (!d) {
-            d = createDeferred();
-            defers.set(ns, d);
+    const paths = globSync(entrypoint.entrypoint, { nodir: true });
+    if (paths.length === 0) {
+        resolve({ entrypoint: entrypoint.entrypoint, path: entrypoint.entrypoint, namespace: "source" });
+    } else {
+        for (const path of paths) {
+            resolve({ entrypoint: entrypoint.entrypoint, path, namespace: "source" });
         }
-        return d;
-    }
-
-    const graph = new ResultGraph();
-
-    const api: HookApi = {
-        context,
-        graph,
-        emit,
-        defer(namespace) {
-            if ((pending.get(namespace) ?? 0) === 0) return Promise.resolve();
-            return getDeferred(namespace).promise;
-        },
-    };
-
-    const visitedSource = new Set<string>();
-
-    async function apply(stage: "resolve" | "load" | "process", task: Task) {
-        let { path, namespace, data } = task;
-        for (const { namespace: ns, filter, hook } of hooks[stage]) {
-            if (ns !== namespace) continue;
-            if (filter && !filter.test(path)) continue;
-            const result = await hook({ file: { path, namespace }, data }, api);
-            if (result !== undefined) {
-                if (stage === "resolve") {
-                    path = result as string;
-                } else if (stage === "load") {
-                    data = result;
-                } else if (stage === "process") {
-                    graph.add(namespace, path, result);
-                }
-            }
-        }
-        task.path = path;
-        task.data = data;
     }
 
     while (queue.length) {
-        const task = queue.shift()!;
-        if (task.namespace === "source") {
-            if (visitedSource.has(task.path)) {
-                const count = (pending.get(task.namespace) ?? 1) - 1;
-                pending.set(task.namespace, count);
-                if (count === 0) getDeferred(task.namespace).resolve();
-                continue;
-            }
-            visitedSource.add(task.path);
+        const task = queue.shift();
+        if (!task) {
+            break;
         }
-        await apply("resolve", task);
-        await apply("load", task);
-        await apply("process", task);
-        const ns = task.namespace;
-        const count = (pending.get(ns) ?? 1) - 1;
-        pending.set(ns, count);
-        if (count === 0) {
-            const d = defers.get(ns);
-            d?.resolve();
+
+        const { type, args } = task;
+
+        for (const {
+            filter: { filter, namespace },
+            hook,
+        } of hooks[type]) {
+            if (namespace !== args.namespace) continue;
+            if (filter && !filter.test(args.path)) continue;
+
+            const result = await hook(args as never);
+
+            if (result === undefined) {
+                return;
+            }
+
+            if (type === "resolve") {
+                load(result as never);
+            }
+
+            if (type === "load") {
+                process(result as never);
+            }
+
+            getDeferred(args.namespace).dequeue();
         }
     }
 
-    logger?.info({ entrypoint, locale: defaultLocale }, "extraction completed");
+    await Promise.all(Array.from(pending.values()).map((d) => d.promise));
 
-    return graph;
+    logger?.info({ entrypoint, locale: defaultLocale }, "extraction completed");
 }

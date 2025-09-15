@@ -3,6 +3,9 @@
     "version": "1.0.9",
     "private": true,
     "type": "module",
+    "exports": {
+        "./*": "./*"
+    },
     "dependencies": {
         "@let-value/translate": "1.0.9",
         "@let-value/translate-extract": "1.0.9",

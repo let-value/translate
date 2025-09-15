@@ -47,8 +47,8 @@ async function main() {
     logger.level = config.logLevel;
 
     const tasks: Promise<unknown>[] = [];
-    for (const ep of config.entrypoints) {
-        tasks.push(run(ep.entrypoint, { config, logger }));
+    for (const entrypoint of config.entrypoints) {
+        tasks.push(run(entrypoint, { config, logger }));
     }
 
     await Promise.all(tasks);

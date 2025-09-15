@@ -3,71 +3,102 @@ import type { Logger } from "./logger.ts";
 
 type MaybePromise<T> = T | Promise<T>;
 
-export interface PipelineContext {
-    entrypoint: string;
+export interface Context {
     config: ResolvedConfig;
     generatedAt: Date;
-    locale: string;
     logger?: Logger;
 }
 
-export interface FileRef {
+export interface ResolveArgs<TInput = unknown> {
+    entrypoint: string;
     path: string;
     namespace: string;
+    data?: TInput;
 }
 
-export interface HookArgs<T = unknown> {
-    file: FileRef;
-    data: T;
+export interface ResolveResult<TInput = unknown> {
+    entrypoint: string;
+    path: string;
+    namespace: string;
+    data?: TInput;
+}
+
+export interface LoadArgs<TInput = unknown> {
+    entrypoint: string;
+    path: string;
+    namespace: string;
+    data?: TInput;
+}
+
+export interface LoadResult<TInput = unknown> {
+    entrypoint: string;
+    path: string;
+    namespace: string;
+    data: TInput;
+}
+
+export interface ProcessArgs<TInput = unknown> {
+    entrypoint: string;
+    path: string;
+    namespace: string;
+    data: TInput;
+}
+
+export interface ProcessResult<TOutput = unknown> {
+    entrypoint: string;
+    path: string;
+    namespace: string;
+    data: TOutput;
 }
 
 export class ResultGraph {
-    #data = new Map<string, Map<string, unknown[]>>();
+    data = new Map<string, Map<string, unknown[]>>();
 
-    add(namespace: string, file: string, result: unknown): void {
-        if (!this.#data.has(namespace)) {
-            this.#data.set(namespace, new Map());
+    add(namespace: string, path: string, result: unknown): void {
+        if (!this.data.has(namespace)) {
+            this.data.set(namespace, new Map());
         }
-        const nsMap = this.#data.get(namespace)!;
-        if (!nsMap.has(file)) {
-            nsMap.set(file, []);
+        // biome-ignore lint/style/noNonNullAssertion: true
+        const map = this.data.get(namespace)!;
+        if (!map.has(path)) {
+            map.set(path, []);
         }
-        nsMap.get(file)!.push(result);
+        // biome-ignore lint/style/noNonNullAssertion: true
+        map.get(path)!.push(result);
     }
 
-    get<T = unknown>(namespace: string, file: string): T[] | undefined {
-        return this.#data.get(namespace)?.get(file) as T[] | undefined;
+    get<T = unknown>(namespace: string, path: string): T[] | undefined {
+        return this.data.get(namespace)?.get(path) as T[] | undefined;
     }
 
     entries<T = unknown>(namespace: string): Array<[string, T[]]> {
-        const nsMap = this.#data.get(namespace);
+        const nsMap = this.data.get(namespace);
         if (!nsMap) return [];
         return Array.from(nsMap.entries()) as Array<[string, T[]]>;
     }
 }
 
-export interface HookApi {
-    context: PipelineContext;
-    graph: ResultGraph;
-    emit(file: FileRef & { data?: unknown }): void;
+export type Filter = { filter: RegExp; namespace?: string };
+export type ResolveHook<TInput = unknown> = (
+    args: ResolveArgs<TInput>,
+) => MaybePromise<ResolveResult<TInput> | undefined>;
+export type LoadHook<TInput = unknown> = (args: LoadArgs<TInput>) => MaybePromise<LoadResult<TInput> | undefined>;
+export type ProcessHook<TInput = unknown, TOutput = unknown> = (
+    args: ProcessArgs<TInput>,
+) => MaybePromise<ProcessResult<TOutput> | undefined>;
+
+export interface Build<TInput = unknown, TOutput = unknown> {
+    context: Context;
+    resolve(args: ResolveArgs<unknown>): void;
+    load(args: LoadArgs<unknown>): void;
+    process(args: ProcessArgs<unknown>): void;
     defer(namespace: string): Promise<void>;
+    onResolve(options: Filter, hook: ResolveHook<TInput>): void;
+    onLoad(options: Filter, hook: LoadHook<TInput>): void;
+    onProcess(options: Filter, hook: ProcessHook<TInput, TOutput>): void;
 }
 
-export type Hook<TIn = unknown, TOut = unknown> = (
-    args: HookArgs<TIn>,
-    api: HookApi,
-) => MaybePromise<TOut | void>;
-
-export interface Build {
-    onResolve(options: { filter?: RegExp; namespace?: string }, hook: Hook): void;
-    onLoad(options: { filter?: RegExp; namespace?: string }, hook: Hook): void;
-    onProcess(options: { filter?: RegExp; namespace?: string }, hook: Hook): void;
-    emit(file: FileRef & { data?: unknown }): void;
-    context: PipelineContext;
-}
-
-export interface Plugin {
+export interface Plugin<TInput = unknown, TOutput = unknown> {
     name: string;
-    setup(build: Build): void;
+    setup(build: Build<TInput, TOutput>): void;
 }
-

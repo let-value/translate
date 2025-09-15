@@ -4,9 +4,9 @@ import fs from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { test } from "node:test";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import { defineConfig, react, run } from "../../../extract/src/index.ts";
 import * as gettextParser from "gettext-parser";
 import ts from "typescript";
+import { defineConfig, react, run } from "../../../extract/src/index.ts";
 
 const appPath = fileURLToPath(new URL("./app.tsx", import.meta.url));
 const appDir = dirname(appPath);
@@ -63,11 +63,11 @@ async function update(
     await fs.writeFile(file, gettextParser.po.compile(po));
 }
 
-test.skip("react app works end to end", async (t) => {
+test("react app works end to end", async (t) => {
     await extract();
-    // t.after(async () => {
-    //     await fs.rm(translationsDir, { recursive: true, force: true });
-    // });
+    t.after(async () => {
+        await fs.rm(translationsDir, { recursive: true, force: true });
+    });
 
     const { runApp } = await loadRunApp();
 

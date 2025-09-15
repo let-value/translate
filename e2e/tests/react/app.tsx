@@ -1,5 +1,8 @@
 /** biome-ignore-all lint/correctness/useUniqueElementIds: true */
 import fs from "node:fs/promises";
+import * as gettextParser from "gettext-parser";
+// biome-ignore lint/correctness/noUnusedImports: need for jsx
+import React from "react";
 
 import {
     LocaleProvider,
@@ -9,10 +12,7 @@ import {
     TranslationsProvider,
     useTranslations,
 } from "../../../react/src/index.ts";
-import { render } from "../../../react/src/test/utils.ts";
-import * as gettextParser from "gettext-parser";
-// biome-ignore lint/correctness/noUnusedImports: need for jsx
-import React from "react";
+import { render } from "../utils.ts";
 
 const name = "World";
 
