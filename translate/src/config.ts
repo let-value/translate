@@ -1,15 +1,6 @@
 import type { PluralFormsLocale } from "./locales.ts";
 
-// biome-ignore lint/complexity/noBannedTypes: anchor
-type Anchor = {};
-
-/**
- * Translations configuration interface. Consumers can extend this
- * interface via module augmentation to provide literal locale strings which
- * will then be used across the library for strict type checking.
- * @see click {@link Anchor} for the actual configuration object
- */
-export interface Configuration extends Anchor {
+type BaseConfiguration = {
     /**
      * Locale to use when a specific one is not provided
      * @see {@link PluralFormsLocale} for available locales
@@ -25,7 +16,15 @@ export interface Configuration extends Anchor {
      * @deprecated not supported yet
      */
     fallback?: Partial<Record<PluralFormsLocale, PluralFormsLocale>>;
-}
+};
+
+/**
+ * Translations configuration interface. Consumers can extend this
+ * interface via module augmentation to provide literal locale strings which
+ * will then be used across the library for strict type checking.
+ * @see click {@link BaseConfiguration} for the actual configuration object
+ */
+export interface Configuration extends BaseConfiguration {}
 
 /**
  * A locale identifier
