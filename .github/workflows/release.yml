@@ -13,7 +13,7 @@ jobs:
     strategy:
       matrix:
         registry: [
-          { enabled: true, public: false, url: 'https://npm.pkg.github.com', token: GITHUB_TOKEN,  },
+          { enabled: true, public: true, url: 'https://npm.pkg.github.com', token: GITHUB_TOKEN,  },
           { enabled: true, public: true, url: 'https://registry.npmjs.org', token: NPM_TOKEN,  },
         ]
       fail-fast: false
