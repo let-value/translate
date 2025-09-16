@@ -88,9 +88,7 @@ export async function run(
         if (
             args.path !== args.entrypoint &&
             (!context.config.walk ||
-                context.config.exclude.some((ex) =>
-                    typeof ex === "function" ? ex(args.path) : ex.test(args.path),
-                ))
+                context.config.exclude.some((ex) => (typeof ex === "function" ? ex(args.path) : ex.test(args.path))))
         ) {
             return;
         }

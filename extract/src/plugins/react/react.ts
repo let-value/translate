@@ -28,7 +28,7 @@ export function react(): Plugin<string, Translation[]> {
                     data,
                 };
             });
-            build.onProcess({ filter, namespace: "source" }, ({ entrypoint, path, namespace, data }) => {
+            build.onProcess({ filter, namespace: "source" }, ({ entrypoint, path, data }) => {
                 const { translations, warnings } = parseSource(data, path);
 
                 for (const warning of warnings) {

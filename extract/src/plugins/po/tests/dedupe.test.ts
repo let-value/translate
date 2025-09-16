@@ -14,16 +14,7 @@ test("deduplicates messages and preserves references", () => {
     const recA = collect(translationsA, "en");
     const recB = collect(translationsB, "en");
 
-    const out = merge(
-        [
-            { translations: recA },
-            { translations: recB },
-        ],
-        undefined,
-        "mark",
-        "en",
-        new Date(),
-    );
+    const out = merge([{ translations: recA }, { translations: recB }], undefined, "mark", "en", new Date());
 
     const parsed = gettextParser.po.parse(out);
     const entry = parsed.translations[""].Hello;

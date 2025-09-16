@@ -3,7 +3,7 @@ import fs from "node:fs/promises";
 import * as gettextParser from "gettext-parser";
 // biome-ignore lint/correctness/noUnusedImports: need for jsx
 import React from "react";
-
+import { renderToPipeableStream } from "react-dom/server";
 import {
     LocaleProvider,
     Message,
@@ -12,7 +12,7 @@ import {
     TranslationsProvider,
     useTranslations,
 } from "../../../react/src/index.ts";
-import { render } from "../utils.ts";
+import { renderStream } from "../utils.ts";
 
 const name = "World";
 
@@ -54,7 +54,8 @@ export async function runApp(locale: string, count: number) {
         </LocaleProvider>
     );
 
-    const html = await render(element);
+    const stream = renderToPipeableStream(element);
+    const html = await renderStream(stream);
 
     function match(id: string) {
         const clean = html.replace(/<!--[^>]*-->/g, "");

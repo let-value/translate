@@ -30,10 +30,9 @@ export function cleanup(): Plugin {
                     const contents = await fs.readFile(full).catch(() => undefined);
                     if (!contents) continue;
                     const parsed = gettextParser.po.parse(contents);
-                    const hasTranslations = Object.entries(parsed.translations || {})
-                        .some(([ctx, msgs]) =>
-                            Object.keys(msgs).some((id) => !(ctx === "" && id === "")),
-                        );
+                    const hasTranslations = Object.entries(parsed.translations || {}).some(([ctx, msgs]) =>
+                        Object.keys(msgs).some((id) => !(ctx === "" && id === "")),
+                    );
                     if (hasTranslations) {
                         build.context.logger?.warn({ path: full }, "stray translation file");
                     } else {
@@ -46,4 +45,3 @@ export function cleanup(): Plugin {
         },
     };
 }
-

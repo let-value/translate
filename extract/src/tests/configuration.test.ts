@@ -26,7 +26,7 @@ test("allows overriding default plugins with function", () => {
 });
 
 test("normalizes single entrypoint to array", () => {
-    const cfg = defineConfig({ entrypoints: "src/index.ts" });
+    const cfg = defineConfig({ entrypoints: join("src/index.ts") });
     assert.deepEqual(
         cfg.entrypoints.map((e) => e.entrypoint),
         [join("src/index.ts")],

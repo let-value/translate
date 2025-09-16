@@ -1,9 +1,10 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { message as msg, Translator } from "@let-value/translate";
-import { render } from "@let-value/translate-e2e/tests/utils.ts";
+import { renderStream } from "@let-value/translate-e2e/tests/utils.ts";
 import type { GetTextTranslations } from "gettext-parser";
 import { createElement, Fragment } from "react";
+import { renderToPipeableStream } from "react-dom/server";
 
 import { Message, Plural, TranslationsProvider } from "../src/components/index.ts";
 
@@ -29,9 +30,10 @@ test("Message matches translate message function", async () => {
     ] as const;
 
     for (const { el, expected } of cases) {
-        const result = normalize(
-            await render(createElement(TranslationsProvider, { translations: { en: translations } }, el)),
+        const stream = renderToPipeableStream(
+            createElement(TranslationsProvider, { translations: { en: translations } }, el),
         );
+        const result = normalize(await renderStream(stream));
         assert.equal(result, `<!--$-->${expected}<!--/$-->`);
     }
 });
@@ -73,9 +75,10 @@ test("Plural matches translate plural function", async () => {
     ] as const;
 
     for (const { el, expected } of cases) {
-        const result = normalize(
-            await render(createElement(TranslationsProvider, { translations: { en: translations } }, el)),
+        const stream = renderToPipeableStream(
+            createElement(TranslationsProvider, { translations: { en: translations } }, el),
         );
+        const result = normalize(await renderStream(stream));
         assert.equal(result, `<!--$-->${expected}<!--/$-->`);
     }
 });

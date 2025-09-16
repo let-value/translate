@@ -51,9 +51,11 @@ test("removes empty stray translation files", async () => {
     const config = defineConfig({ entrypoints: entrypoint, plugins: () => [plugin, cleanup()] });
     await run(config.entrypoints[0], { config });
 
-    const exists = await fs.access(stray).then(() => true).catch(() => false);
+    const exists = await fs
+        .access(stray)
+        .then(() => true)
+        .catch(() => false);
     assert.equal(exists, false);
 
     await fs.rm("translations", { recursive: true, force: true });
 });
-

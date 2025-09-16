@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import * as gettextParser from "gettext-parser";
 import type { GetTextTranslationRecord } from "gettext-parser";
+import * as gettextParser from "gettext-parser";
 import { merge } from "./po.ts";
 
 const date = new Date("2024-01-01T00:00:00Z");

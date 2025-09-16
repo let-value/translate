@@ -15,13 +15,7 @@ test("preserves existing translations and comments", async () => {
     const { translations } = parseFile(fixture);
     const record = collect(translations, "en");
 
-    const out = merge(
-        [{ translations: record }],
-        existing,
-        "mark",
-        "en",
-        new Date(),
-    );
+    const out = merge([{ translations: record }], existing, "mark", "en", new Date());
 
     const parsed = gettextParser.po.parse(out);
     const message = parsed.translations[""]["Hello world"];

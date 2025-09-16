@@ -23,9 +23,7 @@ test("matches xgettext output", async () => {
 
     const { translations } = parseFile(fixture);
     const record = collect(translations, "en");
-    const out = merge([
-        { translations: record },
-    ], undefined, "mark", "en", new Date());
+    const out = merge([{ translations: record }], undefined, "mark", "en", new Date());
     const ours = gettextParser.po.parse(out);
 
     assert.deepEqual(normalize(ours), normalize(ref));
@@ -38,9 +36,7 @@ test("matches xgettext output for 4 plural forms", async () => {
 
     const { translations } = parseFile(fixture);
     const record = collect(translations, "sl");
-    const out = merge([
-        { translations: record },
-    ], undefined, "mark", "sl", new Date());
+    const out = merge([{ translations: record }], undefined, "mark", "sl", new Date());
     const ours = gettextParser.po.parse(out);
 
     assert.deepEqual(normalize(ours), normalize(ref));
