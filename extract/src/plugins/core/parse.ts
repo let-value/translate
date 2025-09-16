@@ -1,7 +1,6 @@
 import fs from "node:fs";
 import { extname, resolve } from "node:path";
 
-import { memo } from "radash";
 import Parser from "tree-sitter";
 import JavaScript from "tree-sitter-javascript";
 import TS from "tree-sitter-typescript";
@@ -28,17 +27,44 @@ function getLanguage(ext: string) {
     }
 }
 
-const getCachedParser = memo(function getCachedParser(ext: string) {
-    const parser = new Parser();
-    const language = getLanguage(ext) as Parser.Language;
-    parser.setLanguage(language);
+const parserCache = new Map<string, { parser: Parser; language: Parser.Language }>();
+const queryCache = new WeakMap<Parser.Language, Map<string, Parser.Query>>();
 
-    return { parser, language };
-});
+function getCachedParser(ext: string) {
+    let cached = parserCache.get(ext);
+    if (!cached) {
+        const parser = new Parser();
+        const language = getLanguage(ext) as Parser.Language;
+        parser.setLanguage(language);
+        cached = { parser, language };
+        parserCache.set(ext, cached);
+    }
+    return cached;
+}
+
+function getCachedQuery(language: Parser.Language, pattern: string) {
+    let cache = queryCache.get(language);
+    if (!cache) {
+        cache = new Map();
+        queryCache.set(language, cache);
+    }
+
+    let query = cache.get(pattern);
+    if (!query) {
+        query = new Parser.Query(language, pattern);
+        cache.set(pattern, query);
+    }
+
+    return query;
+}
 
 export function getParser(path: string) {
     const ext = extname(path);
     return getCachedParser(ext);
+}
+
+export function getQuery(language: Parser.Language, pattern: string) {
+    return getCachedQuery(language, pattern);
 }
 
 export function parseFile(filePath: string): ParseResult {
@@ -62,7 +88,7 @@ export function parseSource(source: string, path: string): ParseResult {
     const seen = new Set<number>();
 
     for (const spec of queries) {
-        const query = new Parser.Query(language, spec.pattern);
+        const query = getCachedQuery(language, spec.pattern);
         for (const match of query.matches(tree.rootNode)) {
             const message = spec.extract(match);
             if (!message) {
@@ -95,7 +121,7 @@ export function parseSource(source: string, path: string): ParseResult {
         }
     }
 
-    const importTreeQuery = new Parser.Query(language, importQuery.pattern);
+    const importTreeQuery = getCachedQuery(language, importQuery.pattern);
     for (const match of importTreeQuery.matches(tree.rootNode)) {
         const imp = importQuery.extract(match);
         if (imp) {

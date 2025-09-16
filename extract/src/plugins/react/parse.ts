@@ -1,8 +1,6 @@
 import fs from "node:fs";
 import { resolve } from "node:path";
-import Parser from "tree-sitter";
-
-import { getParser } from "../core/parse.ts";
+import { getParser, getQuery } from "../core/parse.ts";
 import { getReference } from "../core/queries/comment.ts";
 
 import { queries as coreQueries } from "../core/queries/index.ts";
@@ -13,6 +11,8 @@ export interface ParseResult {
     translations: Translation[];
     warnings: Warning[];
 }
+
+const combinedQueries = [...coreQueries, ...reactQueries];
 
 export function parseFile(filePath: string): ParseResult {
     const path = resolve(filePath);
@@ -29,8 +29,8 @@ export function parseSource(source: string, path: string): ParseResult {
     const warnings: Warning[] = [];
     const seen = new Set<number>();
 
-    for (const spec of [...coreQueries, ...reactQueries]) {
-        const query = new Parser.Query(language, spec.pattern);
+    for (const spec of combinedQueries) {
+        const query = getQuery(language, spec.pattern);
         for (const match of query.matches(tree.rootNode)) {
             const message = spec.extract(match);
             if (!message) continue;
