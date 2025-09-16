@@ -43,6 +43,6 @@
         "check": "biome check .",
         "format": "biome check --write .",
         "typecheck": "tsc --build",
-        "test": "node --test \"**/*.test.ts\""
+        "test": "node --test"
     }
 }

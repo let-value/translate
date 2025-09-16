@@ -43,7 +43,7 @@ async function main() {
     }
 
     const config = result.config as ResolvedConfig;
-    config.logLevel = (logLevel as LevelWithSilent | undefined) ?? config.logLevel;
+    config.logLevel = (logLevel as LevelWithSilent) ?? config.logLevel;
     logger.level = config.logLevel;
 
     const tasks: Promise<unknown>[] = [];

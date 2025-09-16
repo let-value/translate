@@ -1,5 +1,6 @@
 import { globSync } from "glob";
 import type { ResolvedConfig, ResolvedEntrypoint } from "./configuration.ts";
+import { Defer } from "./defer.ts";
 import type { Logger } from "./logger.ts";
 import type {
     Build,
@@ -13,7 +14,7 @@ import type {
     ResolveHook,
 } from "./plugin.ts";
 
-type Task =
+export type Task =
     | {
           type: "resolve";
           args: ResolveArgs;
@@ -27,25 +28,6 @@ type Task =
           args: ProcessArgs;
       };
 
-class Defer {
-    pending = 0;
-    promise: Promise<void> = Promise.resolve();
-    resolve?: () => void;
-
-    enqueue() {
-        if (this.pending++ === 0) {
-            this.promise = new Promise<void>((res) => {
-                this.resolve = res;
-            });
-        }
-    }
-    dequeue() {
-        if (this.pending > 0 && --this.pending === 0) {
-            this.resolve?.();
-        }
-    }
-}
-
 export async function run(
     entrypoint: ResolvedEntrypoint,
     { config, logger }: { config: ResolvedConfig; logger?: Logger },
@@ -53,8 +35,13 @@ export async function run(
     const destination = entrypoint?.destination ?? config.destination;
     const obsolete = entrypoint?.obsolete ?? config.obsolete;
     const exclude = entrypoint?.exclude ?? config.exclude;
+    const walk = entrypoint?.walk ?? config.walk;
 
-    const defaultLocale = config.defaultLocale;
+    const context: Context = {
+        config: { ...config, destination, obsolete, exclude, walk },
+        generatedAt: new Date(),
+        logger,
+    };
 
     logger?.info({ entrypoint }, "starting extraction");
 
@@ -71,24 +58,24 @@ export async function run(
     const queue: Task[] = [];
 
     function getDeferred(namespace: string) {
-        let d = pending.get(namespace);
-        if (d === undefined) {
-            d = new Defer();
-            pending.set(namespace, d);
+        let defer = pending.get(namespace);
+        if (defer === undefined) {
+            defer = new Defer();
+            pending.set(namespace, defer);
         }
-        return d;
+        return defer;
     }
 
     function defer(namespace: string) {
-        const d = getDeferred(namespace);
-        return d.promise;
+        const defer = getDeferred(namespace);
+        return defer.promise;
     }
 
     function resolve(args: ResolveArgs) {
         if (
             args.path !== args.entrypoint &&
             (!context.config.walk ||
-                context.config.exclude.some((ex) => (typeof ex === "function" ? ex(args.path) : ex.test(args.path))))
+                context.config.exclude.some((ex) => (typeof ex === "function" ? ex(args) : ex.test(args.path))))
         ) {
             return;
         }
@@ -105,12 +92,6 @@ export async function run(
         queue.push({ type: "process", args });
         getDeferred(args.namespace).enqueue();
     }
-
-    const context: Context = {
-        config: { ...config, destination, obsolete, exclude },
-        generatedAt: new Date(),
-        logger,
-    };
 
     const build: Build = {
         context,
@@ -143,6 +124,34 @@ export async function run(
         }
     }
 
+    async function processTask(task: Task) {
+        const { type } = task;
+        let args = task.args;
+
+        for (const {
+            filter: { filter, namespace },
+            hook,
+        } of hooks[type]) {
+            if (namespace !== args.namespace) continue;
+            if (filter && !filter.test(args.path)) continue;
+
+            const result = await hook(args as never);
+            if (result !== undefined) {
+                args = result as never;
+            }
+        }
+
+        if (args !== undefined) {
+            if (type === "resolve") {
+                load(args as never);
+            } else if (type === "load") {
+                process(args as never);
+            }
+        }
+
+        getDeferred(task.args.namespace).dequeue();
+    }
+
     while (queue.length || Array.from(pending.values()).some((d) => d.pending > 0)) {
         while (queue.length) {
             const task = queue.shift();
@@ -150,36 +159,12 @@ export async function run(
                 break;
             }
 
-            const { type } = task;
-            let args = task.args;
-
-            for (const {
-                filter: { filter, namespace },
-                hook,
-            } of hooks[type]) {
-                if (namespace !== args.namespace) continue;
-                if (filter && !filter.test(args.path)) continue;
-
-                const result = await hook(args as never);
-                if (result !== undefined) {
-                    args = result as never;
-                }
-            }
-
-            if (args !== undefined) {
-                if (type === "resolve") {
-                    load(args as never);
-                } else if (type === "load") {
-                    process(args as never);
-                }
-            }
-
-            getDeferred(task.args.namespace).dequeue();
+            await processTask(task);
         }
 
         await Promise.all(Array.from(pending.values()).map((d) => d.promise));
         await Promise.resolve();
     }
 
-    logger?.info({ entrypoint, locale: defaultLocale }, "extraction completed");
+    logger?.info({ entrypoint }, "extraction completed");
 }

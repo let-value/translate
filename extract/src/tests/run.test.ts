@@ -117,7 +117,7 @@ test("skips resolving paths matching exclude", async () => {
 
     const config = defineConfig({
         entrypoints: entrypoint,
-        exclude: (p) => p === extra,
+        exclude: (p) => p.path === extra,
         plugins: () => [plugin],
     });
     await run(config.entrypoints[0], { config });

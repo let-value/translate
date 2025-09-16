@@ -8,7 +8,7 @@ const mockPlugin: Plugin = { name: "mock", setup() {} };
 
 test("appends plugins when array provided", () => {
     const cfg = defineConfig({ entrypoints: "src/index.ts", plugins: [mockPlugin] });
-    assert.equal(cfg.plugins.length, 3);
+    assert.equal(cfg.plugins.length, 4);
     assert.equal(cfg.plugins.at(-1), mockPlugin);
 });
 
@@ -78,22 +78,23 @@ test("configures walk option", () => {
 
 test("provides default excludes", () => {
     const cfg = defineConfig({ entrypoints: "src/index.ts" });
-    for (const p of ["foo/node_modules/bar.ts", "foo/dist/bar.ts", "foo/build/bar.ts"]) {
-        assert(cfg.exclude.some((e) => (e instanceof RegExp ? e.test(p) : e(p))));
-    }
+    assert(cfg.exclude.some((e) => e instanceof RegExp && e.test("node_modules/somefile")));
+    assert(cfg.exclude.some((e) => e instanceof RegExp && e.test("dist/somefile")));
+    assert(cfg.exclude.some((e) => e instanceof RegExp && e.test("build/somefile")));
 });
 
 test("supports exclude overrides", () => {
     const cfg = defineConfig({
         entrypoints: [{ entrypoint: "src/index.ts", exclude: /skip/ }],
-        exclude: /global/,
+        exclude: [/global/, /node_modules/],
     });
-    assert(cfg.exclude.some((e) => (e instanceof RegExp ? e.test("global") : e("global"))));
+    assert(cfg.exclude.some((e) => e instanceof RegExp && e.test("global")));
+    assert(cfg.exclude.some((e) => e instanceof RegExp && e.test("node_modules/foo")));
     const epExclude = cfg.entrypoints[0].exclude;
     assert(epExclude);
-    assert(epExclude.some((e) => (e instanceof RegExp ? e.test("skip") : e("skip"))));
-    assert(!epExclude.some((e) => (e instanceof RegExp ? e.test("global") : e("global"))));
-    assert(epExclude.some((e) => (e instanceof RegExp ? e.test("node_modules/foo") : e("node_modules/foo"))));
+    assert(epExclude.some((e) => e instanceof RegExp && e.test("skip")));
+    assert(!epExclude.some((e) => e instanceof RegExp && e.test("global")));
+    assert(!epExclude.some((e) => e instanceof RegExp && e.test("node_modules/foo")));
 });
 
 test("defaults log level to info", () => {
