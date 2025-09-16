@@ -4,9 +4,9 @@ import { Fragment } from "react";
 const name = "World";
 const n = 2;
 
-const cookiePolicy = message`Cookie Policy`;
-const termsOfService = message`Terms of Service`;
-const privacyPolicy = message`Privacy Policy`;
+const cookiePolicy = <Message>{`Cookie Policy`}</Message>;
+const termsOfService = <Message>{"Terms of Service"}</Message>;
+const privacyPolicy = <Message>Privacy Policy</Message>;
 
 <Message>hello</Message>;
 <Message>hello {name}</Message>;
