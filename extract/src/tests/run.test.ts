@@ -1,4 +1,7 @@
 import assert from "node:assert/strict";
+import { mkdtemp, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { test } from "node:test";
 
 import { defineConfig } from "../configuration.ts";
@@ -123,4 +126,33 @@ test("skips resolving paths matching exclude", async () => {
     await run(config.entrypoints[0], { config });
 
     assert.equal(resolvedExtra, false);
+});
+
+test("resolves glob entrypoints to matched files", async () => {
+    const directory = await mkdtemp(join(tmpdir(), "translate-extract-"));
+    const file = join(directory, "entry.ts");
+    await writeFile(file, "export const foo = 'bar';");
+
+    const entrypoint = join(directory, "**/*.ts");
+    const seen: string[] = [];
+
+    const plugin: Plugin = {
+        name: "glob-entrypoint",
+        setup(build) {
+            build.onResolve({ filter: /.*/, namespace: "source" }, (args) => {
+                seen.push(args.entrypoint);
+                return args;
+            });
+            build.onLoad({ filter: /.*/, namespace: "source" }, (args) => ({
+                ...args,
+                data: "",
+            }));
+            build.onProcess({ filter: /.*/, namespace: "source" }, () => undefined);
+        },
+    };
+
+    const config = defineConfig({ entrypoints: entrypoint, plugins: () => [plugin] });
+    await run(config.entrypoints[0], { config });
+
+    assert.deepEqual(seen, [file]);
 });

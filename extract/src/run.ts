@@ -120,7 +120,7 @@ export async function run(
         resolve({ entrypoint: entrypoint.entrypoint, path: entrypoint.entrypoint, namespace: "source" });
     } else {
         for (const path of paths) {
-            resolve({ entrypoint: entrypoint.entrypoint, path, namespace: "source" });
+            resolve({ entrypoint: path, path, namespace: "source" });
         }
     }
 
