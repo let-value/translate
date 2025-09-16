@@ -32,6 +32,12 @@ suite("react plugin", () => {
                 plural: undefined,
                 context: undefined,
             },
+            {
+                id: "By signing up you’re 16+ and accept ${termsOfService} & ${privacyPolicy}.",
+                message: ["By signing up you’re 16+ and accept ${termsOfService} & ${privacyPolicy}."],
+                plural: undefined,
+                context: undefined,
+            },
             { id: "one", plural: "many", message: ["one", "many"], context: undefined },
             {
                 id: "One ${name}",

@@ -18,3 +18,6 @@ const privacyPolicy = <Message>Privacy Policy</Message>;
 <Message>
     {termsOfService} • {privacyPolicy} • {cookiePolicy}
 </Message>;
+<Message>
+    By signing up you’re 16+ and accept {termsOfService} & {privacyPolicy}.
+</Message>;
