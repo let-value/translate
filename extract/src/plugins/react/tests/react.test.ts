@@ -50,8 +50,8 @@ suite("react plugin", () => {
 
     test("reports invalid expressions", () => {
         const msgMatches = getMatches(invalid, "invalid.tsx", messageQuery);
-        assert.equal(msgMatches[0].error, "JSX expressions must be simple identifiers");
+        assert.equal(msgMatches[0].error, "JSX expressions must be simple identifiers, strings, or template literals");
         const plMatches = getMatches(invalid, "invalid.tsx", pluralQuery);
-        assert.equal(plMatches[0].error, "JSX expressions must be simple identifiers");
+        assert.equal(plMatches[0].error, "JSX expressions must be simple identifiers, strings, or template literals");
     });
 });

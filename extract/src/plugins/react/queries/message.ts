@@ -7,9 +7,17 @@ import { buildAttrValue, buildTemplate } from "./utils.ts";
 export const messageQuery: QuerySpec = withComment({
     pattern: `(
         [
-            (jsx_element (jsx_opening_element name: (identifier) @name))
-            (jsx_self_closing_element name: (identifier) @name)
-        ] @call
+            (jsx_element (jsx_opening_element name: (identifier) @name)) @call
+            (jsx_self_closing_element name: (identifier) @name) @call
+            (lexical_declaration 
+                (variable_declarator 
+                    value: [
+                        (jsx_element (jsx_opening_element name: (identifier) @name)) @call
+                        (jsx_self_closing_element name: (identifier) @name) @call
+                    ]
+                )
+            )
+        ]
         (#eq? @name "Message")
     )`,
     extract(match: Parser.QueryMatch): MessageMatch | undefined {
