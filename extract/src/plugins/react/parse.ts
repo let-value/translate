@@ -3,16 +3,13 @@ import { resolve } from "node:path";
 import { getParser, getQuery } from "../core/parse.ts";
 import { getReference } from "../core/queries/comment.ts";
 
-import { queries as coreQueries } from "../core/queries/index.ts";
 import type { Context, Translation, Warning } from "../core/queries/types.ts";
-import { queries as reactQueries } from "./queries/index.ts";
+import { queries } from "./queries/index.ts";
 
 export interface ParseResult {
     translations: Translation[];
     warnings: Warning[];
 }
-
-const combinedQueries = [...coreQueries, ...reactQueries];
 
 export function parseFile(filePath: string): ParseResult {
     const path = resolve(filePath);
@@ -29,7 +26,7 @@ export function parseSource(source: string, path: string): ParseResult {
     const warnings: Warning[] = [];
     const seen = new Set<number>();
 
-    for (const spec of combinedQueries) {
+    for (const spec of queries) {
         const query = getQuery(language, spec.pattern);
         for (const match of query.matches(tree.rootNode)) {
             const message = spec.extract(match);
