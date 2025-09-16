@@ -29,7 +29,7 @@ function getPromiseState(promise: any) {
 }
 
 export function useTranslations(locale?: Locale): LocaleTranslator {
-    const requestedLocale = locale ?? use(localeContext) ?? "unknown";
+    const requestedLocale = locale ?? use(localeContext) ?? ("unknown" as never);
     const translator = use(translatorContext);
     if (!translator) {
         throw new Error("TranslationsProvider is missing");
