@@ -1,4 +1,4 @@
-import type { PluralFormsLocale } from "plural-forms";
+import type { PluralFormsLocale } from "./locales.ts";
 
 /**
  * Translations configuration interface. Consumers can extend this
