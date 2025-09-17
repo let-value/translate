@@ -10,7 +10,7 @@ type BaseConfiguration = {
      * List of locales supported by the application
      * @see {@link PluralFormsLocale} for available locales
      */
-    locales: readonly PluralFormsLocale[];
+    locales: PluralFormsLocale[];
     /**
      * Optional map of fallback locales
      * @deprecated not supported yet
@@ -26,8 +26,10 @@ type BaseConfiguration = {
  */
 export interface Configuration extends BaseConfiguration {}
 
+export type { PluralFormsLocale };
+
 /**
  * A locale identifier
  * @see {@link PluralFormsLocale} for available locales
  */
-export type Locale = PluralFormsLocale & {};
+export type Locale = Configuration & {};

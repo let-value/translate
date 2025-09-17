@@ -43,7 +43,7 @@ export async function run(
         logger,
     };
 
-    logger?.info({ entrypoint }, "starting extraction");
+    logger?.info(entrypoint, "starting extraction");
 
     const resolvers: { filter: Filter; hook: ResolveHook }[] = [];
     const loaders: { filter: Filter; hook: LoadHook }[] = [];
@@ -72,25 +72,34 @@ export async function run(
     }
 
     function resolve(args: ResolveArgs) {
-        if (
-            args.path !== args.entrypoint &&
-            (!context.config.walk ||
-                context.config.exclude.some((ex) => (typeof ex === "function" ? ex(args) : ex.test(args.path))))
-        ) {
+        const { entrypoint, path, namespace } = args;
+        const skipped =
+            (args.path !== args.entrypoint && !context.config.walk) ||
+            context.config.exclude.some((ex) => (typeof ex === "function" ? ex(args) : ex.test(args.path)));
+        logger?.debug({ entrypoint, path, namespace, skipped }, "resolve");
+
+        if (skipped) {
             return;
         }
+
         queue.push({ type: "resolve", args });
-        getDeferred(args.namespace).enqueue();
+        getDeferred(namespace).enqueue();
     }
 
     function load(args: LoadArgs) {
+        const { entrypoint, path, namespace } = args;
+        logger?.debug({ entrypoint, path, namespace }, "load");
+
         queue.push({ type: "load", args });
-        getDeferred(args.namespace).enqueue();
+        getDeferred(namespace).enqueue();
     }
 
     function process(args: ProcessArgs) {
+        const { entrypoint, path, namespace } = args;
+        logger?.debug({ entrypoint, path, namespace }, "process");
+
         queue.push({ type: "process", args });
-        getDeferred(args.namespace).enqueue();
+        getDeferred(namespace).enqueue();
     }
 
     const build: Build = {
@@ -127,13 +136,12 @@ export async function run(
     async function processTask(task: Task) {
         const { type } = task;
         let args = task.args;
+        const { entrypoint, path, namespace } = args;
+        logger?.trace({ type, entrypoint, path, namespace }, "processing task");
 
-        for (const {
-            filter: { filter, namespace },
-            hook,
-        } of hooks[type]) {
-            if (namespace !== args.namespace) continue;
-            if (filter && !filter.test(args.path)) continue;
+        for (const { filter, hook } of hooks[type]) {
+            if (filter.namespace !== namespace) continue;
+            if (filter.filter && !filter.filter.test(path)) continue;
 
             const result = await hook(args as never);
             if (result !== undefined) {
@@ -149,7 +157,7 @@ export async function run(
             }
         }
 
-        getDeferred(task.args.namespace).dequeue();
+        getDeferred(namespace).dequeue();
     }
 
     while (queue.length || Array.from(pending.values()).some((d) => d.pending > 0)) {
@@ -166,5 +174,5 @@ export async function run(
         await Promise.resolve();
     }
 
-    logger?.info({ entrypoint }, "extraction completed");
+    logger?.info(entrypoint, "extraction completed");
 }

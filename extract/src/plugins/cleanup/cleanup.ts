@@ -5,6 +5,8 @@ import * as gettextParser from "gettext-parser";
 
 import type { Plugin } from "../../plugin.ts";
 
+const namespace = "cleanup";
+
 export function cleanup(): Plugin {
     return {
         name: "cleanup",
@@ -13,12 +15,12 @@ export function cleanup(): Plugin {
             const processedDirs = new Set<string>();
             const generated = new Set<string>();
 
-            build.onResolve({ namespace: "cleanup", filter: /.*/ }, (args) => {
+            build.onResolve({ namespace, filter: /.*/ }, (args) => {
                 generated.add(args.path);
                 return args;
             });
 
-            build.onProcess({ namespace: "cleanup", filter: /.*/ }, async ({ path }) => {
+            build.onProcess({ namespace, filter: /.*/ }, async ({ path }) => {
                 await build.defer("translate");
                 const dir = dirname(path);
                 if (processedDirs.has(dir)) return undefined;

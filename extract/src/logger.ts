@@ -7,6 +7,7 @@ export function createLogger(level: LevelWithSilent = "info"): Logger {
             target: "pino-pretty",
             options: {
                 colorize: true,
+                ignore: "time,pid,hostname",
             },
         },
     });
