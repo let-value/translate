@@ -1,4 +1,4 @@
-import { globSync } from "glob";
+import { glob } from "glob";
 import type { ResolvedConfig, ResolvedEntrypoint } from "./configuration.ts";
 import { Defer } from "./defer.ts";
 import type { Logger } from "./logger.ts";
@@ -124,13 +124,11 @@ export async function run(
         plugin.setup(build);
     }
 
-    const paths = globSync(entrypoint.entrypoint, { nodir: true });
-    if (paths.length === 0) {
-        resolve({ entrypoint: entrypoint.entrypoint, path: entrypoint.entrypoint, namespace: "source" });
-    } else {
-        for (const path of paths) {
-            resolve({ entrypoint: path, path, namespace: "source" });
-        }
+    const paths = await glob(entrypoint.entrypoint, { nodir: true });
+    logger?.debug({ entrypoint: entrypoint.entrypoint, paths }, "resolved paths");
+
+    for (const path of paths) {
+        resolve({ entrypoint: path, path, namespace: "source" });
     }
 
     async function processTask(task: Task) {
