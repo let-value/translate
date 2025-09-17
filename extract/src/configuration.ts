@@ -1,5 +1,5 @@
 import { basename, dirname, extname, join } from "node:path";
-import type { Locale } from "@let-value/translate";
+import type { PluralFormsLocale } from "@let-value/translate";
 import type { LevelWithSilent } from "pino";
 
 import type { Plugin } from "./plugin.ts";
@@ -33,15 +33,15 @@ export interface UserConfig {
     /**
      * Default locale to use as the base for extraction
      * @default "en"
-     * @see {@link Locale} for available locales
+     * @see {@link PluralFormsLocale} for available locales
      */
-    defaultLocale?: Locale;
+    defaultLocale?: PluralFormsLocale;
     /**
      * Array of locales to extract translations for
      * @default [defaultLocale]
-     * @see {@link Locale} for available locales
+     * @see {@link PluralFormsLocale} for available locales
      */
-    locales?: Locale[];
+    locales?: PluralFormsLocale[];
     /**
      * Array of plugins to use or a function to override the default plugins
      * @default DefaultPlugins

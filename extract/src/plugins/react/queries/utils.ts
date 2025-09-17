@@ -7,9 +7,7 @@ export function buildTemplate(node: Parser.SyntaxNode): { text: string; error?: 
     const contentStart = open?.endIndex ?? node.startIndex;
     const contentEnd = close?.startIndex ?? node.endIndex;
 
-    type Part =
-        | { kind: "text"; text: string; raw: boolean }
-        | { kind: "expr"; value: string };
+    type Part = { kind: "text"; text: string; raw: boolean } | { kind: "expr"; value: string };
 
     const parts: Part[] = [];
     let segmentStart = contentStart;
@@ -40,7 +38,7 @@ export function buildTemplate(node: Parser.SyntaxNode): { text: string; error?: 
             } else if (expr.type === "string") {
                 parts.push({ kind: "text", text: expr.text.slice(1, -1), raw: false });
             } else if (expr.type === "template_string") {
-                const hasSubstitutions = expr.children.some(c => c.type === "template_substitution");
+                const hasSubstitutions = expr.children.some((c) => c.type === "template_substitution");
                 if (hasSubstitutions) {
                     return { text: "", error: "JSX expressions with template substitutions are not supported" };
                 }
@@ -54,7 +52,6 @@ export function buildTemplate(node: Parser.SyntaxNode): { text: string; error?: 
             parts.push({ kind: "text", text: child.text.slice(1, -1), raw: false });
             segmentStart = child.endIndex;
         } else if (child.type === "jsx_text" || child.type === "html_character_reference" || child.isError) {
-            continue;
         } else {
             return { text: "", error: "Unsupported JSX child" };
         }
@@ -62,7 +59,7 @@ export function buildTemplate(node: Parser.SyntaxNode): { text: string; error?: 
 
     pushRawText(contentEnd);
 
-    const firstRawIndex = parts.findIndex(part => part.kind === "text" && part.raw);
+    const firstRawIndex = parts.findIndex((part) => part.kind === "text" && part.raw);
     if (firstRawIndex === 0) {
         const part = parts[firstRawIndex] as Extract<Part, { kind: "text" }>;
         part.text = part.text.replace(/^\s+/, "");
@@ -113,14 +110,14 @@ export function buildAttrValue(node: Parser.SyntaxNode): { text: string; error?:
         if (!expr) {
             return { text: "", error: "Empty JSX expression" };
         }
-        
+
         if (expr.type === "identifier") {
             return { text: `\${${expr.text}}` };
         } else if (expr.type === "string") {
             return { text: expr.text.slice(1, -1) };
         } else if (expr.type === "template_string") {
             // Check if it's a simple template string with no substitutions
-            const hasSubstitutions = expr.children.some(c => c.type === "template_substitution");
+            const hasSubstitutions = expr.children.some((c) => c.type === "template_substitution");
             if (hasSubstitutions) {
                 return { text: "", error: "JSX expressions with template substitutions are not supported" };
             }

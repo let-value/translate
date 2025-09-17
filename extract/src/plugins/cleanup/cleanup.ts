@@ -12,25 +12,44 @@ export function cleanup(): Plugin {
         name: "cleanup",
         setup(build) {
             build.context.logger?.debug("cleanup plugin initialized");
-            const processedDirs = new Set<string>();
+            const processed = new Set<string>();
             const generated = new Set<string>();
+            const dirs = new Set<string>();
+            let dispatched = false;
 
-            build.onResolve({ namespace, filter: /.*/ }, (args) => {
-                generated.add(args.path);
-                return args;
+            build.onResolve({ namespace, filter: /.*/ }, ({ path }) => {
+                generated.add(path);
+                dirs.add(dirname(path));
+
+                Promise.all([build.defer("source"), build.defer("translate")]).then(() => {
+                    if (dispatched) {
+                        return;
+                    }
+                    dispatched = true;
+
+                    for (const path of dirs.values()) {
+                        build.process({ entrypoint: path, path, namespace, data: undefined });
+                    }
+                });
+
+                return undefined;
             });
 
             build.onProcess({ namespace, filter: /.*/ }, async ({ path }) => {
-                await build.defer("translate");
-                const dir = dirname(path);
-                if (processedDirs.has(dir)) return undefined;
-                processedDirs.add(dir);
-                const files = await fs.readdir(dir).catch(() => []);
+                if (processed.has(path)) {
+                    return undefined;
+                }
+                processed.add(path);
+                const files = await fs.readdir(path).catch(() => []);
                 for (const f of files.filter((p) => p.endsWith(".po"))) {
-                    const full = join(dir, f);
-                    if (generated.has(full)) continue;
+                    const full = join(path, f);
+                    if (generated.has(full)) {
+                        continue;
+                    }
                     const contents = await fs.readFile(full).catch(() => undefined);
-                    if (!contents) continue;
+                    if (!contents) {
+                        continue;
+                    }
                     const parsed = gettextParser.po.parse(contents);
                     const hasTranslations = Object.entries(parsed.translations || {}).some(([ctx, msgs]) =>
                         Object.keys(msgs).some((id) => !(ctx === "" && id === "")),

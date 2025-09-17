@@ -32,4 +32,4 @@ export type { PluralFormsLocale };
  * A locale identifier
  * @see {@link PluralFormsLocale} for available locales
  */
-export type Locale = Configuration & {};
+export type Locale = Configuration["locales"][number] & {};
