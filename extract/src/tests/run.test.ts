@@ -133,7 +133,7 @@ test("resolves glob entrypoints to matched files", async () => {
     const file = join(directory, "entry.ts");
     await writeFile(file, "export const foo = 'bar';");
 
-    const entrypoint = join(directory, "**/*.ts");
+    const entrypoint = join(directory, "**/*.ts").replaceAll("\\", "/");
     const seen: string[] = [];
 
     const plugin: Plugin = {

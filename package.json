@@ -24,7 +24,7 @@
         "publish": "npm publish --workspaces"
     },
     "devDependencies": {
-        "@biomejs/biome": "2.2.2",
+        "@biomejs/biome": "2.2.4",
         "bumpp": "10.2.3",
         "typescript": "5.9.2"
     }
