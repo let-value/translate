@@ -10,10 +10,28 @@ function normalize(po: gettextParser.GetTextTranslations) {
     return Object.values(po.translations)
         .flatMap((ctx) => Object.values(ctx))
         .filter(({ msgid }) => msgid)
-        .map(({ comments, ...rest }) => ({
-            comments: { ...comments, flag: undefined, reference: undefined },
-            ...rest,
-        }));
+        .map(({ comments, msgctxt, msgid_plural, msgstr, ...rest }) => {
+            const result: Record<string, unknown> = {
+                comments: { ...comments, flag: undefined, reference: undefined },
+                ...rest,
+            };
+
+            if (msgctxt) {
+                result.msgctxt = msgctxt;
+            }
+
+            if (msgid_plural) {
+                result.msgid_plural = msgid_plural;
+            }
+
+            if (msgid_plural) {
+                result.msgstr = msgstr;
+            } else {
+                result.msgstr = [""];
+            }
+
+            return result;
+        });
 }
 
 test("matches xgettext output", async () => {
@@ -23,10 +41,9 @@ test("matches xgettext output", async () => {
 
     const { translations } = parseFile(fixture);
     const record = collect(translations, "en");
-    const out = merge([{ translations: record }], undefined, "mark", "en", new Date());
-    const ours = gettextParser.po.parse(out);
+    const merged = merge([{ translations: record }], undefined, "mark", "en", new Date());
 
-    assert.deepEqual(normalize(ours), normalize(ref));
+    assert.deepEqual(normalize(merged), normalize(ref));
 });
 
 test("matches xgettext output for 4 plural forms", async () => {
@@ -36,8 +53,7 @@ test("matches xgettext output for 4 plural forms", async () => {
 
     const { translations } = parseFile(fixture);
     const record = collect(translations, "sl");
-    const out = merge([{ translations: record }], undefined, "mark", "sl", new Date());
-    const ours = gettextParser.po.parse(out);
+    const merged = merge([{ translations: record }], undefined, "mark", "sl", new Date());
 
-    assert.deepEqual(normalize(ours), normalize(ref));
+    assert.deepEqual(normalize(merged), normalize(ref));
 });

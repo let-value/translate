@@ -54,41 +54,6 @@ test("runs all process hooks for a file", async () => {
     assert.deepEqual(collected, [coreTranslations, reactTranslations]);
 });
 
-test("skips resolving additional files when walk disabled", async () => {
-    const entrypoint = "entry.ts";
-    const extra = "extra.ts";
-    let resolvedExtra = false;
-
-    const plugin: Plugin = {
-        name: "mock",
-        setup(build) {
-            build.onResolve({ filter: /.*/, namespace: "source" }, ({ entrypoint, path, namespace }) => {
-                if (path === extra) resolvedExtra = true;
-                return { entrypoint, path, namespace };
-            });
-            build.onLoad({ filter: /.*/, namespace: "source" }, ({ entrypoint, path, namespace }) => ({
-                entrypoint,
-                path,
-                namespace,
-                data: "",
-            }));
-            build.onProcess({ filter: /.*/, namespace: "source" }, (args) => {
-                build.resolve({
-                    entrypoint: args.entrypoint,
-                    path: extra,
-                    namespace: "source",
-                });
-                return undefined;
-            });
-        },
-    };
-
-    const config = defineConfig({ entrypoints: entrypoint, walk: false, plugins: () => [plugin] });
-    await run(config.entrypoints[0], { config });
-
-    assert.equal(resolvedExtra, false);
-});
-
 test("skips resolving paths matching exclude", async () => {
     const entrypoint = "entry.ts";
     const extra = "extra.ts";

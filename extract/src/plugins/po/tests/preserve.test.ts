@@ -10,15 +10,13 @@ import { collect, merge } from "../po.ts";
 test("preserves existing translations and comments", async () => {
     const fixture = fileURLToPath(new URL("./fixtures/sample.js", import.meta.url));
     const existingPath = fileURLToPath(new URL("./fixtures/existing.po", import.meta.url));
-    const existing = await fs.readFile(existingPath);
+    const existing = gettextParser.po.parse(await fs.readFile(existingPath));
 
     const { translations } = parseFile(fixture);
     const record = collect(translations, "en");
 
-    const out = merge([{ translations: record }], existing, "mark", "en", new Date());
-
-    const parsed = gettextParser.po.parse(out);
-    const message = parsed.translations[""]["Hello world"];
+    const merged = merge([{ translations: record }], existing, "mark", "en", new Date());
+    const message = merged.translations[""]["Hello world"];
 
     assert.equal(message.msgstr[0], "Ahoy!");
     assert.equal(message.comments?.translator, "existing translator comment");

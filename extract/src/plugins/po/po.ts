@@ -72,23 +72,62 @@ export function collect(source: Translation[], locale?: string): GetTextTranslat
     return translations;
 }
 
+export function hasChanges(left: GetTextTranslations, right?: GetTextTranslations): boolean {
+    const ignoredKeys = new Set(["pot-creation-date", "po-revision-date"]);
+
+    function deepEqual(left: unknown, right: unknown): boolean {
+        if (left === right) {
+            return true;
+        }
+
+        if (left == null || right == null) {
+            return false;
+        }
+
+        if (typeof left !== typeof right) {
+            return false;
+        }
+
+        if (Array.isArray(left)) {
+            if (!Array.isArray(right) || left.length !== right.length) {
+                return false;
+            }
+
+            return left.every((item, index) => deepEqual(item, right[index]));
+        }
+
+        if (typeof left === "object") {
+            const keys1 = Object.keys(left).filter((key) => !ignoredKeys.has(key));
+            const keys2 = Object.keys(right).filter((key) => !ignoredKeys.has(key));
+
+            if (keys1.length !== keys2.length) {
+                return false;
+            }
+
+            return keys1.every((key) => deepEqual(left[key as never], right[key as never]));
+        }
+
+        return false;
+    }
+
+    return !deepEqual(left, right);
+}
+
 export function merge(
     sources: Collected[],
-    existing: string | Buffer | undefined,
+    existing: GetTextTranslations | undefined,
     obsolete: ObsoleteStrategy,
     locale: string,
     generatedAt: Date,
-): string {
+): GetTextTranslations {
     let headers: Record<string, string> = {};
     let translations: GetTextTranslationRecord = { "": {} };
     let obsoleteTranslations: GetTextTranslationRecord = {};
     const nplurals = getNPlurals(locale);
 
     if (existing) {
-        const parsed = gettextParser.po.parse(existing);
-        headers = parsed.headers || {};
-        translations = parsed.translations || { "": {} };
-        obsoleteTranslations = parsed.obsolete || {};
+        translations = existing.translations || { "": {} };
+        obsoleteTranslations = existing.obsolete || {};
         for (const ctx of Object.keys(translations)) {
             for (const id of Object.keys(translations[ctx])) {
                 if (ctx === "" && id === "") continue;
@@ -98,8 +137,8 @@ export function merge(
     }
 
     const collected: GetTextTranslationRecord = { "": {} };
-    for (const { translations: record } of sources) {
-        for (const [ctx, msgs] of Object.entries(record)) {
+    for (const { translations } of sources) {
+        for (const [ctx, msgs] of Object.entries(translations)) {
             if (!collected[ctx]) collected[ctx] = {};
             for (const [id, entry] of Object.entries(msgs)) {
                 const existing = collected[ctx][id];
@@ -138,20 +177,28 @@ export function merge(
                     translator: existingEntry.comments?.translator,
                 };
             }
-            entry.obsolete = false;
+            delete entry.obsolete;
             entry.msgstr = entry.msgstr.slice(0, nplurals);
-            while (entry.msgstr.length < nplurals) entry.msgstr.push("");
+            while (entry.msgstr.length < nplurals) {
+                entry.msgstr.push("");
+            }
             translations[ctx][id] = entry;
-            if (obsoleteTranslations[ctx]) delete obsoleteTranslations[ctx][id];
+            if (obsoleteTranslations[ctx]) {
+                delete obsoleteTranslations[ctx][id];
+            }
         }
     }
 
     for (const ctx of Object.keys(translations)) {
         for (const id of Object.keys(translations[ctx])) {
-            if (ctx === "" && id === "") continue;
+            if (ctx === "" && id === "") {
+                continue;
+            }
             const entry = translations[ctx][id];
             if (entry.obsolete) {
-                if (!obsoleteTranslations[ctx]) obsoleteTranslations[ctx] = {};
+                if (!obsoleteTranslations[ctx]) {
+                    obsoleteTranslations[ctx] = {};
+                }
                 obsoleteTranslations[ctx][id] = entry;
                 delete translations[ctx][id];
             }
@@ -167,14 +214,12 @@ export function merge(
         "x-generator": "@let-value/translate-extract",
     };
 
-    const poObj: GetTextTranslations = {
+    return {
         charset: "utf-8",
         headers,
         translations,
         ...(obsolete === "mark" && Object.keys(obsoleteTranslations).length ? { obsolete: obsoleteTranslations } : {}),
     };
-
-    return gettextParser.po.compile(poObj).toString();
 }
 
 const namespace = "translate";
@@ -222,7 +267,8 @@ export function po(): Plugin {
             });
 
             build.onLoad({ filter: /.*\.po$/, namespace }, async ({ entrypoint, path }) => {
-                const data = await fs.readFile(path).catch(() => undefined);
+                const contents = await fs.readFile(path).catch(() => undefined);
+                const data = contents ? gettextParser.po.parse(contents) : undefined;
                 return {
                     entrypoint,
                     path,
@@ -249,8 +295,11 @@ export function po(): Plugin {
                     locale,
                     build.context.generatedAt,
                 );
-                await fs.mkdir(dirname(path), { recursive: true });
-                await fs.writeFile(path, out);
+
+                if (hasChanges(out, data as never)) {
+                    await fs.mkdir(dirname(path), { recursive: true });
+                    await fs.writeFile(path, gettextParser.po.compile(out));
+                }
 
                 build.resolve({
                     entrypoint,
