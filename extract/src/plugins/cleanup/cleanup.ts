@@ -21,7 +21,7 @@ export function cleanup(): Plugin {
                 generated.add(path);
                 dirs.add(dirname(path));
 
-                Promise.all([build.defer("source"), build.defer("translate")]).then(() => {
+                Promise.all([build.defer("source"), build.defer("translate"), build.defer(namespace)]).then(() => {
                     if (dispatched) {
                         return;
                     }

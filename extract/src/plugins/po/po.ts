@@ -207,7 +207,7 @@ export function po(): Plugin {
                     collections.get(destination)?.translations.push(...data);
                 }
 
-                build.defer("source").then(() => {
+                Promise.all([build.defer("source"), build.defer(namespace)]).then(() => {
                     if (dispatched) {
                         return;
                     }
