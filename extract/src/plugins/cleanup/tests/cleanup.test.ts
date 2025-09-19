@@ -43,6 +43,11 @@ test("removes empty stray translation files", async () => {
                     path: generated,
                     namespace: "cleanup",
                 });
+                build.resolve({
+                    entrypoint: args.entrypoint,
+                    path: stray,
+                    namespace: "cleanup",
+                });
                 return undefined;
             });
         },

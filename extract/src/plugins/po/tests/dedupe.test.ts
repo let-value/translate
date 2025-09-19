@@ -2,7 +2,8 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 
 import type { Translation } from "../../core/queries/types.ts";
-import { collect, merge } from "../po.ts";
+import { collect } from "../collect.ts";
+import { merge } from "../merge.ts";
 
 test("deduplicates messages and preserves references", () => {
     const translationsA: Translation[] = [

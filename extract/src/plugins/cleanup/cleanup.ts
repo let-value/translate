@@ -54,7 +54,7 @@ export function cleanup(): Plugin {
                     if (!hasTranslations && generated.has(full)) {
                         await fs.unlink(full);
                     }
-                    if (hasTranslations) {
+                    if (hasTranslations && !generated.has(full)) {
                         build.context.logger?.warn({ path: full }, "stray translation file");
                     }
                 }

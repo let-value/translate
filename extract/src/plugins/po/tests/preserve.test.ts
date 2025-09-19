@@ -5,7 +5,8 @@ import { fileURLToPath } from "node:url";
 import * as gettextParser from "gettext-parser";
 
 import { parseFile } from "../../core/parse.ts";
-import { collect, merge } from "../po.ts";
+import { collect } from "../collect.ts";
+import { merge } from "../merge.ts";
 
 test("preserves existing translations and comments", async () => {
     const fixture = fileURLToPath(new URL("./fixtures/sample.js", import.meta.url));

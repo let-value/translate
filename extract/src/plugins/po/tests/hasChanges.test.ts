@@ -1,7 +1,8 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import type { GetTextTranslations } from "gettext-parser";
-import { hasChanges } from "../po.ts";
+
+import { hasChanges } from "../hasChanges.ts";
 
 const baseTranslations: GetTextTranslations = {
     charset: "utf-8",
@@ -300,6 +301,39 @@ test("handles null and undefined values", () => {
 
     const result = hasChanges(newTranslations, oldTranslations);
     assert.equal(result, true);
+});
+
+test("returns false when only empty message entries differ", () => {
+    const newTranslations = {
+        ...baseTranslations,
+        translations: {
+            ...baseTranslations.translations,
+            "": {
+                ...baseTranslations.translations[""],
+                "": {
+                    msgid: "",
+                    msgstr: ["Different empty string content"],
+                },
+            },
+        },
+    };
+
+    const oldTranslations = {
+        ...baseTranslations,
+        translations: {
+            ...baseTranslations.translations,
+            "": {
+                ...baseTranslations.translations[""],
+                "": {
+                    msgid: "",
+                    msgstr: [""],
+                },
+            },
+        },
+    };
+
+    const result = hasChanges(newTranslations, oldTranslations);
+    assert.equal(result, false);
 });
 
 test("handles deep cloned objects as identical", () => {
