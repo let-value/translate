@@ -73,9 +73,7 @@ export async function run(
 
     function resolve(args: ResolveArgs) {
         const { entrypoint, path, namespace } = args;
-        const skipped =
-            (args.path !== args.entrypoint && !context.config.walk) ||
-            context.config.exclude.some((ex) => (typeof ex === "function" ? ex(args) : ex.test(args.path)));
+        const skipped = context.config.exclude.some((ex) => (typeof ex === "function" ? ex(args) : ex.test(args.path)));
         logger?.debug({ entrypoint, path, namespace, skipped }, "resolve");
 
         if (skipped) {
