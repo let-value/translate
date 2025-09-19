@@ -123,8 +123,8 @@ function resolveEntrypoint(ep: string | EntrypointConfig): ResolvedEntrypoint {
     if (typeof ep === "string") {
         return { entrypoint: ep };
     }
-    const { entrypoint, destination, obsolete, exclude } = ep;
-    return { entrypoint, destination, obsolete, exclude: exclude ? normalizeExclude(exclude) : undefined };
+    const { entrypoint, destination, obsolete, walk, exclude } = ep;
+    return { entrypoint, destination, obsolete, walk, exclude: exclude ? normalizeExclude(exclude) : undefined };
 }
 
 function resolvePlugins(user?: UserConfig["plugins"]): Plugin[] {
