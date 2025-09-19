@@ -97,8 +97,8 @@ export function hasChanges(left: GetTextTranslations, right?: GetTextTranslation
         }
 
         if (typeof left === "object") {
-            const keys1 = Object.keys(left).filter((key) => !ignoredKeys.has(key));
-            const keys2 = Object.keys(right).filter((key) => !ignoredKeys.has(key));
+            const keys1 = Object.keys(left).filter((key) => !ignoredKeys.has(key.toLowerCase()));
+            const keys2 = Object.keys(right).filter((key) => !ignoredKeys.has(key.toLowerCase()));
 
             if (keys1.length !== keys2.length) {
                 return false;

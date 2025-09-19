@@ -43,9 +43,6 @@ export function cleanup(): Plugin {
                 const files = await fs.readdir(path).catch(() => []);
                 for (const f of files.filter((p) => p.endsWith(".po"))) {
                     const full = join(path, f);
-                    if (generated.has(full)) {
-                        continue;
-                    }
                     const contents = await fs.readFile(full).catch(() => undefined);
                     if (!contents) {
                         continue;
@@ -54,11 +51,11 @@ export function cleanup(): Plugin {
                     const hasTranslations = Object.entries(parsed.translations || {}).some(([ctx, msgs]) =>
                         Object.keys(msgs).some((id) => !(ctx === "" && id === "")),
                     );
+                    if (!hasTranslations && generated.has(full)) {
+                        await fs.unlink(full);
+                    }
                     if (hasTranslations) {
                         build.context.logger?.warn({ path: full }, "stray translation file");
-                    } else {
-                        await fs.unlink(full);
-                        build.context.logger?.info({ path: full }, "removed empty translation file");
                     }
                 }
                 return undefined;
