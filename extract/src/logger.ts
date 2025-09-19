@@ -1,16 +1,26 @@
-import pino, { type LevelWithSilent, type Logger } from "pino";
+import chalk, { type ChalkInstance } from "chalk";
+import log, { type Logger, type LogLevelNames } from "loglevel";
+import prefix from "loglevel-plugin-prefix";
 
-export function createLogger(level: LevelWithSilent = "info"): Logger {
-    return pino({
-        level,
-        transport: {
-            target: "pino-pretty",
-            options: {
-                colorize: true,
-                ignore: "time,pid,hostname",
-            },
-        },
-    });
-}
+export type LogLevel = LogLevelNames;
 
-export type { Logger, LevelWithSilent };
+const colors: Record<LogLevel, ChalkInstance> = {
+    trace: chalk.magenta,
+    debug: chalk.cyan,
+    info: chalk.blue,
+    warn: chalk.yellow,
+    error: chalk.red,
+};
+
+prefix.reg(log);
+prefix.apply(log, {
+    format(level, name) {
+        const color = colors[level as LogLevelNames] ?? ((value: string) => value);
+        const scope = name ? ` ${chalk.green(`${name}:`)}` : "";
+
+        return `${color(level)}${scope}`;
+    },
+});
+
+export const logger = log;
+export type { Logger };
