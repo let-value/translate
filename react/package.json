@@ -1,6 +1,6 @@
 {
     "name": "@let-value/translate-react",
-    "version": "1.0.19",
+    "version": "1.0.20",
     "type": "module",
     "main": "dist/index.cjs",
     "module": "dist/index.js",
@@ -24,10 +24,10 @@
         "test": "node --test"
     },
     "dependencies": {
-        "@let-value/translate": "1.0.19"
+        "@let-value/translate": "1.0.20"
     },
     "devDependencies": {
-        "@let-value/translate-e2e": "1.0.19",
+        "@let-value/translate-e2e": "1.0.20",
         "@types/gettext-parser": "8.0.0",
         "@types/react": "19.1.13",
         "@types/react-dom": "19.1.9",
