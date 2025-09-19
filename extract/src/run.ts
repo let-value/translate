@@ -1,4 +1,4 @@
-import fg from "fast-glob";
+import glob from "fast-glob";
 import type { ResolvedConfig, ResolvedEntrypoint } from "./configuration.ts";
 import { Defer } from "./defer.ts";
 import type { Logger } from "./logger.ts";
@@ -13,8 +13,6 @@ import type {
     ResolveArgs,
     ResolveHook,
 } from "./plugin.ts";
-
-const { isDynamicPattern } = fg;
 
 export type Task =
     | {
@@ -126,8 +124,8 @@ export async function run(
         plugin.setup(build);
     }
 
-    const paths = isDynamicPattern(entrypoint.entrypoint)
-        ? await fg(entrypoint.entrypoint, { onlyFiles: true })
+    const paths = glob.isDynamicPattern(entrypoint.entrypoint)
+        ? await glob(entrypoint.entrypoint, { onlyFiles: true })
         : [entrypoint.entrypoint];
     logger?.debug({ entrypoint: entrypoint.entrypoint, paths }, "resolved paths");
 

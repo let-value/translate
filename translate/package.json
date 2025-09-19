@@ -24,7 +24,6 @@
         "test": "node --test"
     },
     "dependencies": {
-        "glob": "11.0.3",
         "plural-forms": "0.5.5"
     },
     "devDependencies": {
