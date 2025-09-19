@@ -1,6 +1,6 @@
 {
     "name": "@let-value/translate-extract",
-    "version": "1.0.14",
+    "version": "1.0.15",
     "type": "module",
     "main": "dist/index.cjs",
     "module": "dist/index.js",
@@ -20,7 +20,7 @@
         "dist"
     ],
     "dependencies": {
-        "@let-value/translate": "1.0.14",
+        "@let-value/translate": "1.0.15",
         "chalk": "5.3.0",
         "cosmiconfig": "9.0.0",
         "gettext-parser": "8.0.0",
