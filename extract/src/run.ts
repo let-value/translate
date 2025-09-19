@@ -1,4 +1,4 @@
-import { glob, hasMagic } from "glob";
+import glob from "fast-glob";
 import type { ResolvedConfig, ResolvedEntrypoint } from "./configuration.ts";
 import { Defer } from "./defer.ts";
 import type { Logger } from "./logger.ts";
@@ -124,8 +124,8 @@ export async function run(
         plugin.setup(build);
     }
 
-    const paths = hasMagic(entrypoint.entrypoint)
-        ? await glob(entrypoint.entrypoint, { nodir: true })
+    const paths = glob.isDynamicPattern(entrypoint.entrypoint)
+        ? await glob(entrypoint.entrypoint, { onlyFiles: true })
         : [entrypoint.entrypoint];
     logger?.debug({ entrypoint: entrypoint.entrypoint, paths }, "resolved paths");
 
