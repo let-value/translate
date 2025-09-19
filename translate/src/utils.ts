@@ -1,5 +1,6 @@
-import type { GetTextTranslations } from "gettext-parser";
+import type { GetTextTranslationRecord, GetTextTranslations } from "gettext-parser";
 import { getNPlurals, getPluralFunc } from "plural-forms";
+
 import type { Locale } from "./config.ts";
 
 // biome-ignore lint/suspicious/noExplicitAny: true
@@ -100,3 +101,48 @@ export const pluralFunc = memo(function pluralFunc(locale: Locale) {
         return defaultPluralFunc;
     }
 });
+
+export function mergeTranslations(
+    primary: GetTextTranslations,
+    ...others: (GetTextTranslations | undefined)[]
+): GetTextTranslations {
+    function mergeRecords(target: GetTextTranslationRecord, source: GetTextTranslationRecord): void {
+        for (const ctx in source) {
+            if (!target[ctx]) {
+                target[ctx] = source[ctx];
+                continue;
+            }
+
+            const targetContext = target[ctx];
+            const sourceContext = source[ctx];
+            for (const id in sourceContext) {
+                if (!targetContext[id]) {
+                    targetContext[id] = sourceContext[id];
+                }
+            }
+        }
+    }
+
+    const result: GetTextTranslations = {
+        charset: primary.charset,
+        headers: { ...primary.headers },
+        translations: { ...primary.translations },
+        obsolete: primary.obsolete ? { ...primary.obsolete } : undefined,
+    };
+
+    for (const other of others) {
+        if (other?.translations) {
+            mergeRecords(result.translations, other.translations);
+        }
+
+        if (other?.obsolete) {
+            if (!result.obsolete) {
+                result.obsolete = other.obsolete;
+            } else {
+                mergeRecords(result.obsolete, other.obsolete);
+            }
+        }
+    }
+
+    return result;
+}

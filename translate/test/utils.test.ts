@@ -1,8 +1,9 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
+import type { GetTextTranslations } from "gettext-parser";
 import type { Locale } from "../src/config.ts";
-import { memo, normalizeMessageId, pluralFunc, substitute } from "../src/utils.ts";
+import { memo, mergeTranslations, normalizeMessageId, pluralFunc, substitute } from "../src/utils.ts";
 
 test("substitute replaces numeric placeholders with values", () => {
     assert.equal(substitute("Hello ${0}, ${1}!", ["World", "Friend"]), "Hello World, Friend!");
@@ -103,4 +104,74 @@ test("pluralFunc falls back to default when locale is unknown", () => {
     const pf = pluralFunc("xx" as unknown as Locale);
     assert.equal(pf(1), 0);
     assert.equal(pf(2), 1);
+});
+
+test("mergeTranslations merges multiple GetTextTranslations", () => {
+    const primary: GetTextTranslations = {
+        charset: "utf-8",
+        headers: { Language: "en" },
+        translations: {
+            "": {
+                Hello: { msgid: "Hello", msgstr: ["Hello"] },
+            },
+        },
+    };
+
+    const secondary: GetTextTranslations = {
+        charset: "utf-8",
+        headers: { Language: "es" },
+        translations: {
+            "": {
+                World: { msgid: "World", msgstr: ["Mundo"] },
+            },
+        },
+        obsolete: {
+            "": {
+                Old: { msgid: "Old", msgstr: ["Old"], obsolete: true },
+            },
+        },
+    };
+
+    const merged = mergeTranslations(primary, secondary);
+
+    assert.equal(merged.charset, "utf-8");
+    assert.deepEqual(merged.headers, { Language: "en" });
+    assert.deepEqual(merged.translations, {
+        "": {
+            Hello: { msgid: "Hello", msgstr: ["Hello"] },
+            World: { msgid: "World", msgstr: ["Mundo"] },
+        },
+    });
+    assert.deepEqual(merged.obsolete, {
+        "": {
+            Old: { msgid: "Old", msgstr: ["Old"], obsolete: true },
+        },
+    });
+});
+
+test("mergeTranslations handles overlapping keys by keeping primary", () => {
+    const primary: GetTextTranslations = {
+        charset: "utf-8",
+        headers: { Language: "en" },
+        translations: {
+            "": {
+                Hello: { msgid: "Hello", msgstr: ["Hello"] },
+            },
+        },
+    };
+
+    const secondary: GetTextTranslations = {
+        charset: "utf-8",
+        headers: { Language: "es" },
+        translations: {
+            "": {
+                Hello: { msgid: "Hello", msgstr: ["Hola"] }, // Different translation
+            },
+        },
+    };
+
+    const merged = mergeTranslations(primary, secondary);
+
+    // Should keep primary's translation
+    assert.deepEqual(merged.translations[""]["Hello"], { msgid: "Hello", msgstr: ["Hello"] });
 });

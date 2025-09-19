@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { mkdtemp, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { join, resolve } from "node:path";
 import { test } from "node:test";
 
 import { defineConfig } from "../configuration.ts";
@@ -140,7 +140,7 @@ test("resolves glob entrypoints to matched files", async () => {
         name: "glob-entrypoint",
         setup(build) {
             build.onResolve({ filter: /.*/, namespace: "source" }, (args) => {
-                seen.push(args.entrypoint);
+                seen.push(resolve(args.entrypoint));
                 return args;
             });
             build.onLoad({ filter: /.*/, namespace: "source" }, (args) => ({

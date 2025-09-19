@@ -1,5 +1,4 @@
 import type { GetTextTranslations } from "gettext-parser";
-import { assign } from "radash";
 import type { Locale } from "./config.ts";
 
 import {
@@ -14,7 +13,7 @@ import {
     type PluralInput,
     type PluralMessage,
 } from "./messages.ts";
-import { normalizeTranslations, pluralFunc, type StrictStaticString, substitute } from "./utils.ts";
+import { mergeTranslations, normalizeTranslations, pluralFunc, type StrictStaticString, substitute } from "./utils.ts";
 
 type TranslationModule = GetTextTranslations | { default: GetTextTranslations };
 type TranslationLoader = () => Promise<TranslationModule>;
@@ -184,7 +183,7 @@ export class Translator<T extends TranslationRecord = TranslationRecord> {
         const base = this.translations[key];
         if (base) {
             const parentTranslations = this.parent?.getLocale(locale as never)?.translations;
-            const translations = assign<GetTextTranslations>(base, parentTranslations as never);
+            const translations = mergeTranslations(base, parentTranslations);
             delete this.translations[key];
 
             const translator = new LocaleTranslator(key, translations);

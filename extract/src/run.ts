@@ -32,10 +32,10 @@ export async function run(
     entrypoint: ResolvedEntrypoint,
     { config, logger }: { config: ResolvedConfig; logger?: Logger },
 ) {
-    const destination = entrypoint?.destination ?? config.destination;
-    const obsolete = entrypoint?.obsolete ?? config.obsolete;
-    const exclude = entrypoint?.exclude ?? config.exclude;
-    const walk = entrypoint?.walk ?? config.walk;
+    const destination = entrypoint.destination ?? config.destination;
+    const obsolete = entrypoint.obsolete ?? config.obsolete;
+    const exclude = entrypoint.exclude ?? config.exclude;
+    const walk = entrypoint.walk ?? config.walk;
 
     const context: Context = {
         config: { ...config, destination, obsolete, exclude, walk },

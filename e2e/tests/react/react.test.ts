@@ -15,7 +15,7 @@ const translationsDir = join(appDir, "translations");
 async function extract() {
     await fs.rm(translationsDir, { recursive: true, force: true });
     const config = defineConfig({
-        entrypoints: appPath,
+        entrypoints: appPath.replaceAll("\\", "/"),
         locales: ["en", "ru", "sl", "sk"],
         defaultLocale: "ja",
         plugins: [react()],
