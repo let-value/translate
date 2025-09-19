@@ -1,6 +1,6 @@
 import { basename, dirname, extname, join } from "node:path";
 import type { PluralFormsLocale } from "@let-value/translate";
-import type { LevelWithSilent } from "pino";
+import type { LogLevel } from "./logger.ts";
 
 import type { Plugin } from "./plugin.ts";
 import { cleanup } from "./plugins/cleanup/cleanup.ts";
@@ -86,7 +86,7 @@ export interface UserConfig {
      * Log level for the extraction process
      * @default "info"
      */
-    logLevel?: LevelWithSilent;
+    logLevel?: LogLevel;
 }
 
 export interface ResolvedEntrypoint extends Omit<EntrypointConfig, "exclude"> {
@@ -101,7 +101,7 @@ export interface ResolvedConfig {
     destination: DestinationFn;
     obsolete: ObsoleteStrategy;
     walk: boolean;
-    logLevel: LevelWithSilent;
+    logLevel: LogLevel;
     exclude: Exclude[];
 }
 

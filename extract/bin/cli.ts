@@ -2,7 +2,7 @@
 import { parseArgs } from "node:util";
 import { cosmiconfig } from "cosmiconfig";
 import type { ResolvedConfig } from "../src/configuration.ts";
-import { createLogger, type LevelWithSilent } from "../src/logger.ts";
+import { createLogger, type LogLevel } from "../src/logger.ts";
 import { run } from "../src/run.ts";
 
 const moduleName = "translate";
@@ -17,7 +17,7 @@ async function main() {
         },
     });
 
-    const logger = createLogger(logLevel as LevelWithSilent | undefined);
+    const logger = createLogger(logLevel as LogLevel | undefined);
 
     const explorer = cosmiconfig(moduleName, {
         searchPlaces: [
@@ -43,8 +43,8 @@ async function main() {
     }
 
     const config = result.config as ResolvedConfig;
-    config.logLevel = (logLevel as LevelWithSilent) ?? config.logLevel;
-    logger.level = config.logLevel;
+    config.logLevel = (logLevel as LogLevel) ?? config.logLevel;
+    logger.setLevel(config.logLevel);
 
     const tasks: Promise<unknown>[] = [];
     for (const entrypoint of config.entrypoints) {
