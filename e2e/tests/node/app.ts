@@ -19,8 +19,8 @@ export async function runApp(locale: string, count: number) {
 
     const t = new Translator({ [locale]: translations }).getLocale(locale as never);
 
-    const translated = t.message(deferred);
-    const def = t.message(descriptor);
+    const translated = t.translate(deferred);
+    const def = t.translate(descriptor);
     const greeting = t.message`こんにちは、${name}！`;
     const items = t.ngettext(message`りんご`, message`${count} りんご`, count);
 

@@ -24,8 +24,8 @@ function App({ count }: { count: number }) {
 
     return (
         <div>
-            <div id="translated">{t.message(deferred)}</div>
-            <div id="def">{t.message(descriptor)}</div>
+            <div id="translated">{t.translate(deferred)}</div>
+            <div id="def">{t.translate(descriptor)}</div>
             <div id="greeting">
                 <Message>こんにちは、{name}！</Message>
             </div>

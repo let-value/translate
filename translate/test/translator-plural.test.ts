@@ -57,6 +57,15 @@ test("translate handles plural helper with multiple forms", () => {
     assert.equal(t.translate(apples), "5 яблок");
 });
 
+test("plural rejects deferred plural input", () => {
+    const t = new Translator(translations).getLocale("en");
+    const apples = plural(message`${1} apple`, message`${1} apples`, 1);
+    assert.throws(() => {
+        // @ts-expect-error plural does not accept deferred inputs
+        t.plural(apples);
+    }, /translate\(\)/);
+});
+
 test("plural substitutes values from the chosen plural form", () => {
     const t = new Translator(translations).getLocale("en");
     assert.equal(t.plural(message`${"Bob"} ${1} carrot`, message`${2} carrots for ${"Bob"}`, 1), "Bob 1 carrot");

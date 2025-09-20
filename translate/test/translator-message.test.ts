@@ -11,6 +11,15 @@ test("translator substitutes template values", () => {
     assert.equal(t.translate(message`Hello, ${name}!`), "Hello, World!");
 });
 
+test("message rejects deferred message input", () => {
+    const t = new Translator({}).getLocale("en" as never);
+    const deferred = message`Hello`;
+    assert.throws(() => {
+        // @ts-expect-error message does not accept deferred inputs
+        t.message(deferred);
+    }, /translate\(\)/);
+});
+
 test("translator applies translations with placeholders", async () => {
     const name = "World";
     const ruUrl = new URL("./fixtures/ru.po", import.meta.url);

@@ -44,6 +44,15 @@ test("context plural returns default forms when translation missing", () => {
     assert.equal(t.context("company").plural(message`${2} pear`, message`${2} pears`, 2), "2 pears");
 });
 
+test("context plural rejects deferred input", () => {
+    const t = new Translator(translations).getLocale("en");
+    const deferred = context("company").plural(message`${1} apple`, message`${1} apples`, 1);
+    assert.throws(() => {
+        // @ts-expect-error context plural does not accept deferred inputs
+        t.context("company").plural(deferred);
+    }, /translate\(\)/);
+});
+
 test("npgettext alias works", () => {
     const t = new Translator(translations).getLocale("en");
     assert.equal(t.npgettext("ctx", message`${1} apple`, message`${1} apples`, 1), "1 apple");
