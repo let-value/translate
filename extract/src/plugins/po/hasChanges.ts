@@ -1,69 +1,66 @@
+import { isDeepStrictEqual } from "node:util";
 import type { GetTextTranslations } from "gettext-parser";
+import * as gettextParser from "gettext-parser";
+
+const IGNORED_HEADER_KEYS = new Set(["pot-creation-date", "po-revision-date"]);
+const IGNORED_HEADER_LINE_PREFIXES = ["pot-creation-date:", "po-revision-date:"];
+
+function normalizeHeaderString(value: string): string {
+    const lines = value.split("\n");
+    const hadTrailingNewline = value.endsWith("\n");
+
+    const filtered = lines
+        .filter((line) => {
+            const trimmed = line.trimStart().toLowerCase();
+            return !IGNORED_HEADER_LINE_PREFIXES.some((prefix) => trimmed.startsWith(prefix));
+        })
+        .map((line) => {
+            const separatorIndex = line.indexOf(":");
+            if (separatorIndex === -1) {
+                return line;
+            }
+
+            const key = line.slice(0, separatorIndex).trim().toLowerCase();
+            const value = line.slice(separatorIndex + 1);
+            return `${key}:${value}`;
+        });
+
+    if (hadTrailingNewline && filtered[filtered.length - 1] !== "") {
+        filtered.push("");
+    }
+
+    return filtered.join("\n");
+}
+
+function normalize(translations: GetTextTranslations): GetTextTranslations {
+    const compiled = gettextParser.po.compile(translations);
+    const parsed = gettextParser.po.parse(compiled);
+
+    if (parsed.headers) {
+        const normalizedHeaders: Record<string, string> = {};
+        for (const [key, value] of Object.entries(parsed.headers)) {
+            if (!IGNORED_HEADER_KEYS.has(key.toLowerCase())) {
+                normalizedHeaders[key.toLowerCase()] = value as string;
+            }
+        }
+        parsed.headers = normalizedHeaders;
+    }
+
+    const headerMessage = parsed.translations?.[""]?.[""];
+    if (headerMessage?.msgstr) {
+        headerMessage.msgstr = headerMessage.msgstr.map((item) => normalizeHeaderString(item));
+    }
+
+    return parsed;
+}
 
 export function hasChanges(left: GetTextTranslations, right?: GetTextTranslations): boolean {
-    const ignoredPaths = new Set(["headers.pot-creation-date", "headers.po-revision-date"]);
-    const emptyMessagePattern = /^translations\.\.$|^translations\.\.\./;
-
-    function isPathIgnored(currentPath: string): boolean {
-        const normalizedPath = currentPath.toLowerCase();
-
-        if (ignoredPaths.has(normalizedPath)) {
-            return true;
-        }
-
-        if (emptyMessagePattern.test(normalizedPath)) {
-            return true;
-        }
-
-        return false;
+    if (!right) {
+        return true;
     }
 
-    function deepEqual(left: unknown, right: unknown, currentPath = ""): boolean {
-        if (left === right) {
-            return true;
-        }
+    const normalizedLeft = normalize(left);
+    const normalizedRight = normalize(right);
 
-        if (left == null || right == null) {
-            return false;
-        }
-
-        if (typeof left !== typeof right) {
-            return false;
-        }
-
-        if (Array.isArray(left)) {
-            if (!Array.isArray(right) || left.length !== right.length) {
-                return false;
-            }
-
-            return left.every((item, index) => {
-                const newPath = `${currentPath}[${index}]`;
-                return deepEqual(item, right[index], newPath);
-            });
-        }
-
-        if (typeof left === "object") {
-            const keys1 = Object.keys(left).filter((key) => {
-                const newPath = currentPath ? `${currentPath}.${key}` : key;
-                return !isPathIgnored(newPath);
-            });
-            const keys2 = Object.keys(right).filter((key) => {
-                const newPath = currentPath ? `${currentPath}.${key}` : key;
-                return !isPathIgnored(newPath);
-            });
-
-            if (keys1.length !== keys2.length) {
-                return false;
-            }
-
-            return keys1.every((key) => {
-                const newPath = currentPath ? `${currentPath}.${key}` : key;
-                return deepEqual(left[key as never], right[key as never], newPath);
-            });
-        }
-
-        return false;
-    }
-
-    return !deepEqual(left, right, "");
+    return !isDeepStrictEqual(normalizedLeft, normalizedRight);
 }
