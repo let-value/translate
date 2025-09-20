@@ -1,0 +1,34 @@
+msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=UTF-8\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+msgid "Hello, ${0}!"
+msgstr "Bonjour, ${0}!"
+
+msgid "items"
+msgstr "articles"
+
+msgid "${0} item"
+msgid_plural "${0} items"
+msgstr[0] "${0} article"
+msgstr[1] "${0} articles"
+
+msgctxt "greeting"
+msgid "Hello, ${0}!"
+msgstr "Salut, ${0}!"
+
+msgctxt "catalog"
+msgid "items"
+msgstr "articles catalogue"
+
+msgctxt "catalog"
+msgid "${0} item"
+msgid_plural "${0} items"
+msgstr[0] "${0} article catalogue"
+msgstr[1] "${0} articles catalogue"
+
+msgid "${0} notification"
+msgid_plural "notifications"
+msgstr[0] "${0} notification"
+msgstr[1] "${0} notifications"

@@ -24,11 +24,25 @@ await test("fetchLocale loads translations", async () => {
     assert.equal(lt.message`Hello, ${name}!`, "Привет, World!");
 });
 
-await test("getLocale throws for async locales", async () => {
+await test("getLocale warns and returns untranslated fallback for async locales", async () => {
     const t = new Translator({
         en: empty,
         ru: async () => gettextParser.po.parse(await fs.promises.readFile(ruUrl)),
     });
-    // @ts-expect-error async locale cannot be loaded synchronously
-    assert.throws(() => t.getLocale("ru"));
+    const originalWarn = console.warn;
+    const warnings: unknown[] = [];
+    console.warn = (...args: unknown[]) => {
+        warnings.push(args);
+    };
+
+    try {
+        // @ts-expect-error async locale cannot be loaded synchronously
+        const lt = t.getLocale("ru");
+        const name = "World";
+        assert.equal(lt.message`Hello, ${name}!`, "Hello, World!");
+    } finally {
+        console.warn = originalWarn;
+    }
+
+    assert.ok(warnings.some((entry) => String(entry).includes("Translator.getLocale")));
 });

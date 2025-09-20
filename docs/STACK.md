@@ -38,6 +38,7 @@ These scripts are present in **every package** and wired in CI:
 * **`check`**/**`format`**: lint+format with Biome. Run `format` before committing.
 * **`typecheck`**: TS incremental build; no emit. Keep `tsconfig.json` minimal and strict.
 * **`test`**: Node test runner picks up `**/*.test.js` or files in `test/`. See test layout below.
+* **`@let-value/translate` error handling**: `LocaleTranslator` helpers log `console.warn` and return the untranslated source string when fallbacks are required; they must not throw so consumers remain resilient.
 
 ## TypeScript & Build
 

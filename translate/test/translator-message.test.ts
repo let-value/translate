@@ -11,13 +11,23 @@ test("translator substitutes template values", () => {
     assert.equal(t.translate(message`Hello, ${name}!`), "Hello, World!");
 });
 
-test("message rejects deferred message input", () => {
+test("message warns and translates deferred message input", () => {
     const t = new Translator({}).getLocale("en" as never);
     const deferred = message`Hello`;
-    assert.throws(() => {
+    const originalWarn = console.warn;
+    const warnings: unknown[] = [];
+    console.warn = (...args: unknown[]) => {
+        warnings.push(args);
+    };
+
+    try {
         // @ts-expect-error message does not accept deferred inputs
-        t.message(deferred);
-    }, /translate\(\)/);
+        assert.equal(t.message(deferred), "Hello");
+    } finally {
+        console.warn = originalWarn;
+    }
+
+    assert.ok(warnings.some((entry) => String(entry).includes("LocaleTranslator.message")));
 });
 
 test("translator applies translations with placeholders", async () => {
