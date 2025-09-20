@@ -1,125 +1,66 @@
+import { isDeepStrictEqual } from "node:util";
 import type { GetTextTranslations } from "gettext-parser";
+import * as gettextParser from "gettext-parser";
+
+const IGNORED_HEADER_KEYS = new Set(["pot-creation-date", "po-revision-date"]);
+const IGNORED_HEADER_LINE_PREFIXES = ["pot-creation-date:", "po-revision-date:"];
+
+function normalizeHeaderString(value: string): string {
+    const lines = value.split("\n");
+    const hadTrailingNewline = value.endsWith("\n");
+
+    const filtered = lines
+        .filter((line) => {
+            const trimmed = line.trimStart().toLowerCase();
+            return !IGNORED_HEADER_LINE_PREFIXES.some((prefix) => trimmed.startsWith(prefix));
+        })
+        .map((line) => {
+            const separatorIndex = line.indexOf(":");
+            if (separatorIndex === -1) {
+                return line;
+            }
+
+            const key = line.slice(0, separatorIndex).trim().toLowerCase();
+            const value = line.slice(separatorIndex + 1);
+            return `${key}:${value}`;
+        });
+
+    if (hadTrailingNewline && filtered[filtered.length - 1] !== "") {
+        filtered.push("");
+    }
+
+    return filtered.join("\n");
+}
+
+function normalize(translations: GetTextTranslations): GetTextTranslations {
+    const compiled = gettextParser.po.compile(translations);
+    const parsed = gettextParser.po.parse(compiled);
+
+    if (parsed.headers) {
+        const normalizedHeaders: Record<string, string> = {};
+        for (const [key, value] of Object.entries(parsed.headers)) {
+            if (!IGNORED_HEADER_KEYS.has(key.toLowerCase())) {
+                normalizedHeaders[key.toLowerCase()] = value as string;
+            }
+        }
+        parsed.headers = normalizedHeaders;
+    }
+
+    const headerMessage = parsed.translations?.[""]?.[""];
+    if (headerMessage?.msgstr) {
+        headerMessage.msgstr = headerMessage.msgstr.map((item) => normalizeHeaderString(item));
+    }
+
+    return parsed;
+}
 
 export function hasChanges(left: GetTextTranslations, right?: GetTextTranslations): boolean {
-    const ignoredPaths = new Set(["headers.pot-creation-date", "headers.po-revision-date"]);
-    const caseInsensitiveStringPaths = new Set(["headers.content-type", "headers.language"]);
-    const emptyMessagePattern = /^translations\.\.$|^translations\.\.\./;
-
-    function isPathIgnored(currentPath: string): boolean {
-        const normalizedPath = currentPath.toLowerCase();
-
-        if (ignoredPaths.has(normalizedPath)) {
-            return true;
-        }
-
-        if (emptyMessagePattern.test(normalizedPath)) {
-            return true;
-        }
-
-        return false;
+    if (!right) {
+        return true;
     }
 
-    function isCaseInsensitivePath(currentPath: string): boolean {
-        return caseInsensitiveStringPaths.has(currentPath.toLowerCase());
-    }
+    const normalizedLeft = normalize(left);
+    const normalizedRight = normalize(right);
 
-    function getCanonicalKey(currentPath: string, key: string): string {
-        if (currentPath.toLowerCase() === "headers") {
-            return key.toLowerCase();
-        }
-
-        return key;
-    }
-
-    function deepEqual(left: unknown, right: unknown, currentPath = ""): boolean {
-        if (left === right) {
-            return true;
-        }
-
-        if (left == null || right == null) {
-            return false;
-        }
-
-        if (typeof left !== typeof right) {
-            return false;
-        }
-
-        if (typeof left === "string") {
-            if (typeof right !== "string") {
-                return false;
-            }
-
-            if (isCaseInsensitivePath(currentPath)) {
-                return left.toLowerCase() === right.toLowerCase();
-            }
-
-            return false;
-        }
-
-        if (Array.isArray(left)) {
-            if (!Array.isArray(right) || left.length !== right.length) {
-                return false;
-            }
-
-            return left.every((item, index) => {
-                const newPath = `${currentPath}[${index}]`;
-                return deepEqual(item, right[index], newPath);
-            });
-        }
-
-        if (typeof left === "object") {
-            const leftObj = left as Record<string, unknown>;
-            const rightObj = right as Record<string, unknown>;
-
-            const leftEntries = Object.keys(leftObj)
-                .map((key) => {
-                    const path = currentPath ? `${currentPath}.${key}` : key;
-                    if (isPathIgnored(path)) {
-                        return undefined;
-                    }
-                    return { key, canonical: getCanonicalKey(currentPath, key) };
-                })
-                .filter((value): value is { key: string; canonical: string } => Boolean(value));
-
-            const rightEntries = Object.keys(rightObj)
-                .map((key) => {
-                    const path = currentPath ? `${currentPath}.${key}` : key;
-                    if (isPathIgnored(path)) {
-                        return undefined;
-                    }
-                    return { key, canonical: getCanonicalKey(currentPath, key) };
-                })
-                .filter((value): value is { key: string; canonical: string } => Boolean(value));
-
-            if (leftEntries.length !== rightEntries.length) {
-                return false;
-            }
-
-            const rightMap = new Map<string, string>();
-            for (const entry of rightEntries) {
-                if (rightMap.has(entry.canonical)) {
-                    return false;
-                }
-                rightMap.set(entry.canonical, entry.key);
-            }
-
-            for (const entry of leftEntries) {
-                if (!rightMap.has(entry.canonical)) {
-                    return false;
-                }
-                const rightKey = rightMap.get(entry.canonical) as string;
-                const newPath = currentPath ? `${currentPath}.${entry.key}` : entry.key;
-                if (!deepEqual(leftObj[entry.key], rightObj[rightKey], newPath)) {
-                    return false;
-                }
-                rightMap.delete(entry.canonical);
-            }
-
-            return rightMap.size === 0;
-        }
-
-        return false;
-    }
-
-    return !deepEqual(left, right, "");
+    return !isDeepStrictEqual(normalizedLeft, normalizedRight);
 }
