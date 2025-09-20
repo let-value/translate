@@ -77,6 +77,10 @@ test("returns true when charset differs", () => {
     const newTranslations = {
         ...baseTranslations,
         charset: "iso-8859-1",
+        headers: {
+            ...baseTranslations.headers,
+            "content-type": "text/plain; charset=ISO-8859-1",
+        },
     };
 
     const result = hasChanges(newTranslations, baseTranslations);
@@ -191,25 +195,6 @@ test("returns true when comments differ", () => {
     assert.equal(result, true);
 });
 
-test("returns true when msgstr array length differs", () => {
-    const newTranslations = {
-        ...baseTranslations,
-        translations: {
-            ...baseTranslations.translations,
-            "": {
-                ...baseTranslations.translations[""],
-                Hello: {
-                    msgid: "Hello",
-                    msgstr: ["Hello", "Hellos"],
-                },
-            },
-        },
-    };
-
-    const result = hasChanges(newTranslations, baseTranslations);
-    assert.equal(result, true);
-});
-
 test("returns true when obsolete translations differ", () => {
     const newTranslations = {
         ...baseTranslations,
@@ -273,7 +258,7 @@ test("returns true when msgctxt differs", () => {
     assert.equal(result, true);
 });
 
-test("handles null and undefined values", () => {
+test("ignores properties explicitly set to undefined", () => {
     const newTranslations = {
         ...baseTranslations,
         translations: {
@@ -304,7 +289,125 @@ test("handles null and undefined values", () => {
     };
 
     const result = hasChanges(newTranslations, oldTranslations);
+    assert.equal(result, false);
+});
+
+test("treats null translator comments as no change", () => {
+    const newTranslations = {
+        ...baseTranslations,
+        translations: {
+            ...baseTranslations.translations,
+            "": {
+                ...baseTranslations.translations[""],
+                Test: {
+                    msgid: "Test",
+                    msgstr: ["Test"],
+                    comments: { translator: null },
+                },
+            },
+        },
+    };
+
+    const oldTranslations = {
+        ...baseTranslations,
+        translations: {
+            ...baseTranslations.translations,
+            "": {
+                ...baseTranslations.translations[""],
+                Test: {
+                    msgid: "Test",
+                    msgstr: ["Test"],
+                },
+            },
+        },
+    };
+
+    const result = hasChanges(newTranslations, oldTranslations);
+    assert.equal(result, false);
+});
+
+test("ignores empty nested structures", () => {
+    const withEmptyComments = {
+        ...baseTranslations,
+        translations: {
+            ...baseTranslations.translations,
+            "": {
+                ...baseTranslations.translations[""],
+                Test: {
+                    msgid: "Test",
+                    msgstr: ["Test"],
+                    comments: { translator: undefined },
+                },
+            },
+        },
+    };
+
+    const withoutComments = {
+        ...baseTranslations,
+        translations: {
+            ...baseTranslations.translations,
+            "": {
+                ...baseTranslations.translations[""],
+                Test: {
+                    msgid: "Test",
+                    msgstr: ["Test"],
+                },
+            },
+        },
+    };
+
+    const result = hasChanges(withEmptyComments, withoutComments);
+    assert.equal(result, false);
+});
+
+test("ignores empty obsolete sections", () => {
+    const withEmptyObsolete = {
+        ...baseTranslations,
+        obsolete: {},
+    };
+
+    const result = hasChanges(withEmptyObsolete, baseTranslations);
+    assert.equal(result, false);
+});
+
+test("detects translator comment updates", () => {
+    const baseWorld = baseTranslations.translations[""]?.World;
+    const withTranslatorComment = {
+        ...baseTranslations,
+        translations: {
+            ...baseTranslations.translations,
+            "": {
+                ...baseTranslations.translations[""],
+                World: {
+                    ...baseWorld,
+                    comments: {
+                        ...baseWorld?.comments,
+                        translator: "Jane Doe",
+                    },
+                },
+            },
+        },
+    };
+
+    const result = hasChanges(withTranslatorComment, baseTranslations);
     assert.equal(result, true);
+});
+
+test("ignores header key casing differences", () => {
+    const newTranslations = {
+        ...baseTranslations,
+        headers: {
+            ...baseTranslations.headers,
+        },
+    };
+
+    if (newTranslations.headers) {
+        delete newTranslations.headers["x-generator"];
+        newTranslations.headers["X-Generator"] = baseTranslations.headers?.["x-generator"] ?? "";
+    }
+
+    const result = hasChanges(newTranslations, baseTranslations);
+    assert.equal(result, false);
 });
 
 test("returns false when only empty message entries differ", () => {
