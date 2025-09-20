@@ -45,16 +45,25 @@ test("plural handles Slovak plurals for any number", () => {
     }
 });
 
-test("plural supports plural helper", () => {
+test("translate handles plural helper", () => {
     const t = new Translator(translations).getLocale("en");
     const apples = plural(message`${1} apple`, message`${1} apples`, 1);
-    assert.equal(t.plural(apples), "1 apple");
+    assert.equal(t.translate(apples), "1 apple");
 });
 
-test("plural supports plural helper with multiple forms", () => {
+test("translate handles plural helper with multiple forms", () => {
     const t = new Translator(translations).getLocale("ru");
     const apples = plural(message`${5} apple`, message`${5} apples`, message`${5} many apples`, 5);
-    assert.equal(t.plural(apples), "5 яблок");
+    assert.equal(t.translate(apples), "5 яблок");
+});
+
+test("plural rejects deferred plural input", () => {
+    const t = new Translator(translations).getLocale("en");
+    const apples = plural(message`${1} apple`, message`${1} apples`, 1);
+    assert.throws(() => {
+        // @ts-expect-error plural does not accept deferred inputs
+        t.plural(apples);
+    }, /translate\(\)/);
 });
 
 test("plural substitutes values from the chosen plural form", () => {
@@ -69,10 +78,10 @@ test("context handles plurals", () => {
     assert.equal(t.context("company").plural(message`${2} apple`, message`${2} apples`, 2), "2 Apple устройства");
 });
 
-test("context-aware plural helper works", () => {
+test("translate handles context-aware plural helper", () => {
     const t = new Translator(translations).getLocale("ru");
     const apples = context("company").plural(message`${2} apple`, message`${2} apples`, 2);
-    assert.equal(t.context("company").plural(apples), "2 Apple устройства");
+    assert.equal(t.translate(apples), "2 Apple устройства");
 });
 
 test("plural returns default forms when translation missing", async () => {

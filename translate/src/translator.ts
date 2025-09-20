@@ -8,9 +8,7 @@ import {
     type ContextPluralMessage,
     type Message,
     type MessageArgs,
-    type MessageInput,
     type PluralArgs,
-    type PluralInput,
     type PluralMessage,
 } from "./messages.ts";
 import { mergeTranslations, normalizeTranslations, pluralFunc, type StrictStaticString, substitute } from "./utils.ts";
@@ -23,8 +21,21 @@ type SyncLocaleKeys<T> = {
     [K in keyof T]: T[K] extends GetTextTranslations ? K : never;
 }[keyof T];
 
-type ContextMessageInput<T extends string> = [ContextMessage] | MessageInput<T>;
-type ContextPluralInput = [ContextPluralMessage] | PluralInput;
+function isMessage(value: unknown): value is Message {
+    return Boolean(value) && typeof value === "object" && "msgid" in (value as Message);
+}
+
+function isPluralMessage(value: unknown): value is PluralMessage {
+    return Boolean(value) && typeof value === "object" && "forms" in (value as PluralMessage);
+}
+
+function isContextMessage(value: unknown): value is ContextMessage {
+    return Boolean(value) && typeof value === "object" && "id" in (value as ContextMessage);
+}
+
+function isContextPluralMessage(value: unknown): value is ContextPluralMessage {
+    return Boolean(value) && typeof value === "object" && "id" in (value as ContextPluralMessage);
+}
 
 function resolveTranslationModule(module: TranslationModule): GetTextTranslations {
     return "default" in module ? module.default : module;
@@ -55,34 +66,53 @@ export class LocaleTranslator {
         return usedVals?.length ? substitute(result, usedVals) : result;
     }
 
-    message = <T extends string>(...args: MessageInput<T>): string => {
-        const [source] = args;
-        if (typeof source === "object" && "msgid" in source) {
-            return this.translateMessage(source);
+    message = <T extends string>(...args: MessageArgs<T>): string => {
+        const [source] = args as [unknown];
+        if (isMessage(source)) {
+            throw new TypeError("LocaleTranslator.message no longer accepts deferred messages. Use translate() instead.");
         }
-        return this.translateMessage(buildMessage(...(args as MessageArgs<T>)));
+        return this.translate(buildMessage(...args));
     };
 
-    plural = (...args: PluralInput): string => {
-        const [source] = args;
-        if (typeof source === "object" && "forms" in source) {
-            return this.translatePlural(source);
+    translate(message: Message): string;
+    translate(message: PluralMessage): string;
+    translate(message: ContextMessage): string;
+    translate(message: ContextPluralMessage): string;
+    translate(message: Message | PluralMessage | ContextMessage | ContextPluralMessage): string {
+        if ("context" in message) {
+            if ("forms" in message.id) {
+                return this.translatePlural(message.id, message.context);
+            }
+            return this.translateMessage(message.id, message.context);
         }
-        return this.translatePlural(buildPlural(...(args as PluralArgs)));
+
+        if ("forms" in message) {
+            return this.translatePlural(message);
+        }
+
+        return this.translateMessage(message);
+    }
+
+    plural = (...args: PluralArgs): string => {
+        const [source] = args as [unknown];
+        if (isPluralMessage(source)) {
+            throw new TypeError("LocaleTranslator.plural no longer accepts deferred messages. Use translate() instead.");
+        }
+        return this.translate(buildPlural(...args));
     };
 
     context<T extends string>(
         context: StrictStaticString<T>,
     ): {
-        message: <T extends string>(...args: ContextMessageInput<T>) => string;
-        plural: (...args: ContextPluralInput) => string;
+        message: <U extends string>(...args: MessageArgs<U>) => string;
+        plural: (...args: PluralArgs) => string;
     };
     context(
         strings: TemplateStringsArray,
         ...values: never[]
     ): {
-        message: <T extends string>(...args: ContextMessageInput<T>) => string;
-        plural: (...args: ContextPluralInput) => string;
+        message: <U extends string>(...args: MessageArgs<U>) => string;
+        plural: (...args: PluralArgs) => string;
     };
     context<T extends string>(...args: [StrictStaticString<T>] | [TemplateStringsArray, ...never[]]) {
         const [source] = args as [StrictStaticString<T> | TemplateStringsArray];
@@ -90,59 +120,53 @@ export class LocaleTranslator {
         const ctx = typeof source === "string" ? source : source[0];
 
         return {
-            message: <T extends string>(...args: ContextMessageInput<T>): string => {
-                const [src] = args;
-                if (typeof src === "object") {
-                    if ("id" in src && "context" in src) {
-                        return this.translateMessage(src.id, src.context);
-                    }
-                    if ("msgid" in src) {
-                        return this.translateMessage(src, ctx);
-                    }
+            message: <U extends string>(...args: MessageArgs<U>): string => {
+                const [source] = args as [unknown];
+                if (isMessage(source) || isContextMessage(source)) {
+                    throw new TypeError(
+                        "LocaleTranslator.context().message no longer accepts deferred messages. Use translate() instead.",
+                    );
                 }
-                return this.translateMessage(buildMessage(...(args as MessageArgs<T>)), ctx);
+                return this.translate({ context: ctx, id: buildMessage(...args) });
             },
-            plural: (...args: ContextPluralInput): string => {
-                const [src] = args;
-                if (typeof src === "object") {
-                    if ("id" in src && "context" in src) {
-                        return this.translatePlural(src.id, src.context);
-                    }
-                    if ("forms" in src) {
-                        return this.translatePlural(src, ctx);
-                    }
+            plural: (...args: PluralArgs): string => {
+                const [source] = args as [unknown];
+                if (isPluralMessage(source) || isContextPluralMessage(source)) {
+                    throw new TypeError(
+                        "LocaleTranslator.context().plural no longer accepts deferred messages. Use translate() instead.",
+                    );
                 }
-                return this.translatePlural(buildPlural(...(args as PluralArgs)), ctx);
+                return this.translate({ context: ctx, id: buildPlural(...args) });
             },
         };
     }
 
-    gettext<T extends string>(...args: MessageInput<T>): string {
+    gettext<T extends string>(...args: MessageArgs<T>): string {
         return this.message(...args);
     }
 
-    ngettext(...args: PluralInput): string {
+    ngettext(...args: PluralArgs): string {
         return this.plural(...args);
     }
 
     pgettext<C extends string, T extends string>(
         context: ContextMessage | StrictStaticString<C>,
-        ...args: MessageInput<T> | []
+        ...args: MessageArgs<T> | []
     ): string {
         if (typeof context === "object") {
             return this.translateMessage(context.id, context.context);
         }
-        return this.context(context).message(...(args as ContextMessageInput<T>));
+        return this.context(context).message(...(args as MessageArgs<T>));
     }
 
     npgettext<C extends string>(
         context: ContextPluralMessage | StrictStaticString<C>,
-        ...args: PluralInput | []
+        ...args: PluralArgs | []
     ): string {
         if (typeof context === "object") {
             return this.translatePlural(context.id, context.context);
         }
-        return this.context(context).plural(...(args as ContextPluralInput));
+        return this.context(context).plural(...(args as PluralArgs));
     }
 }
 

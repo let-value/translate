@@ -22,7 +22,9 @@ export function Plural({ number, forms, context }: PluralProps) {
     const messages = built.map((b) => b.message);
     const input = plural(...messages, number);
 
-    const translated = context ? translator.context(context as "").plural(input) : translator.plural(input);
+    const translated = context
+        ? translator.translate({ context: context as "", id: input })
+        : translator.translate(input);
 
     // biome-ignore lint/suspicious/noControlCharactersInRegex: using null separators
     const parts = translated.split(/\u0000(\d+)-(\d+)\u0000/);

@@ -24,9 +24,9 @@ test("context plural handles context-aware message pairs", () => {
 test("context builders accept context-aware messages", () => {
     const t = new Translator(translations).getLocale("ru");
     const verb = context("verb");
-    assert.equal(t.context("verb").message(verb.message("Open")), "Открыть");
+    assert.equal(t.translate(verb.message("Open")), "Открыть");
     const apples = context("company").plural(message`${3} apple`, message`${3} apples`, 3);
-    assert.equal(t.context("company").plural(apples), "3 Apple устройства");
+    assert.equal(t.translate(apples), "3 Apple устройства");
 });
 
 test("context plural substitutes values from the chosen plural form", () => {
@@ -42,6 +42,15 @@ test("context plural returns default forms when translation missing", () => {
     const t = new Translator(translations).getLocale("ru");
     assert.equal(t.context("company").plural(message`${1} pear`, message`${1} pears`, 1), "1 pear");
     assert.equal(t.context("company").plural(message`${2} pear`, message`${2} pears`, 2), "2 pears");
+});
+
+test("context plural rejects deferred input", () => {
+    const t = new Translator(translations).getLocale("en");
+    const deferred = context("company").plural(message`${1} apple`, message`${1} apples`, 1);
+    assert.throws(() => {
+        // @ts-expect-error context plural does not accept deferred inputs
+        t.context("company").plural(deferred);
+    }, /translate\(\)/);
 });
 
 test("npgettext alias works", () => {

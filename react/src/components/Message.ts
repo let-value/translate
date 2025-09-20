@@ -23,7 +23,9 @@ export function Message({ context, children }: MessageProps) {
 
     const tokens = values.map((_, i) => `\u0000${i}\u0000`);
     const built = message(strings as unknown as TemplateStringsArray, ...tokens);
-    const translated = context ? translator.context(context as "").message(built) : translator.message(built);
+    const translated = context
+        ? translator.translate({ context: context as "", id: built })
+        : translator.translate(built);
 
     // biome-ignore lint/suspicious/noControlCharactersInRegex: using null separators
     const parts = translated.split(/\u0000(\d+)\u0000/);

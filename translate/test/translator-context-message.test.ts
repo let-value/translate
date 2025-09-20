@@ -16,13 +16,23 @@ test("context builder handles context-aware messages", async () => {
     const ruPo = fs.readFileSync(new URL("./fixtures/ru.po", import.meta.url));
     const t = new Translator({ ru: gettextParser.po.parse(ruPo) }).getLocale("ru");
     const verb = context("verb");
-    assert.equal(t.context("verb").message(verb.message("Open")), "Открыть");
+    assert.equal(t.translate(verb.message("Open")), "Открыть");
 });
 
 test("context message returns original string when translation missing", () => {
     const ruPo = fs.readFileSync(new URL("./fixtures/ru.po", import.meta.url));
     const t = new Translator({ ru: gettextParser.po.parse(ruPo) }).getLocale("ru");
     assert.equal(t.context("verb").message("Close"), "Close");
+});
+
+test("context message rejects deferred input", () => {
+    const t = new Translator({}).getLocale("en" as never);
+    const verb = context("verb");
+    const deferred = verb.message("Open");
+    assert.throws(() => {
+        // @ts-expect-error context message does not accept deferred inputs
+        t.context("verb").message(deferred);
+    }, /translate\(\)/);
 });
 
 test("pgettext alias works", () => {

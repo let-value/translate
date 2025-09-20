@@ -8,7 +8,16 @@ import { Translator } from "../src/translator.ts";
 test("translator substitutes template values", () => {
     const name = "World";
     const t = new Translator({}).getLocale("en" as never);
-    assert.equal(t.message(message`Hello, ${name}!`), "Hello, World!");
+    assert.equal(t.translate(message`Hello, ${name}!`), "Hello, World!");
+});
+
+test("message rejects deferred message input", () => {
+    const t = new Translator({}).getLocale("en" as never);
+    const deferred = message`Hello`;
+    assert.throws(() => {
+        // @ts-expect-error message does not accept deferred inputs
+        t.message(deferred);
+    }, /translate\(\)/);
 });
 
 test("translator applies translations with placeholders", async () => {
@@ -30,10 +39,10 @@ test("translator loads translations on demand", async () => {
 
 test("message returns original string when translation missing", async () => {
     const t = new Translator({}).getLocale("fr" as never);
-    assert.equal(t.message(message`Untranslated`), "Untranslated");
+    assert.equal(t.translate(message`Untranslated`), "Untranslated");
 });
 
 test("gettext alias works", () => {
     const t = new Translator({}).getLocale("en" as never);
-    assert.equal(t.gettext(message`Alias`), "Alias");
+    assert.equal(t.gettext`Alias`, "Alias");
 });
