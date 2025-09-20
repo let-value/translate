@@ -2,6 +2,7 @@ import type { GetTextTranslations } from "gettext-parser";
 
 export function hasChanges(left: GetTextTranslations, right?: GetTextTranslations): boolean {
     const ignoredPaths = new Set(["headers.pot-creation-date", "headers.po-revision-date"]);
+    const caseInsensitiveStringPaths = new Set(["headers.content-type", "headers.language"]);
     const emptyMessagePattern = /^translations\.\.$|^translations\.\.\./;
 
     function isPathIgnored(currentPath: string): boolean {
@@ -18,6 +19,18 @@ export function hasChanges(left: GetTextTranslations, right?: GetTextTranslation
         return false;
     }
 
+    function isCaseInsensitivePath(currentPath: string): boolean {
+        return caseInsensitiveStringPaths.has(currentPath.toLowerCase());
+    }
+
+    function getCanonicalKey(currentPath: string, key: string): string {
+        if (currentPath.toLowerCase() === "headers") {
+            return key.toLowerCase();
+        }
+
+        return key;
+    }
+
     function deepEqual(left: unknown, right: unknown, currentPath = ""): boolean {
         if (left === right) {
             return true;
@@ -28,6 +41,18 @@ export function hasChanges(left: GetTextTranslations, right?: GetTextTranslation
         }
 
         if (typeof left !== typeof right) {
+            return false;
+        }
+
+        if (typeof left === "string") {
+            if (typeof right !== "string") {
+                return false;
+            }
+
+            if (isCaseInsensitivePath(currentPath)) {
+                return left.toLowerCase() === right.toLowerCase();
+            }
+
             return false;
         }
 
@@ -43,23 +68,54 @@ export function hasChanges(left: GetTextTranslations, right?: GetTextTranslation
         }
 
         if (typeof left === "object") {
-            const keys1 = Object.keys(left).filter((key) => {
-                const newPath = currentPath ? `${currentPath}.${key}` : key;
-                return !isPathIgnored(newPath);
-            });
-            const keys2 = Object.keys(right).filter((key) => {
-                const newPath = currentPath ? `${currentPath}.${key}` : key;
-                return !isPathIgnored(newPath);
-            });
+            const leftObj = left as Record<string, unknown>;
+            const rightObj = right as Record<string, unknown>;
 
-            if (keys1.length !== keys2.length) {
+            const leftEntries = Object.keys(leftObj)
+                .map((key) => {
+                    const path = currentPath ? `${currentPath}.${key}` : key;
+                    if (isPathIgnored(path)) {
+                        return undefined;
+                    }
+                    return { key, canonical: getCanonicalKey(currentPath, key) };
+                })
+                .filter((value): value is { key: string; canonical: string } => Boolean(value));
+
+            const rightEntries = Object.keys(rightObj)
+                .map((key) => {
+                    const path = currentPath ? `${currentPath}.${key}` : key;
+                    if (isPathIgnored(path)) {
+                        return undefined;
+                    }
+                    return { key, canonical: getCanonicalKey(currentPath, key) };
+                })
+                .filter((value): value is { key: string; canonical: string } => Boolean(value));
+
+            if (leftEntries.length !== rightEntries.length) {
                 return false;
             }
 
-            return keys1.every((key) => {
-                const newPath = currentPath ? `${currentPath}.${key}` : key;
-                return deepEqual(left[key as never], right[key as never], newPath);
-            });
+            const rightMap = new Map<string, string>();
+            for (const entry of rightEntries) {
+                if (rightMap.has(entry.canonical)) {
+                    return false;
+                }
+                rightMap.set(entry.canonical, entry.key);
+            }
+
+            for (const entry of leftEntries) {
+                if (!rightMap.has(entry.canonical)) {
+                    return false;
+                }
+                const rightKey = rightMap.get(entry.canonical) as string;
+                const newPath = currentPath ? `${currentPath}.${entry.key}` : entry.key;
+                if (!deepEqual(leftObj[entry.key], rightObj[rightKey], newPath)) {
+                    return false;
+                }
+                rightMap.delete(entry.canonical);
+            }
+
+            return rightMap.size === 0;
         }
 
         return false;

@@ -1,8 +1,12 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
+import { fileURLToPath } from "node:url";
 import type { GetTextTranslations } from "gettext-parser";
-
+import * as gettextParser from "gettext-parser";
+import { parseFile } from "../../core/parse.ts";
+import { collect } from "../collect.ts";
 import { hasChanges } from "../hasChanges.ts";
+import { merge } from "../merge.ts";
 
 const baseTranslations: GetTextTranslations = {
     charset: "utf-8",
@@ -340,5 +344,25 @@ test("handles deep cloned objects as identical", () => {
     const clonedTranslations = JSON.parse(JSON.stringify(baseTranslations));
 
     const result = hasChanges(clonedTranslations, baseTranslations);
+    assert.equal(result, false);
+});
+
+test("returns false after regenerating from existing translations", () => {
+    const fixture = fileURLToPath(new URL("./fixtures/sample.js", import.meta.url));
+    const generatedAt = new Date("2024-01-01T00:00:00Z");
+
+    const firstParse = parseFile(fixture);
+    const firstCollected = collect(firstParse.translations, "en");
+    const initial = merge([{ translations: firstCollected }], undefined, "mark", "en", generatedAt);
+
+    const compiled = gettextParser.po.compile(initial);
+    const existing = gettextParser.po.parse(compiled);
+
+    const secondParse = parseFile(fixture);
+    const secondCollected = collect(secondParse.translations, "en");
+    const regenerated = merge([{ translations: secondCollected }], existing, "mark", "en", generatedAt);
+
+    assert.notDeepStrictEqual(regenerated, existing);
+    const result = hasChanges(regenerated, existing);
     assert.equal(result, false);
 });
