@@ -24,9 +24,9 @@ test("context plural handles context-aware message pairs", () => {
 test("context builders accept context-aware messages", () => {
     const t = new Translator(translations).getLocale("ru");
     const verb = context("verb");
-    assert.equal(t.context("verb").message(verb.message("Open")), "Открыть");
+    assert.equal(t.translate(verb.message("Open")), "Открыть");
     const apples = context("company").plural(message`${3} apple`, message`${3} apples`, 3);
-    assert.equal(t.context("company").plural(apples), "3 Apple устройства");
+    assert.equal(t.translate(apples), "3 Apple устройства");
 });
 
 test("context plural substitutes values from the chosen plural form", () => {
