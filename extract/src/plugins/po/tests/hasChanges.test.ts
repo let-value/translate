@@ -302,7 +302,7 @@ test("treats null translator comments as no change", () => {
                 Test: {
                     msgid: "Test",
                     msgstr: ["Test"],
-                    comments: { translator: null },
+                    comments: { translator: undefined },
                 },
             },
         },
