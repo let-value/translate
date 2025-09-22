@@ -6,8 +6,12 @@ This roadmap organizes behaviour-preserving refactors into incremental passes so
 
 ### Area: LocaleTranslator workflow
 
+> **Error handling policy:** LocaleTranslator entry points never throw when fallbacks are required. They log a `console.warn`
+> describing the missing translation or unsupported input and return the untranslated source string (or `translate()` fallback)
+> so consumers remain resilient. Preserve this contract when refactoring helpers and tests.
+
 #### Purpose: clarify translation flow and eliminate duplication
-- **Pass A — add guard-rail tests:** introduce focused unit tests for `LocaleTranslator.message`, `.plural`, and `.context` covering context overrides and placeholder substitution before touching internals.【F:translate/src/translator.ts†L42-L116】
+- [x] **Pass A — add guard-rail tests:** introduce focused unit tests for `LocaleTranslator.message`, `.plural`, and `.context` covering context overrides and placeholder substitution before touching internals.【F:translate/src/translator.ts†L42-L116】
 - **Pass B — extract pure helpers:** split context-aware translation logic into pure functions (e.g., `selectTranslation`, `resolvePluralForm`) reused by `.message`, `.plural`, `.context`, and `pgettext`/`npgettext` to avoid repeated structural checks.【F:translate/src/translator.ts†L58-L146】
 - **Pass C — de-duplicate substitution rules:** move the `values` selection (`form.values` vs. `forms[0].values`) out of `translatePlural` into a helper shared with the message path so placeholder handling lives in one place, reinforcing the “one source of truth” rule.【F:translate/src/translator.ts†L48-L56】
 

@@ -21,6 +21,92 @@ type SyncLocaleKeys<T> = {
     [K in keyof T]: T[K] extends GetTextTranslations ? K : never;
 }[keyof T];
 
+type Translation = NonNullable<GetTextTranslations["translations"]>[string][string];
+
+function selectTranslation(
+    translations: GetTextTranslations | undefined,
+    context: string,
+    msgid: string,
+): Translation | undefined {
+    return translations?.translations?.[context]?.[msgid];
+}
+
+type DeferredGuard = (value: unknown) => boolean;
+
+function translateDeferred(
+    locale: Locale,
+    translations: GetTextTranslations | undefined,
+    source: unknown,
+    method: string,
+    guards: DeferredGuard[],
+    context?: string,
+): string | undefined {
+    if (!guards.some((guard) => guard(source))) {
+        return undefined;
+    }
+
+    console.warn(
+        `LocaleTranslator.${method} received a deferred message. Falling back to translate() semantics.`,
+    );
+
+    const message = source as AnyTranslationMessage;
+
+    if (context !== undefined) {
+        if (isPluralMessage(message)) {
+            return translateValue(locale, translations, { context, id: message });
+        }
+        if (isMessage(message)) {
+            return translateValue(locale, translations, { context, id: message });
+        }
+    }
+
+    return translateValue(locale, translations, message);
+}
+
+function selectValues(message: Message | undefined, fallback?: Message): unknown[] | undefined {
+    const values = message?.values;
+    if (values && values.length) {
+        return values;
+    }
+    return fallback?.values;
+}
+
+function selectTemplate(preferred: string | undefined, fallback: string): string {
+    return preferred && preferred.length ? preferred : fallback;
+}
+
+function applyValues(template: string, message: Message | undefined, fallback?: Message): string {
+    const values = selectValues(message, fallback);
+    return values && values.length ? substitute(template, values) : template;
+}
+
+function resolveMessage(
+    translations: GetTextTranslations | undefined,
+    message: Message,
+    context = "",
+): string {
+    const entry = selectTranslation(translations, context, message.msgid);
+    const template = selectTemplate(entry?.msgstr?.[0], message.msgstr);
+    return applyValues(template, message);
+}
+
+function resolvePluralForm(
+    locale: Locale,
+    message: PluralMessage,
+    entry: Translation | undefined,
+): string {
+    const index = pluralFunc(locale)(message.n);
+    const forms = message.forms;
+    const selectedForm = forms[index] ?? forms[forms.length - 1];
+    const translatedForms = entry?.msgstr;
+    const templateCandidate =
+        translatedForms && translatedForms.length
+            ? translatedForms[index] ?? translatedForms[translatedForms.length - 1]
+            : undefined;
+    const template = selectTemplate(templateCandidate, selectedForm.msgstr);
+    return applyValues(template, selectedForm, forms[0]);
+}
+
 function isMessage(value: unknown): value is Message {
     return Boolean(value) && typeof value === "object" && "msgid" in (value as Message);
 }
@@ -30,11 +116,105 @@ function isPluralMessage(value: unknown): value is PluralMessage {
 }
 
 function isContextMessage(value: unknown): value is ContextMessage {
-    return Boolean(value) && typeof value === "object" && "id" in (value as ContextMessage);
+    if (!value || typeof value !== "object" || !("id" in value)) {
+        return false;
+    }
+    const candidate = (value as ContextMessage).id;
+    return !isPluralMessage(candidate);
 }
 
 function isContextPluralMessage(value: unknown): value is ContextPluralMessage {
-    return Boolean(value) && typeof value === "object" && "id" in (value as ContextPluralMessage);
+    if (!value || typeof value !== "object" || !("id" in value)) {
+        return false;
+    }
+    const candidate = (value as ContextPluralMessage).id;
+    return isPluralMessage(candidate);
+}
+
+function translateMessageValue(
+    translations: GetTextTranslations | undefined,
+    message: Message,
+    context = "",
+): string {
+    return resolveMessage(translations, message, context);
+}
+
+function translatePluralValue(
+    locale: Locale,
+    translations: GetTextTranslations | undefined,
+    message: PluralMessage,
+    context = "",
+): string {
+    const entry = selectTranslation(translations, context, message.forms[0]!.msgid);
+    return resolvePluralForm(locale, message, entry);
+}
+
+type AnyTranslationMessage = Message | PluralMessage | ContextMessage | ContextPluralMessage;
+
+function translateValue(
+    locale: Locale,
+    translations: GetTextTranslations | undefined,
+    message: AnyTranslationMessage,
+): string {
+    if (isContextPluralMessage(message)) {
+        return translatePluralValue(locale, translations, message.id, message.context);
+    }
+
+    if (isContextMessage(message)) {
+        return translateMessageValue(translations, message.id, message.context);
+    }
+
+    if (isPluralMessage(message)) {
+        return translatePluralValue(locale, translations, message);
+    }
+
+    return translateMessageValue(translations, message);
+}
+
+function translateMessageArgs<T extends string>(
+    locale: Locale,
+    translations: GetTextTranslations | undefined,
+    args: MessageArgs<T>,
+    method: string,
+    guards: DeferredGuard[],
+    context?: string,
+): string {
+    const [source] = args as [unknown];
+
+    const deferred = translateDeferred(locale, translations, source, method, guards, context);
+    if (deferred !== undefined) {
+        return deferred;
+    }
+
+    const message = buildMessage(...args);
+    return translateValue(
+        locale,
+        translations,
+        context !== undefined ? { context, id: message } : message,
+    );
+}
+
+function translatePluralArgs(
+    locale: Locale,
+    translations: GetTextTranslations | undefined,
+    args: PluralArgs,
+    method: string,
+    guards: DeferredGuard[],
+    context?: string,
+): string {
+    const [source] = args as [unknown];
+
+    const deferred = translateDeferred(locale, translations, source, method, guards, context);
+    if (deferred !== undefined) {
+        return deferred;
+    }
+
+    const message = buildPlural(...args);
+    return translateValue(
+        locale,
+        translations,
+        context !== undefined ? { context, id: message } : message,
+    );
 }
 
 function resolveTranslationModule(module: TranslationModule): GetTextTranslations {
@@ -50,28 +230,8 @@ export class LocaleTranslator {
         this.translations = translations ? normalizeTranslations(translations) : undefined;
     }
 
-    private translateMessage({ msgid, msgstr, values }: Message, msgctxt = ""): string {
-        const translated = this.translations?.translations?.[msgctxt]?.[msgid];
-        const result = translated?.msgstr?.[0] || msgstr;
-        return values ? substitute(result, values) : result;
-    }
-
-    private translatePlural({ forms, n }: PluralMessage, msgctxt = ""): string {
-        const entry = this.translations?.translations?.[msgctxt]?.[forms[0].msgid];
-        const index = pluralFunc(this.locale)(n);
-        const form = forms[index] ?? forms[forms.length - 1];
-        const translated = entry?.msgstr ? (entry.msgstr[index] ?? entry.msgstr[entry.msgstr.length - 1]) : undefined;
-        const result = translated || form.msgstr;
-        const usedVals = form.values?.length ? form.values : forms[0].values;
-        return usedVals?.length ? substitute(result, usedVals) : result;
-    }
-
     message = <T extends string>(...args: MessageArgs<T>): string => {
-        const [source] = args as [unknown];
-        if (isMessage(source)) {
-            throw new TypeError("LocaleTranslator.message no longer accepts deferred messages. Use translate() instead.");
-        }
-        return this.translate(buildMessage(...args));
+        return translateMessageArgs(this.locale, this.translations, args, "message", [isMessage]);
     };
 
     translate(message: Message): string;
@@ -79,26 +239,11 @@ export class LocaleTranslator {
     translate(message: ContextMessage): string;
     translate(message: ContextPluralMessage): string;
     translate(message: Message | PluralMessage | ContextMessage | ContextPluralMessage): string {
-        if ("context" in message) {
-            if ("forms" in message.id) {
-                return this.translatePlural(message.id, message.context);
-            }
-            return this.translateMessage(message.id, message.context);
-        }
-
-        if ("forms" in message) {
-            return this.translatePlural(message);
-        }
-
-        return this.translateMessage(message);
+        return translateValue(this.locale, this.translations, message);
     }
 
     plural = (...args: PluralArgs): string => {
-        const [source] = args as [unknown];
-        if (isPluralMessage(source)) {
-            throw new TypeError("LocaleTranslator.plural no longer accepts deferred messages. Use translate() instead.");
-        }
-        return this.translate(buildPlural(...args));
+        return translatePluralArgs(this.locale, this.translations, args, "plural", [isPluralMessage]);
     };
 
     context<T extends string>(
@@ -121,22 +266,24 @@ export class LocaleTranslator {
 
         return {
             message: <U extends string>(...args: MessageArgs<U>): string => {
-                const [source] = args as [unknown];
-                if (isMessage(source) || isContextMessage(source)) {
-                    throw new TypeError(
-                        "LocaleTranslator.context().message no longer accepts deferred messages. Use translate() instead.",
-                    );
-                }
-                return this.translate({ context: ctx, id: buildMessage(...args) });
+                return translateMessageArgs(
+                    this.locale,
+                    this.translations,
+                    args,
+                    "context().message",
+                    [isMessage, isContextMessage],
+                    ctx,
+                );
             },
             plural: (...args: PluralArgs): string => {
-                const [source] = args as [unknown];
-                if (isPluralMessage(source) || isContextPluralMessage(source)) {
-                    throw new TypeError(
-                        "LocaleTranslator.context().plural no longer accepts deferred messages. Use translate() instead.",
-                    );
-                }
-                return this.translate({ context: ctx, id: buildPlural(...args) });
+                return translatePluralArgs(
+                    this.locale,
+                    this.translations,
+                    args,
+                    "context().plural",
+                    [isPluralMessage, isContextPluralMessage],
+                    ctx,
+                );
             },
         };
     }
@@ -154,9 +301,16 @@ export class LocaleTranslator {
         ...args: MessageArgs<T> | []
     ): string {
         if (typeof context === "object") {
-            return this.translateMessage(context.id, context.context);
+            return translateValue(this.locale, this.translations, context);
         }
-        return this.context(context).message(...(args as MessageArgs<T>));
+        return translateMessageArgs(
+            this.locale,
+            this.translations,
+            args as MessageArgs<T>,
+            "pgettext",
+            [isMessage, isContextMessage],
+            context,
+        );
     }
 
     npgettext<C extends string>(
@@ -164,9 +318,16 @@ export class LocaleTranslator {
         ...args: PluralArgs | []
     ): string {
         if (typeof context === "object") {
-            return this.translatePlural(context.id, context.context);
+            return translateValue(this.locale, this.translations, context);
         }
-        return this.context(context).plural(...(args as PluralArgs));
+        return translatePluralArgs(
+            this.locale,
+            this.translations,
+            args as PluralArgs,
+            "npgettext",
+            [isPluralMessage, isContextPluralMessage],
+            context,
+        );
     }
 }
 
@@ -216,7 +377,11 @@ export class Translator<T extends TranslationRecord = TranslationRecord> {
         }
 
         if (this.pending[key] || this.loaders[key]) {
-            throw new Error("async locale cannot be loaded synchronously");
+            console.warn(
+                `Translator.getLocale(${key}) called before async locale resolved. Returning untranslated fallback.`,
+            );
+            this.translators[key] ??= new LocaleTranslator(key);
+            return this.translators[key];
         }
 
         this.translators[key] ??= new LocaleTranslator(key);

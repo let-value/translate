@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import { test } from "node:test";
 import * as gettextParser from "gettext-parser";
+import type { GetTextTranslations } from "gettext-parser";
 import { context, message, plural } from "../src/messages.ts";
 import { Translator } from "../src/translator.ts";
 
@@ -57,13 +58,23 @@ test("translate handles plural helper with multiple forms", () => {
     assert.equal(t.translate(apples), "5 яблок");
 });
 
-test("plural rejects deferred plural input", () => {
+test("plural warns and translates deferred plural input", () => {
     const t = new Translator(translations).getLocale("en");
     const apples = plural(message`${1} apple`, message`${1} apples`, 1);
-    assert.throws(() => {
+    const originalWarn = console.warn;
+    const warnings: unknown[] = [];
+    console.warn = (...args: unknown[]) => {
+        warnings.push(args);
+    };
+
+    try {
         // @ts-expect-error plural does not accept deferred inputs
-        t.plural(apples);
-    }, /translate\(\)/);
+        assert.equal(t.plural(apples), "1 apple");
+    } finally {
+        console.warn = originalWarn;
+    }
+
+    assert.ok(warnings.some((entry) => String(entry).includes("LocaleTranslator.plural")));
 });
 
 test("plural substitutes values from the chosen plural form", () => {
@@ -86,6 +97,24 @@ test("translate handles context-aware plural helper", () => {
 
 test("plural returns default forms when translation missing", async () => {
     const t = new Translator({}).getLocale("fr" as never);
+    assert.equal(t.plural(message`${1} apple`, message`${1} apples`, 1), "1 apple");
+    assert.equal(t.plural(message`${2} apple`, message`${2} apples`, 2), "2 apples");
+});
+
+test("plural falls back to original forms when translation empty", () => {
+    const translations: GetTextTranslations = {
+        charset: "utf-8",
+        headers: {},
+        translations: {
+            "": {
+                "${0} apple": {
+                    msgid: "${0} apple",
+                    msgstr: ["", ""],
+                },
+            },
+        },
+    };
+    const t = new Translator({ en: translations }).getLocale("en");
     assert.equal(t.plural(message`${1} apple`, message`${1} apples`, 1), "1 apple");
     assert.equal(t.plural(message`${2} apple`, message`${2} apples`, 2), "2 apples");
 });

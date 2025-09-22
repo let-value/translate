@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import { test } from "node:test";
 import * as gettextParser from "gettext-parser";
+import type { GetTextTranslations } from "gettext-parser";
 import { message } from "../src/messages.ts";
 import { Translator } from "../src/translator.ts";
 
@@ -11,13 +12,23 @@ test("translator substitutes template values", () => {
     assert.equal(t.translate(message`Hello, ${name}!`), "Hello, World!");
 });
 
-test("message rejects deferred message input", () => {
+test("message warns and translates deferred message input", () => {
     const t = new Translator({}).getLocale("en" as never);
     const deferred = message`Hello`;
-    assert.throws(() => {
+    const originalWarn = console.warn;
+    const warnings: unknown[] = [];
+    console.warn = (...args: unknown[]) => {
+        warnings.push(args);
+    };
+
+    try {
         // @ts-expect-error message does not accept deferred inputs
-        t.message(deferred);
-    }, /translate\(\)/);
+        assert.equal(t.message(deferred), "Hello");
+    } finally {
+        console.warn = originalWarn;
+    }
+
+    assert.ok(warnings.some((entry) => String(entry).includes("LocaleTranslator.message")));
 });
 
 test("translator applies translations with placeholders", async () => {
@@ -40,6 +51,23 @@ test("translator loads translations on demand", async () => {
 test("message returns original string when translation missing", async () => {
     const t = new Translator({}).getLocale("fr" as never);
     assert.equal(t.translate(message`Untranslated`), "Untranslated");
+});
+
+test("translate falls back to source when translation empty", () => {
+    const translations: GetTextTranslations = {
+        charset: "utf-8",
+        headers: {},
+        translations: {
+            "": {
+                "延期されたメッセージ": {
+                    msgid: "延期されたメッセージ",
+                    msgstr: [""],
+                },
+            },
+        },
+    };
+    const t = new Translator({ ja: translations }).getLocale("ja");
+    assert.equal(t.translate(message`延期されたメッセージ`), "延期されたメッセージ");
 });
 
 test("gettext alias works", () => {
