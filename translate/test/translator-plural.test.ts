@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import { test } from "node:test";
+import type { GetTextTranslations } from "gettext-parser";
 import * as gettextParser from "gettext-parser";
 import { context, message, plural } from "../src/messages.ts";
 import { Translator } from "../src/translator.ts";
@@ -57,15 +58,6 @@ test("translate handles plural helper with multiple forms", () => {
     assert.equal(t.translate(apples), "5 яблок");
 });
 
-test("plural rejects deferred plural input", () => {
-    const t = new Translator(translations).getLocale("en");
-    const apples = plural(message`${1} apple`, message`${1} apples`, 1);
-    assert.throws(() => {
-        // @ts-expect-error plural does not accept deferred inputs
-        t.plural(apples);
-    }, /translate\(\)/);
-});
-
 test("plural substitutes values from the chosen plural form", () => {
     const t = new Translator(translations).getLocale("en");
     assert.equal(t.plural(message`${"Bob"} ${1} carrot`, message`${2} carrots for ${"Bob"}`, 1), "Bob 1 carrot");
@@ -86,6 +78,24 @@ test("translate handles context-aware plural helper", () => {
 
 test("plural returns default forms when translation missing", async () => {
     const t = new Translator({}).getLocale("fr" as never);
+    assert.equal(t.plural(message`${1} apple`, message`${1} apples`, 1), "1 apple");
+    assert.equal(t.plural(message`${2} apple`, message`${2} apples`, 2), "2 apples");
+});
+
+test("plural falls back to original forms when translation empty", () => {
+    const translations: GetTextTranslations = {
+        charset: "utf-8",
+        headers: {},
+        translations: {
+            "": {
+                "${0} apple": {
+                    msgid: "${0} apple",
+                    msgstr: ["", ""],
+                },
+            },
+        },
+    };
+    const t = new Translator({ en: translations }).getLocale("en");
     assert.equal(t.plural(message`${1} apple`, message`${1} apples`, 1), "1 apple");
     assert.equal(t.plural(message`${2} apple`, message`${2} apples`, 2), "2 apples");
 });
