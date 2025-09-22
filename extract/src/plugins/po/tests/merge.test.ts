@@ -6,10 +6,12 @@ import { merge } from "../merge.ts";
 
 const date = new Date("2024-01-01T00:00:00Z");
 
-function createExisting() {
+function createExisting(): GetTextTranslations {
     return {
         charset: "utf-8",
-        headers: {},
+        headers: {
+            "MIME-Version": "1.0",
+        },
         translations: {
             "": {
                 "": { msgid: "", msgstr: [""] },
@@ -32,6 +34,12 @@ function runMerge(
         date,
     );
 }
+
+test("retains existing headers", () => {
+    const existing = createExisting();
+    const merged = runMerge([], existing, "mark");
+    assert.ok(merged.headers["MIME-Version"], "existing header should be retained");
+});
 
 test("marks missing translations as obsolete", () => {
     const existing = createExisting();

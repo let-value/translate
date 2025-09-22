@@ -34,6 +34,7 @@ export function merge(
     const nplurals = getNPlurals(locale);
 
     if (existing) {
+        headers = existing.headers || {};
         translations = existing.translations || { "": {} };
         obsoleteTranslations = existing.obsolete || {};
         for (const ctx of Object.keys(translations)) {
@@ -115,10 +116,12 @@ export function merge(
 
     headers = {
         ...headers,
-        "content-type": headers["content-type"] || "text/plain; charset=UTF-8",
-        "plural-forms": `nplurals=${nplurals}; plural=${getFormula(locale)};`,
+        "Content-Type": headers["Content-Type"] || "text/plain; charset=UTF-8",
+        "Plural-Forms": `nplurals=${nplurals}; plural=${getFormula(locale)};`,
         language: locale,
-        "pot-creation-date": formatDate(generatedAt),
+        "MIME-Version": "1.0",
+        "Content-Transfer-Encoding": "8bit",
+        "POT-Creation-Date": formatDate(generatedAt),
         "x-generator": "@let-value/translate-extract",
     };
 
