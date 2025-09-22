@@ -21,94 +21,21 @@ type SyncLocaleKeys<T> = {
     [K in keyof T]: T[K] extends GetTextTranslations ? K : never;
 }[keyof T];
 
-type Translation = NonNullable<GetTextTranslations["translations"]>[string][string];
-
-function selectTranslation(
-    translations: GetTextTranslations | undefined,
-    context: string,
-    msgid: string,
-): Translation | undefined {
-    return translations?.translations?.[context]?.[msgid];
-}
-
-type DeferredGuard = (value: unknown) => boolean;
-
-function translateDeferred(
-    locale: Locale,
-    translations: GetTextTranslations | undefined,
-    source: unknown,
-    method: string,
-    guards: DeferredGuard[],
-    context?: string,
-): string | undefined {
-    if (!guards.some((guard) => guard(source))) {
-        return undefined;
-    }
-
-    console.warn(
-        `LocaleTranslator.${method} received a deferred message. Falling back to translate() semantics.`,
-    );
-
-    const message = source as AnyTranslationMessage;
-
-    if (context !== undefined) {
-        if (isPluralMessage(message)) {
-            return translateValue(locale, translations, { context, id: message });
-        }
-        if (isMessage(message)) {
-            return translateValue(locale, translations, { context, id: message });
-        }
-    }
-
-    return translateValue(locale, translations, message);
-}
-
 function selectValues(message: Message | undefined, fallback?: Message): unknown[] | undefined {
     const values = message?.values;
-    if (values && values.length) {
+    if (values?.length) {
         return values;
     }
     return fallback?.values;
 }
 
 function selectTemplate(preferred: string | undefined, fallback: string): string {
-    return preferred && preferred.length ? preferred : fallback;
+    return preferred?.length ? preferred : fallback;
 }
 
 function applyValues(template: string, message: Message | undefined, fallback?: Message): string {
     const values = selectValues(message, fallback);
-    return values && values.length ? substitute(template, values) : template;
-}
-
-function resolveMessage(
-    translations: GetTextTranslations | undefined,
-    message: Message,
-    context = "",
-): string {
-    const entry = selectTranslation(translations, context, message.msgid);
-    const template = selectTemplate(entry?.msgstr?.[0], message.msgstr);
-    return applyValues(template, message);
-}
-
-function resolvePluralForm(
-    locale: Locale,
-    message: PluralMessage,
-    entry: Translation | undefined,
-): string {
-    const index = pluralFunc(locale)(message.n);
-    const forms = message.forms;
-    const selectedForm = forms[index] ?? forms[forms.length - 1];
-    const translatedForms = entry?.msgstr;
-    const templateCandidate =
-        translatedForms && translatedForms.length
-            ? translatedForms[index] ?? translatedForms[translatedForms.length - 1]
-            : undefined;
-    const template = selectTemplate(templateCandidate, selectedForm.msgstr);
-    return applyValues(template, selectedForm, forms[0]);
-}
-
-function isMessage(value: unknown): value is Message {
-    return Boolean(value) && typeof value === "object" && "msgid" in (value as Message);
+    return values?.length ? substitute(template, values) : template;
 }
 
 function isPluralMessage(value: unknown): value is PluralMessage {
@@ -131,91 +58,7 @@ function isContextPluralMessage(value: unknown): value is ContextPluralMessage {
     return isPluralMessage(candidate);
 }
 
-function translateMessageValue(
-    translations: GetTextTranslations | undefined,
-    message: Message,
-    context = "",
-): string {
-    return resolveMessage(translations, message, context);
-}
-
-function translatePluralValue(
-    locale: Locale,
-    translations: GetTextTranslations | undefined,
-    message: PluralMessage,
-    context = "",
-): string {
-    const entry = selectTranslation(translations, context, message.forms[0]!.msgid);
-    return resolvePluralForm(locale, message, entry);
-}
-
 type AnyTranslationMessage = Message | PluralMessage | ContextMessage | ContextPluralMessage;
-
-function translateValue(
-    locale: Locale,
-    translations: GetTextTranslations | undefined,
-    message: AnyTranslationMessage,
-): string {
-    if (isContextPluralMessage(message)) {
-        return translatePluralValue(locale, translations, message.id, message.context);
-    }
-
-    if (isContextMessage(message)) {
-        return translateMessageValue(translations, message.id, message.context);
-    }
-
-    if (isPluralMessage(message)) {
-        return translatePluralValue(locale, translations, message);
-    }
-
-    return translateMessageValue(translations, message);
-}
-
-function translateMessageArgs<T extends string>(
-    locale: Locale,
-    translations: GetTextTranslations | undefined,
-    args: MessageArgs<T>,
-    method: string,
-    guards: DeferredGuard[],
-    context?: string,
-): string {
-    const [source] = args as [unknown];
-
-    const deferred = translateDeferred(locale, translations, source, method, guards, context);
-    if (deferred !== undefined) {
-        return deferred;
-    }
-
-    const message = buildMessage(...args);
-    return translateValue(
-        locale,
-        translations,
-        context !== undefined ? { context, id: message } : message,
-    );
-}
-
-function translatePluralArgs(
-    locale: Locale,
-    translations: GetTextTranslations | undefined,
-    args: PluralArgs,
-    method: string,
-    guards: DeferredGuard[],
-    context?: string,
-): string {
-    const [source] = args as [unknown];
-
-    const deferred = translateDeferred(locale, translations, source, method, guards, context);
-    if (deferred !== undefined) {
-        return deferred;
-    }
-
-    const message = buildPlural(...args);
-    return translateValue(
-        locale,
-        translations,
-        context !== undefined ? { context, id: message } : message,
-    );
-}
 
 function resolveTranslationModule(module: TranslationModule): GetTextTranslations {
     return "default" in module ? module.default : module;
@@ -230,21 +73,61 @@ export class LocaleTranslator {
         this.translations = translations ? normalizeTranslations(translations) : undefined;
     }
 
-    message = <T extends string>(...args: MessageArgs<T>): string => {
-        return translateMessageArgs(this.locale, this.translations, args, "message", [isMessage]);
-    };
+    resolveMessage(message: Message, context = ""): string {
+        const entry = this.translations?.translations?.[context]?.[message.msgid];
+        const template = selectTemplate(entry?.msgstr?.[0], message.msgstr);
+        return applyValues(template, message);
+    }
+
+    resolvePluralForm(message: PluralMessage, context = ""): string {
+        const entry = this.translations?.translations?.[context]?.[message.forms[0].msgid];
+        const index = pluralFunc(this.locale)(message.n);
+        const forms = message.forms;
+        const selectedForm = forms[index] ?? forms[forms.length - 1];
+        const translatedForms = entry?.msgstr;
+        const templateCandidate = translatedForms?.length
+            ? (translatedForms[index] ?? translatedForms[translatedForms.length - 1])
+            : undefined;
+        const template = selectTemplate(templateCandidate, selectedForm.msgstr);
+        return applyValues(template, selectedForm, forms[0]);
+    }
+
+    translateValue(message: AnyTranslationMessage): string {
+        if (isContextPluralMessage(message)) {
+            return this.resolvePluralForm(message.id, message.context);
+        }
+
+        if (isContextMessage(message)) {
+            return this.resolveMessage(message.id, message.context);
+        }
+
+        if (isPluralMessage(message)) {
+            return this.resolvePluralForm(message);
+        }
+
+        return this.resolveMessage(message);
+    }
+
+    translateMessage<T extends string>(args: MessageArgs<T>, context?: string): string {
+        const message = buildMessage(...args);
+        return this.resolveMessage(message, context);
+    }
+
+    translatePlural(args: PluralArgs, context?: string): string {
+        const message = buildPlural(...args);
+        return this.resolvePluralForm(message, context);
+    }
 
     translate(message: Message): string;
     translate(message: PluralMessage): string;
     translate(message: ContextMessage): string;
     translate(message: ContextPluralMessage): string;
     translate(message: Message | PluralMessage | ContextMessage | ContextPluralMessage): string {
-        return translateValue(this.locale, this.translations, message);
+        return this.translateValue(message);
     }
 
-    plural = (...args: PluralArgs): string => {
-        return translatePluralArgs(this.locale, this.translations, args, "plural", [isPluralMessage]);
-    };
+    message = <T extends string>(...args: MessageArgs<T>): string => this.translateMessage(args);
+    plural = (...args: PluralArgs): string => this.translatePlural(args);
 
     context<T extends string>(
         context: StrictStaticString<T>,
@@ -262,73 +145,20 @@ export class LocaleTranslator {
     context<T extends string>(...args: [StrictStaticString<T>] | [TemplateStringsArray, ...never[]]) {
         const [source] = args as [StrictStaticString<T> | TemplateStringsArray];
 
-        const ctx = typeof source === "string" ? source : source[0];
+        const context = typeof source === "string" ? source : source[0];
 
         return {
-            message: <U extends string>(...args: MessageArgs<U>): string => {
-                return translateMessageArgs(
-                    this.locale,
-                    this.translations,
-                    args,
-                    "context().message",
-                    [isMessage, isContextMessage],
-                    ctx,
-                );
-            },
-            plural: (...args: PluralArgs): string => {
-                return translatePluralArgs(
-                    this.locale,
-                    this.translations,
-                    args,
-                    "context().plural",
-                    [isPluralMessage, isContextPluralMessage],
-                    ctx,
-                );
-            },
+            message: <U extends string>(...args: MessageArgs<U>): string => this.translateMessage(args, context),
+            plural: (...args: PluralArgs): string => this.translatePlural(args, context),
         };
     }
 
-    gettext<T extends string>(...args: MessageArgs<T>): string {
-        return this.message(...args);
-    }
-
-    ngettext(...args: PluralArgs): string {
-        return this.plural(...args);
-    }
-
-    pgettext<C extends string, T extends string>(
-        context: ContextMessage | StrictStaticString<C>,
-        ...args: MessageArgs<T> | []
-    ): string {
-        if (typeof context === "object") {
-            return translateValue(this.locale, this.translations, context);
-        }
-        return translateMessageArgs(
-            this.locale,
-            this.translations,
-            args as MessageArgs<T>,
-            "pgettext",
-            [isMessage, isContextMessage],
-            context,
-        );
-    }
-
-    npgettext<C extends string>(
-        context: ContextPluralMessage | StrictStaticString<C>,
-        ...args: PluralArgs | []
-    ): string {
-        if (typeof context === "object") {
-            return translateValue(this.locale, this.translations, context);
-        }
-        return translatePluralArgs(
-            this.locale,
-            this.translations,
-            args as PluralArgs,
-            "npgettext",
-            [isPluralMessage, isContextPluralMessage],
-            context,
-        );
-    }
+    gettext = <T extends string>(...args: MessageArgs<T>): string => this.message(...args);
+    ngettext = (...args: PluralArgs): string => this.plural(...args);
+    pgettext = <C extends string, T extends string>(context: StrictStaticString<C>, ...args: MessageArgs<T>): string =>
+        this.translateMessage(args, context);
+    npgettext = <C extends string>(context: StrictStaticString<C>, ...args: PluralArgs): string =>
+        this.translatePlural(args, context);
 }
 
 export class Translator<T extends TranslationRecord = TranslationRecord> {

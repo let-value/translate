@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import { test } from "node:test";
-import * as gettextParser from "gettext-parser";
 import type { GetTextTranslations } from "gettext-parser";
+import * as gettextParser from "gettext-parser";
 import { context, message, plural } from "../src/messages.ts";
 import { Translator } from "../src/translator.ts";
 
@@ -56,25 +56,6 @@ test("translate handles plural helper with multiple forms", () => {
     const t = new Translator(translations).getLocale("ru");
     const apples = plural(message`${5} apple`, message`${5} apples`, message`${5} many apples`, 5);
     assert.equal(t.translate(apples), "5 яблок");
-});
-
-test("plural warns and translates deferred plural input", () => {
-    const t = new Translator(translations).getLocale("en");
-    const apples = plural(message`${1} apple`, message`${1} apples`, 1);
-    const originalWarn = console.warn;
-    const warnings: unknown[] = [];
-    console.warn = (...args: unknown[]) => {
-        warnings.push(args);
-    };
-
-    try {
-        // @ts-expect-error plural does not accept deferred inputs
-        assert.equal(t.plural(apples), "1 apple");
-    } finally {
-        console.warn = originalWarn;
-    }
-
-    assert.ok(warnings.some((entry) => String(entry).includes("LocaleTranslator.plural")));
 });
 
 test("plural substitutes values from the chosen plural form", () => {

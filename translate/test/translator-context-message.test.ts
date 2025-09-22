@@ -25,26 +25,6 @@ test("context message returns original string when translation missing", () => {
     assert.equal(t.context("verb").message("Close"), "Close");
 });
 
-test("context message warns and translates deferred input", () => {
-    const t = new Translator({}).getLocale("en" as never);
-    const verb = context("verb");
-    const deferred = verb.message("Open");
-    const originalWarn = console.warn;
-    const warnings: unknown[] = [];
-    console.warn = (...args: unknown[]) => {
-        warnings.push(args);
-    };
-
-    try {
-        // @ts-expect-error context message does not accept deferred inputs
-        assert.equal(t.context("verb").message(deferred), "Open");
-    } finally {
-        console.warn = originalWarn;
-    }
-
-    assert.ok(warnings.some((entry) => String(entry).includes("LocaleTranslator.context().message")));
-});
-
 test("pgettext alias works", () => {
     const t = new Translator({}).getLocale("en" as never);
     assert.equal(t.pgettext("ctx", "X"), "X");

@@ -13,6 +13,7 @@
 * **Typecheck:** `tsc --build` (incremental, references if monorepo).
 * **CI/CD:** GitHub Workflows.
 * **Release:** **bumpp** for version bump + tag; workflows publish on tag.
+* **Error handling policy:** all translate packages never throw errors. If no fallbacks available they log a `console.warn`.
 
 **Do not add:** alternate runners (Jest/Vitest), bundlers, task runners, extra package managers, or heavy polyfill libs. Prefer stdlib.
 

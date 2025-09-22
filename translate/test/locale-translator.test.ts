@@ -1,9 +1,9 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { test } from "node:test";
 import * as gettextParser from "gettext-parser";
-import { readFileSync } from "node:fs";
 
-import { message, plural as buildPlural } from "../src/messages.ts";
+import { plural as buildPlural, message } from "../src/messages.ts";
 import { LocaleTranslator } from "../src/translator.ts";
 
 function createTranslator(): LocaleTranslator {
@@ -25,26 +25,17 @@ test("LocaleTranslator.plural selects translated forms", () => {
     const translator = createTranslator();
 
     const singular = 1;
-    assert.equal(
-        translator.plural(message`${singular} item`, message`${singular} items`, singular),
-        "1 article",
-    );
+    assert.equal(translator.plural(message`${singular} item`, message`${singular} items`, singular), "1 article");
 
     const plural = 3;
-    assert.equal(
-        translator.plural(message`${plural} item`, message`${plural} items`, plural),
-        "3 articles",
-    );
+    assert.equal(translator.plural(message`${plural} item`, message`${plural} items`, plural), "3 articles");
 });
 
 test("LocaleTranslator.plural reuses base form values when alternate forms omit them", () => {
     const translator = createTranslator();
 
     const count = 4;
-    assert.equal(
-        translator.plural(message`${count} notification`, message("notifications"), count),
-        "4 notifications",
-    );
+    assert.equal(translator.plural(message`${count} notification`, message("notifications"), count), "4 notifications");
 });
 
 test("LocaleTranslator.context overrides translations while substituting values", () => {
@@ -60,38 +51,4 @@ test("LocaleTranslator.context overrides translations while substituting values"
         translator.context("catalog").plural(message`${count} item`, message`${count} items`, count),
         "2 articles catalogue",
     );
-});
-
-test("LocaleTranslator.message warns but still translates deferred messages", () => {
-    const translator = createTranslator();
-    const originalWarn = console.warn;
-    const warnings: unknown[] = [];
-    console.warn = (...args: unknown[]) => {
-        warnings.push(args);
-    };
-
-    try {
-        assert.equal(translator.message(message("items")), "articles");
-        assert.ok(warnings.some((entry) => String(entry).includes("LocaleTranslator.message")));
-    } finally {
-        console.warn = originalWarn;
-    }
-});
-
-test("LocaleTranslator.plural warns but still translates deferred plural messages", () => {
-    const translator = createTranslator();
-    const originalWarn = console.warn;
-    const warnings: unknown[] = [];
-    console.warn = (...args: unknown[]) => {
-        warnings.push(args);
-    };
-
-    try {
-        const count = 2;
-        const deferred = buildPlural(message`${count} item`, message`${count} items`, count);
-        assert.equal(translator.plural(deferred), "2 articles");
-        assert.ok(warnings.some((entry) => String(entry).includes("LocaleTranslator.plural")));
-    } finally {
-        console.warn = originalWarn;
-    }
 });
