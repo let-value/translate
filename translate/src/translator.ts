@@ -73,13 +73,13 @@ export class LocaleTranslator {
         this.translations = translations ? normalizeTranslations(translations) : undefined;
     }
 
-    resolveMessage(message: Message, context = ""): string {
+    resolveMessage = (message: Message, context = ""): string => {
         const entry = this.translations?.translations?.[context]?.[message.msgid];
         const template = selectTemplate(entry?.msgstr?.[0], message.msgstr);
         return applyValues(template, message);
-    }
+    };
 
-    resolvePluralForm(message: PluralMessage, context = ""): string {
+    resolvePluralForm = (message: PluralMessage, context = ""): string => {
         const entry = this.translations?.translations?.[context]?.[message.forms[0].msgid];
         const index = pluralFunc(this.locale)(message.n);
         const forms = message.forms;
@@ -90,9 +90,9 @@ export class LocaleTranslator {
             : undefined;
         const template = selectTemplate(templateCandidate, selectedForm.msgstr);
         return applyValues(template, selectedForm, forms[0]);
-    }
+    };
 
-    translateValue(message: AnyTranslationMessage): string {
+    translateValue = (message: AnyTranslationMessage): string => {
         if (isContextPluralMessage(message)) {
             return this.resolvePluralForm(message.id, message.context);
         }
@@ -106,43 +106,26 @@ export class LocaleTranslator {
         }
 
         return this.resolveMessage(message);
-    }
+    };
 
-    translateMessage<T extends string>(args: MessageArgs<T>, context?: string): string {
+    translateMessage = <T extends string>(args: MessageArgs<T>, context?: string): string => {
         const message = buildMessage(...args);
         return this.resolveMessage(message, context);
-    }
+    };
 
-    translatePlural(args: PluralArgs, context?: string): string {
+    translatePlural = (args: PluralArgs, context?: string): string => {
         const message = buildPlural(...args);
         return this.resolvePluralForm(message, context);
-    }
+    };
 
-    translate(message: Message): string;
-    translate(message: PluralMessage): string;
-    translate(message: ContextMessage): string;
-    translate(message: ContextPluralMessage): string;
-    translate(message: Message | PluralMessage | ContextMessage | ContextPluralMessage): string {
+    translate = (message: Message | PluralMessage | ContextMessage | ContextPluralMessage): string => {
         return this.translateValue(message);
-    }
+    };
 
     message = <T extends string>(...args: MessageArgs<T>): string => this.translateMessage(args);
     plural = (...args: PluralArgs): string => this.translatePlural(args);
 
-    context<T extends string>(
-        context: StrictStaticString<T>,
-    ): {
-        message: <U extends string>(...args: MessageArgs<U>) => string;
-        plural: (...args: PluralArgs) => string;
-    };
-    context(
-        strings: TemplateStringsArray,
-        ...values: never[]
-    ): {
-        message: <U extends string>(...args: MessageArgs<U>) => string;
-        plural: (...args: PluralArgs) => string;
-    };
-    context<T extends string>(...args: [StrictStaticString<T>] | [TemplateStringsArray, ...never[]]) {
+    context = <T extends string>(...args: [StrictStaticString<T>] | [TemplateStringsArray, ...never[]]) => {
         const [source] = args as [StrictStaticString<T> | TemplateStringsArray];
 
         const context = typeof source === "string" ? source : source[0];
@@ -151,7 +134,7 @@ export class LocaleTranslator {
             message: <U extends string>(...args: MessageArgs<U>): string => this.translateMessage(args, context),
             plural: (...args: PluralArgs): string => this.translatePlural(args, context),
         };
-    }
+    };
 
     gettext = <T extends string>(...args: MessageArgs<T>): string => this.message(...args);
     ngettext = (...args: PluralArgs): string => this.plural(...args);
@@ -182,13 +165,13 @@ export class Translator<T extends TranslationRecord = TranslationRecord> {
         }
     }
 
-    async loadLocale(locale: Locale, loader?: TranslationLoader): Promise<LocaleTranslator> {
+    loadLocale = async (locale: Locale, loader?: TranslationLoader): Promise<LocaleTranslator> => {
         this.loaders[locale] = loader ?? this.loaders[locale];
 
         return this.fetchLocale(locale as never);
-    }
+    };
 
-    getLocale<L extends SyncLocaleKeys<T>>(locale: L): LocaleTranslator {
+    getLocale = <L extends SyncLocaleKeys<T>>(locale: L): LocaleTranslator => {
         const key = locale as Locale;
         const existing = this.translators[key];
         if (existing) {
@@ -216,9 +199,9 @@ export class Translator<T extends TranslationRecord = TranslationRecord> {
 
         this.translators[key] ??= new LocaleTranslator(key);
         return this.translators[key];
-    }
+    };
 
-    fetchLocale<L extends keyof T>(locale: L) {
+    fetchLocale = <L extends keyof T>(locale: L) => {
         const key = locale as Locale;
 
         const pending = this.pending[key];
@@ -241,5 +224,5 @@ export class Translator<T extends TranslationRecord = TranslationRecord> {
         }
 
         return this.getLocale(key as never);
-    }
+    };
 }

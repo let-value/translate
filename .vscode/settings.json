@@ -14,9 +14,18 @@
     },
     "nodejs-testing.extensions": [
         {
-            "extensions": ["ts"],
+            "extensions": [
+                "ts"
+            ],
             "parameters": []
         }
     ],
-    "cSpell.words": ["msgctxt", "ngettext", "npgettext", "nplurals", "oxlint", "pgettext"]
+    "cSpell.words": [
+        "msgctxt",
+        "ngettext",
+        "npgettext",
+        "nplurals",
+        "oxlint",
+        "pgettext"
+    ],
 }
