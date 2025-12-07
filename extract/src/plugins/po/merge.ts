@@ -34,9 +34,9 @@ export function merge(
     const nplurals = getNPlurals(locale);
 
     if (existing) {
-        headers = existing.headers || {};
-        translations = existing.translations || { "": {} };
-        obsoleteTranslations = existing.obsolete || {};
+        headers = existing.headers ? structuredClone(existing.headers) : {};
+        translations = existing.translations ? structuredClone(existing.translations) : { "": {} };
+        obsoleteTranslations = existing.obsolete ? structuredClone(existing.obsolete) : {};
         for (const ctx of Object.keys(translations)) {
             for (const id of Object.keys(translations[ctx])) {
                 if (ctx === "" && id === "") continue;
