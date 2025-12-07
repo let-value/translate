@@ -1,15 +1,15 @@
 {
     "name": "@let-value/translate-e2e",
-    "version": "1.0.23",
+    "version": "1.0.24",
     "private": true,
     "type": "module",
     "exports": {
         "./*": "./*"
     },
     "dependencies": {
-        "@let-value/translate": "1.0.23",
-        "@let-value/translate-extract": "1.0.23",
-        "@let-value/translate-react": "1.0.23",
+        "@let-value/translate": "1.0.24",
+        "@let-value/translate-extract": "1.0.24",
+        "@let-value/translate-react": "1.0.24",
         "gettext-parser": "8.0.0",
         "react": "19.1.1",
         "react-dom": "19.1.1"
