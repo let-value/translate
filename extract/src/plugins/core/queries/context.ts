@@ -4,7 +4,13 @@ import { extractPluralForms } from "./plural-utils.ts";
 import type { QuerySpec } from "./types.ts";
 import { callPattern } from "./utils.ts";
 
-const ctxCall = callPattern("context", `(arguments (string (string_fragment) @msgctxt))`)
+const ctxCall = callPattern(
+    "context",
+    `[
+  (arguments (string (string_fragment) @msgctxt))
+  (template_string) @msgctxt
+]`,
+)
     .replace(/@call/g, "@ctx")
     .replace(/@func/g, "@ctxfn");
 
@@ -25,11 +31,30 @@ export const contextMsgQuery: QuerySpec = withComment({
         if (!result || !result.translation || !contextNode) {
             return result;
         }
+
+        if (contextNode.type === "template_string") {
+            for (const child of contextNode.children) {
+                if (child.type !== "template_substitution") {
+                    continue;
+                }
+
+                const expr = child.namedChildren[0];
+                if (!expr || expr.type !== "identifier") {
+                    return {
+                        node: contextNode,
+                        error: "context() template expressions must be simple identifiers",
+                    };
+                }
+            }
+        }
+
+        const contextText =
+            contextNode.type === "template_string" ? contextNode.text.slice(1, -1) : contextNode.text;
         return {
             node: result.node,
             translation: {
                 ...result.translation,
-                context: contextNode.text,
+                context: contextText,
             },
         };
     },

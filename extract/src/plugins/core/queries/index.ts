@@ -10,6 +10,9 @@ import type { QuerySpec } from "./types.ts";
 export type { MessageMatch, QuerySpec } from "./types.ts";
 
 export const queries: QuerySpec[] = [
+    contextMsgQuery,
+    contextPluralQuery,
+    contextInvalidQuery,
     messageQuery,
     messageInvalidQuery,
     gettextQuery,
@@ -18,7 +21,4 @@ export const queries: QuerySpec[] = [
     ngettextQuery,
     pgettextQuery,
     npgettextQuery,
-    contextMsgQuery,
-    contextPluralQuery,
-    contextInvalidQuery,
 ];
