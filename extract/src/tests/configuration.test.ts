@@ -3,6 +3,7 @@ import { join } from "node:path";
 import { test } from "node:test";
 import { type DestinationFn, defineConfig } from "../configuration.ts";
 import type { Plugin } from "../plugin.ts";
+import type { StaticPlugin } from "../static.ts";
 
 const mockPlugin: Plugin = { name: "mock", setup() {} };
 
@@ -20,7 +21,7 @@ test("allows overriding default plugins with function", () => {
         },
     });
     assert.deepEqual(
-        cfg.plugins.map((p) => p.name),
+        cfg.plugins.map((p) => (p as Plugin)?.name || (p as StaticPlugin)?.static?.name),
         ["core"],
     );
 });

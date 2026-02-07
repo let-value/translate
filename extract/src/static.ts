@@ -6,7 +6,7 @@ import type { react as reactPlugin } from "./plugins/react/react.ts";
 export function core(...props: Parameters<typeof corePlugin>) {
     return {
         static: {
-            name: "cleanup",
+            name: "core",
             props,
         },
     } as const;
