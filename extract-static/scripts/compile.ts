@@ -1,7 +1,7 @@
 import { resolve } from "node:path";
 import { type Build, build } from "bun";
 import { GLIBC, MUSL } from "detect-libc";
-import { getBinaryName } from "../src/index.ts";
+import { getBinaryName } from "../src/binary.ts";
 
 export const targets = [
     { platform: "win32", os: "windows", arch: "x64" } as const,

@@ -1,7 +1,7 @@
 import { chmodSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 
-import { binaryName, binaryPath, platform } from "../src/index.ts";
+import { binaryName, binaryPath, platform } from "../src/binary.ts";
 
 const root = resolve(import.meta.dirname, "../..");
 const dist = resolve(root, "dist");

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { spawn } from "node:child_process";
-import { binaryPath } from "../src/index.ts";
+import { binaryPath } from "../src/binary.ts";
 
 const child = spawn(binaryPath, process.argv.slice(2), {
     stdio: "inherit",

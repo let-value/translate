@@ -1,18 +1,2 @@
-import { resolve } from "node:path";
-import { familySync } from "detect-libc";
-
-export const root = resolve(import.meta.dirname, "..");
-export const platform = process.platform;
-export const arch = process.arch;
-export const libc = familySync() || null;
-
-export function getBinaryName(platform: string, arch: string, libc?: string | null) {
-    const extension = platform === "win32" ? ".exe" : "";
-
-    return `extract-${platform}-${arch}${libc ? `-${libc}` : ""}${extension}`;
-}
-
-export const binaryName = getBinaryName(platform, arch, libc);
-export const binaryPath = resolve(root, "dist", binaryName);
-
-export default binaryPath;
+export * from "@let-value/translate-extract/core";
+export * from "@let-value/translate-extract/static";

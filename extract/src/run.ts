@@ -13,6 +13,7 @@ import type {
     ResolveArgs,
     ResolveHook,
 } from "./plugin.ts";
+import { resolveStaticPlugin } from "./plugins/static.ts";
 
 export type Task =
     | {
@@ -117,14 +118,14 @@ export async function run(
         },
     };
 
-    for (const plugin of config.plugins) {
+    for (const item of config.plugins) {
+        const plugin = resolveStaticPlugin(item);
         logger?.debug({ plugin: plugin.name }, "setting up plugin");
         plugin.setup(build);
     }
 
-    const paths = glob.isDynamicPattern(entrypoint.entrypoint)
-        ? await glob(entrypoint.entrypoint, { onlyFiles: true })
-        : [entrypoint.entrypoint];
+    const pattern = entrypoint.entrypoint.replace(/\\/g, "/");
+    const paths = glob.isDynamicPattern(pattern) ? await glob(pattern, { onlyFiles: true }) : [entrypoint.entrypoint];
     logger?.debug({ entrypoint: entrypoint.entrypoint, paths }, "resolved paths");
 
     for (const path of paths) {
