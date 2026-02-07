@@ -1,5 +1,6 @@
 import type { ResolvedConfig } from "./configuration.ts";
 import type { Logger } from "./logger.ts";
+import type { StaticPlugin } from "./static.ts";
 
 type MaybePromise<T> = T | Promise<T>;
 
@@ -75,3 +76,5 @@ export interface Plugin<TInput = unknown, TOutput = unknown> {
     name: string;
     setup(build: Build<TInput, TOutput>): void;
 }
+
+export type UniversalPlugin = Plugin | StaticPlugin;

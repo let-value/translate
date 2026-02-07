@@ -13,6 +13,7 @@ import type {
     ResolveArgs,
     ResolveHook,
 } from "./plugin.ts";
+import { resolveStaticPlugin } from "./plugins/static.ts";
 
 export type Task =
     | {
@@ -117,7 +118,8 @@ export async function run(
         },
     };
 
-    for (const plugin of config.plugins) {
+    for (const item of config.plugins) {
+        const plugin = resolveStaticPlugin(item);
         logger?.debug({ plugin: plugin.name }, "setting up plugin");
         plugin.setup(build);
     }

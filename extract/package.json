@@ -14,6 +14,16 @@
             "import": "./dist/src/index.js",
             "require": "./dist/src/index.cjs"
         },
+        "./core": {
+            "types": "./dist/src/core.d.ts",
+            "import": "./dist/src/core.js",
+            "require": "./dist/src/core.cjs"
+        },
+        "./static": {
+            "types": "./dist/src/static.d.ts",
+            "import": "./dist/src/static.js",
+            "require": "./dist/src/static.cjs"
+        },
         "./package.json": "./package.json"
     },
     "files": [

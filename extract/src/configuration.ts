@@ -2,10 +2,8 @@ import { basename, dirname, extname, join } from "node:path";
 import type { PluralFormsLocale } from "@let-value/translate";
 import type { LogLevel } from "./logger.ts";
 
-import type { Plugin } from "./plugin.ts";
-import { cleanup } from "./plugins/cleanup/cleanup.ts";
-import { core } from "./plugins/core/core.ts";
-import { po } from "./plugins/po/po.ts";
+import type { UniversalPlugin } from "./plugin.ts";
+import { cleanup, core, po } from "./static.ts";
 
 export type DestinationFn = (args: { locale: string; entrypoint: string; path: string }) => string;
 export type ExcludeFn = (args: { entrypoint: string; path: string }) => boolean;
@@ -47,7 +45,7 @@ export interface UserConfig {
      * @default DefaultPlugins
      * @see {@link DefaultPlugins} for available plugins
      */
-    plugins?: Plugin[] | ((defaultPlugins: DefaultPlugins) => Plugin[]);
+    plugins?: UniversalPlugin[] | ((defaultPlugins: DefaultPlugins) => UniversalPlugin[]);
     /**
      * One or more entrypoints to extract translations from, could be:
      * - file path, will be treated as a single file entrypoint
@@ -94,7 +92,7 @@ export interface ResolvedEntrypoint extends Omit<EntrypointConfig, "exclude"> {
 }
 
 export interface ResolvedConfig {
-    plugins: Plugin[];
+    plugins: UniversalPlugin[];
     entrypoints: ResolvedEntrypoint[];
     defaultLocale: string;
     locales: string[];
@@ -127,7 +125,7 @@ function resolveEntrypoint(ep: string | EntrypointConfig): ResolvedEntrypoint {
     return { entrypoint, destination, obsolete, walk, exclude: exclude ? normalizeExclude(exclude) : undefined };
 }
 
-function resolvePlugins(user?: UserConfig["plugins"]): Plugin[] {
+function resolvePlugins(user?: UserConfig["plugins"]): UniversalPlugin[] {
     if (typeof user === "function") {
         return user(defaultPlugins);
     }
