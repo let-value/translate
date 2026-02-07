@@ -1,0 +1,39 @@
+{
+    "name": "@let-value/translate-extract-static",
+    "version": "1.0.26",
+    "type": "module",
+    "main": "./dist/src/index.cjs",
+    "module": "./dist/src/index.js",
+    "types": "./dist/src/index.d.ts",
+    "bin": {
+        "extract": "./dist/bin/cli.js"
+    },
+    "exports": {
+        ".": {
+            "types": "./dist/src/index.d.ts",
+            "import": "./dist/src/index.js",
+            "require": "./dist/src/index.cjs"
+        },
+        "./package.json": "./package.json"
+    },
+    "files": [
+        "dist"
+    ],
+    "scripts": {
+        "compile": "node scripts/compile.ts",
+        "build": "tsdown",
+        "check": "biome check .",
+        "format": "biome check --write .",
+        "typecheck": "tsc --build",
+        "test": "node --test"
+    },
+    "devDependencies": {
+        "@types/bun": "1.3.8",
+        "@types/node": "22.10.2",
+        "tsdown": "0.15.2",
+        "typescript": "5.9.2"
+    },
+    "dependencies": {
+        "detect-libc": "2.1.2"
+    }
+}
