@@ -20,7 +20,7 @@
         "dist"
     ],
     "scripts": {
-        "compile": "node scripts/compile.ts",
+        "postinstall": "node dist/scripts/postinstall.cjs",
         "build": "tsdown",
         "check": "biome check .",
         "format": "biome check --write .",
