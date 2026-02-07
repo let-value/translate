@@ -17,10 +17,11 @@
         "./package.json": "./package.json"
     },
     "files": [
-        "dist"
+        "dist",
+        "postinstall.cjs"
     ],
     "scripts": {
-        "postinstall": "node dist/scripts/postinstall.cjs",
+        "postinstall": "node postinstall.cjs",
         "build": "tsdown",
         "check": "biome check .",
         "format": "biome check --write .",
