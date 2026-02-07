@@ -1,6 +1,6 @@
 {
     "name": "@let-value/translate-extract-static",
-    "version": "1.0.27",
+    "version": "1.0.28",
     "type": "module",
     "main": "./dist/src/index.cjs",
     "module": "./dist/src/index.js",
