@@ -1,4 +1,4 @@
-import type Parser from "tree-sitter";
+import type Parser from "@keqingmoe/tree-sitter";
 import type { ImportQuerySpec } from "./types.ts";
 
 export const importQuery: ImportQuerySpec = {

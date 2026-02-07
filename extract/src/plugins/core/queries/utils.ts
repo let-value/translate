@@ -1,4 +1,4 @@
-import type Parser from "tree-sitter";
+import type Parser from "@keqingmoe/tree-sitter";
 
 export const callPattern = (fnName: string, args: string, allowMember = true): string => `(
   (call_expression

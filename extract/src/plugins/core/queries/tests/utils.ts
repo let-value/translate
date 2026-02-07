@@ -1,4 +1,5 @@
-import Parser from "tree-sitter";
+import Parser from "@keqingmoe/tree-sitter";
+
 import { getParser } from "../../parse.ts";
 
 interface AnyQuerySpec<T> {

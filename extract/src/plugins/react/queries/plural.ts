@@ -1,4 +1,4 @@
-import type Parser from "tree-sitter";
+import type Parser from "@keqingmoe/tree-sitter";
 
 import { withComment } from "../../core/queries/comment.ts";
 import type { MessageMatch, QuerySpec, Translation } from "../../core/queries/types.ts";

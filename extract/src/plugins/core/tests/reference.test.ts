@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import type { SyntaxNode } from "tree-sitter";
+import type { SyntaxNode } from "@keqingmoe/tree-sitter";
 import { getReference } from "../queries/comment.ts";
 
 test("normalizes path separators", () => {

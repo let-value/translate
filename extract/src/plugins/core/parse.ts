@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import { extname, resolve } from "node:path";
 
-import Parser from "tree-sitter";
+import Parser from "@keqingmoe/tree-sitter";
 import JavaScript from "tree-sitter-javascript";
 import TS from "tree-sitter-typescript";
 

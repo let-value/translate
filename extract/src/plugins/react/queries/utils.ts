@@ -1,4 +1,4 @@
-import type Parser from "tree-sitter";
+import type Parser from "@keqingmoe/tree-sitter";
 
 export function buildTemplate(node: Parser.SyntaxNode): { text: string; error?: string } {
     const source = node.tree.rootNode.text;
