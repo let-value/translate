@@ -1,4 +1,4 @@
-import type Parser from "tree-sitter";
+import type Parser from "@keqingmoe/tree-sitter";
 import { extractMessage } from "./message.ts";
 import type { MessageMatch, Translation } from "./types.ts";
 import { isDescendant } from "./utils.ts";

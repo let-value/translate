@@ -1,5 +1,5 @@
 import { relative } from "node:path";
-import type Parser from "tree-sitter";
+import type Parser from "@keqingmoe/tree-sitter";
 
 import type { Context, QuerySpec } from "./types.ts";
 
