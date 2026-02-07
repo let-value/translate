@@ -124,9 +124,8 @@ export async function run(
         plugin.setup(build);
     }
 
-    const paths = glob.isDynamicPattern(entrypoint.entrypoint)
-        ? await glob(entrypoint.entrypoint, { onlyFiles: true })
-        : [entrypoint.entrypoint];
+    const pattern = entrypoint.entrypoint.replace(/\\/g, "/");
+    const paths = glob.isDynamicPattern(pattern) ? await glob(pattern, { onlyFiles: true }) : [entrypoint.entrypoint];
     logger?.debug({ entrypoint: entrypoint.entrypoint, paths }, "resolved paths");
 
     for (const path of paths) {
