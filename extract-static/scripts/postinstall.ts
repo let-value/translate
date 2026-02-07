@@ -3,7 +3,7 @@ import { resolve } from "node:path";
 
 import { binaryName, binaryPath, platform } from "../src/index.ts";
 
-const root = resolve(import.meta.dirname, "..");
+const root = resolve(import.meta.dirname, "../..");
 const dist = resolve(root, "dist");
 const pkg = JSON.parse(readFileSync(resolve(root, "package.json"), "utf8")) as { version: string };
 

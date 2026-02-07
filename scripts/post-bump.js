@@ -89,7 +89,7 @@ const fixVersions = async () => {
 const main = async () => {
     try {
         await fixVersions();
-        await runCommand("npm", ["install"]);
+        await runCommand("npm", ["install", "--ignore-scripts"]);
     } catch (error) {
         console.error("Post-bump failed:", error.message);
     }
