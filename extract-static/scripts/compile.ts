@@ -18,7 +18,7 @@ const entrypoint = resolve(workspace, "extract/bin/cli.ts");
 const dist = resolve(workspace, "extract-static", "dist");
 
 for (const { platform, os, arch, libc } of targets) {
-    const target = `bun-${os}-${arch}${libc ? `-${libc}` : ""}` as Build.CompileTarget;
+    const target = `bun-${os}-${arch}${libc === MUSL ? `-${libc}` : ""}` as Build.CompileTarget;
     const file = getBinaryName(platform, arch, libc);
 
     console.log("Building:", {
