@@ -1,45 +1,67 @@
 import { resolve } from "node:path";
 import { type Build, build } from "bun";
 import { GLIBC, MUSL } from "detect-libc";
-import { getBinaryName } from "../src/binary.ts";
+import { arch, getBinaryName, platform } from "../src/binary.ts";
 
-export const targets = [
-    { platform: "win32", os: "windows", arch: "x64" } as const,
-    { platform: "darwin", os: "darwin", arch: "x64" } as const,
-    { platform: "darwin", os: "darwin", arch: "arm64" } as const,
-    { platform: "linux", os: "linux", arch: "x64", libc: GLIBC } as const,
-    { platform: "linux", os: "linux", arch: "arm64", libc: GLIBC } as const,
-    { platform: "linux", os: "linux", arch: "x64", libc: MUSL } as const,
-    { platform: "linux", os: "linux", arch: "arm64", libc: MUSL } as const,
-];
+const root = resolve(import.meta.dirname, "../../");
+const os = platform === "win32" ? "windows" : platform;
 
-const workspace = resolve(import.meta.dirname, "../..");
-const entrypoint = resolve(workspace, "extract/bin/cli.ts");
-const dist = resolve(workspace, "extract-static", "dist");
+const treeSitterPatch: import("bun").BunPlugin = {
+    name: "tree-sitter-patch",
+    setup(build) {
+        build.onLoad({ filter: /tree-sitter[/\\]index\.js$/ }, async (args) => {
+            const contents = await Bun.file(args.path).text();
+            return {
+                contents: contents
+                    .replace(
+                        "nodeSubclass.prototype.type = typeName;",
+                        "Object.defineProperty(nodeSubclass.prototype, 'type', { value: typeName, writable: true, configurable: true });",
+                    )
+                    .replace(
+                        "nodeSubclass.prototype.fields = Object.freeze(fieldNames.sort())",
+                        "Object.defineProperty(nodeSubclass.prototype, 'fields', { value: Object.freeze(fieldNames.sort()), writable: true, configurable: true })",
+                    ),
+                loader: "js",
+            };
+        });
+    },
+};
 
-for (const { platform, os, arch, libc } of targets) {
-    const target = `bun-${os}-${arch}${libc === MUSL ? `-${libc}` : ""}` as Build.CompileTarget;
-    const file = getBinaryName(platform, arch, libc);
+async function main() {
+    const libcs = platform === "linux" ? [GLIBC, MUSL] : [null];
 
-    console.log("Building:", {
-        target,
-        file,
-    });
+    for (const libc of libcs) {
+        const target = `bun-${os}-${arch}${libc === MUSL ? `-${MUSL}` : ""}` as Build.CompileTarget;
+        const file = getBinaryName(platform, arch, libc);
 
-    try {
-        await build({
-            entrypoints: [entrypoint],
+        console.log("Building:", {
+            target,
+            file,
+        });
+
+        const result = await build({
+            entrypoints: [resolve(root, "extract-static/src/launcher.ts")],
+            plugins: [treeSitterPatch],
             compile: {
                 target,
-                outfile: resolve(dist, file),
+                outfile: resolve(root, "extract-static/prebuilts", file),
                 windows: {
                     hideConsole: true,
                 },
                 autoloadDotenv: false,
                 autoloadBunfig: false,
+                autoloadTsconfig: true,
+                autoloadPackageJson: true,
             },
+            minify: false,
         });
-    } catch (error) {
-        console.error(`Failed to build for target ${target}:`, error);
+
+        if (!result.success) {
+            throw new Error("Bun compile failed");
+        }
+
+        console.log(result);
     }
 }
+
+await main();

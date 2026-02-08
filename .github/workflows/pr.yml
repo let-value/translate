@@ -30,4 +30,4 @@ jobs:
           bun-version: 1.3.8
       - run: npm ci
       - run: bun run extract-static/scripts/compile.ts
-      - run: ls -la extract-static/dist
+      - run: ls -la extract-static/prebuilts
