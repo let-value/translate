@@ -14,7 +14,6 @@ async function downloadBinary() {
     try {
         const response = await fetch(url, {
             redirect: "follow",
-            signal: AbortSignal.timeout(30000),
             headers: {
                 "user-agent": "@let-value/translate-extract-static postinstall",
             },
