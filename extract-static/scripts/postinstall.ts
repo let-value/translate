@@ -1,10 +1,9 @@
 import { chmodSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { resolve } from "node:path";
+import { dirname, resolve } from "node:path";
 
 import { binaryName, binaryPath, platform } from "../src/binary.ts";
 
 const root = resolve(import.meta.dirname, "../..");
-const dist = resolve(root, "dist");
 const pkg = JSON.parse(readFileSync(resolve(root, "package.json"), "utf8")) as { version: string };
 
 const repo = "https://github.com/let-value/translate";
@@ -25,6 +24,7 @@ async function downloadBinary() {
             return false;
         }
 
+        mkdirSync(dirname(binaryPath), { recursive: true });
         writeFileSync(binaryPath, Buffer.from(await response.arrayBuffer()));
 
         if (platform !== "win32") {
@@ -35,7 +35,6 @@ async function downloadBinary() {
 }
 
 async function main(): Promise<void> {
-    mkdirSync(dist, { recursive: true });
     if (existsSync(binaryPath)) {
         return;
     }
