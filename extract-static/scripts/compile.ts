@@ -50,6 +50,8 @@ async function main() {
                 },
                 autoloadDotenv: false,
                 autoloadBunfig: false,
+                autoloadTsconfig: true,
+                autoloadPackageJson: true,
             },
             minify: false,
         });
