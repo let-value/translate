@@ -6,6 +6,7 @@ import { type LogLevel, logger } from "../src/logger.ts";
 import { run } from "../src/run.ts";
 
 const moduleName = "translate";
+const defaultLogLevel: LogLevel = "info";
 
 async function main() {
     const {
@@ -41,11 +42,12 @@ async function main() {
     }
 
     const resolvedConfig = result.config as ResolvedConfig;
+    const effectiveLogLevel = (logLevel as LogLevel | undefined) ?? resolvedConfig.logLevel ?? defaultLogLevel;
     const config: ResolvedConfig = {
         ...resolvedConfig,
-        logLevel: (logLevel as LogLevel) ?? resolvedConfig.logLevel,
+        logLevel: effectiveLogLevel,
     };
-    logger.setLevel(config.logLevel);
+    logger.setLevel(effectiveLogLevel);
 
     const tasks: Promise<unknown>[] = [];
     for (const entrypoint of config.entrypoints) {
