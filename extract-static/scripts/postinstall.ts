@@ -21,6 +21,10 @@ async function downloadBinary() {
             },
         });
 
+        if (!response.ok) {
+            return false;
+        }
+
         writeFileSync(binaryPath, Buffer.from(await response.arrayBuffer()));
 
         if (platform !== "win32") {

@@ -6,9 +6,17 @@ on:
 
 jobs:
   binaries:
-    runs-on: ubuntu-latest  
+    runs-on: ${{ matrix.runner }}
     permissions:
       contents: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-latest
+          - runner: windows-latest
+          - runner: macos-13
+          - runner: macos-14
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -19,6 +27,7 @@ jobs:
         with:
           bun-version: 1.3.8
       - run: npm ci
+      - run: npm run build --workspace extract
       - run: bun run extract-static/scripts/compile.ts
       - name: Upload binary to release
         if: ${{ !env.ACT }}

@@ -1,23 +1,11 @@
 import { resolve } from "node:path";
 import { type Build, build } from "bun";
-import { GLIBC, MUSL } from "detect-libc";
-import { getBinaryName } from "../src/binary.ts";
+import { MUSL } from "detect-libc";
+import { arch, getBinaryName, libc, platform } from "../src/binary.ts";
 
-export const targets = [
-    { platform: "win32", os: "windows", arch: "x64" } as const,
-    { platform: "darwin", os: "darwin", arch: "x64" } as const,
-    { platform: "darwin", os: "darwin", arch: "arm64" } as const,
-    { platform: "linux", os: "linux", arch: "x64", libc: GLIBC } as const,
-    { platform: "linux", os: "linux", arch: "arm64", libc: GLIBC } as const,
-    { platform: "linux", os: "linux", arch: "x64", libc: MUSL } as const,
-    { platform: "linux", os: "linux", arch: "arm64", libc: MUSL } as const,
-];
+const os = platform === "win32" ? "windows" : platform;
 
-const workspace = resolve(import.meta.dirname, "../..");
-const entrypoint = resolve(workspace, "extract/bin/cli.ts");
-const dist = resolve(workspace, "extract-static", "dist");
-
-for (const { platform, os, arch, libc } of targets) {
+async function main() {
     const target = `bun-${os}-${arch}${libc === MUSL ? `-${libc}` : ""}` as Build.CompileTarget;
     const file = getBinaryName(platform, arch, libc);
 
@@ -26,20 +14,25 @@ for (const { platform, os, arch, libc } of targets) {
         file,
     });
 
-    try {
-        await build({
-            entrypoints: [entrypoint],
-            compile: {
-                target,
-                outfile: resolve(dist, file),
-                windows: {
-                    hideConsole: true,
-                },
-                autoloadDotenv: false,
-                autoloadBunfig: false,
+    const result = await build({
+        entrypoints: ["../dist/bin/launcher.js"],
+        compile: {
+            target,
+            outfile: resolve("../dist", file),
+            windows: {
+                hideConsole: true,
             },
-        });
-    } catch (error) {
-        console.error(`Failed to build for target ${target}:`, error);
+            autoloadDotenv: false,
+            autoloadBunfig: false,
+            autoloadTsconfig: false,
+            autoloadPackageJson: false,
+        },
+        minify: false,
+    });
+
+    if (!result.success) {
+        throw new Error("Bun compile failed");
     }
 }
+
+await main();
