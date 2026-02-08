@@ -13,6 +13,6 @@ export function getBinaryName(platform: string, arch: string, libc?: string | nu
 }
 
 export const binaryName = getBinaryName(platform, arch, libc);
-export const binaryPath = resolve(root, "dist", binaryName);
+export const binaryPath = resolve(root, "prebuilts", binaryName);
 
 export default binaryPath;

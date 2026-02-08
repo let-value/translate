@@ -3,6 +3,7 @@ import { type Build, build } from "bun";
 import { MUSL } from "detect-libc";
 import { arch, getBinaryName, libc, platform } from "../src/binary.ts";
 
+const root = resolve(import.meta.dirname, "../../");
 const os = platform === "win32" ? "windows" : platform;
 
 async function main() {
@@ -15,10 +16,10 @@ async function main() {
     });
 
     const result = await build({
-        entrypoints: ["../dist/bin/launcher.js"],
+        entrypoints: [resolve(root, "extract-static/dist/bin/launcher.js")],
         compile: {
             target,
-            outfile: resolve("../dist", file),
+            outfile: resolve(root, "extract-static/prebuilts", file),
             windows: {
                 hideConsole: true,
             },
