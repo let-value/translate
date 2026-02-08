@@ -1,7 +1,9 @@
 import chalk, { type ChalkInstance } from "chalk";
-import log, { type Logger, type LogLevelNames } from "loglevel";
+import log from "loglevel";
 import prefix from "loglevel-plugin-prefix";
 
+export type Logger = log.Logger;
+export type LogLevelNames = log.LogLevelNames;
 export type LogLevel = LogLevelNames;
 
 const colors: Record<LogLevel, ChalkInstance> = {
@@ -23,4 +25,3 @@ prefix.apply(log, {
 });
 
 export const logger = log;
-export type { Logger, LogLevelNames };
