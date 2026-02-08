@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { execFile } from "node:child_process";
 import { readdir, readFile, rm } from "node:fs/promises";
-import { join, resolve } from "node:path";
+import { join } from "node:path";
 import { test } from "node:test";
 import { promisify } from "node:util";
 import { binaryPath } from "../src/binary.ts";
@@ -10,18 +10,13 @@ const execFileAsync = promisify(execFile);
 
 const root = join(import.meta.dirname, "fixture");
 const translations = join(root, "translations");
-const nodeModules = resolve(import.meta.dirname, "../../node_modules");
 
-test.skip("compiled binary produces po files", async (t) => {
+test("compiled binary produces po files", async (t) => {
     t.after(async () => {
         await rm(translations, { recursive: true, force: true });
     });
 
-    await execFileAsync(binaryPath, [], {
-        cwd: root,
-        timeout: 30_000,
-        env: { ...process.env, NODE_PATH: nodeModules },
-    });
+    await execFileAsync(binaryPath, [], { cwd: root, timeout: 30_000 });
 
     const files = await readdir(translations);
     const poFiles = files.filter((f) => f.endsWith(".po")).sort();
