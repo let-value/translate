@@ -1,2 +1,2 @@
-export * from "@let-value/translate-extract/core";
-export * from "@let-value/translate-extract/static";
+export * from "../../extract/src/core.ts";
+export * from "../../extract/src/static.ts";

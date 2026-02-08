@@ -37,7 +37,7 @@ async function main() {
     });
 
     const result = await build({
-        entrypoints: [resolve(root, "extract-static/bin/launcher.ts")],
+        entrypoints: [resolve(root, "extract-static/src/launcher.ts")],
         plugins: [treeSitterPatch],
         compile: {
             target,

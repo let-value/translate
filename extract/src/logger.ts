@@ -23,4 +23,4 @@ prefix.apply(log, {
 });
 
 export const logger = log;
-export type { Logger };
+export type { Logger, LogLevelNames };
