@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+
 import { parseArgs } from "node:util";
 import { cosmiconfig } from "cosmiconfig";
 import type { ResolvedConfig } from "../src/configuration.ts";
@@ -7,6 +8,20 @@ import { run } from "../src/run.ts";
 
 const moduleName = "translate";
 const defaultLogLevel: LogLevel = "info";
+
+function unwrapConfig(
+    config: ResolvedConfig | { default: ResolvedConfig } | { translateConfig: ResolvedConfig } | undefined,
+) {
+    if (config && typeof config === "object" && "default" in config) {
+        return config.default;
+    }
+
+    if (config && typeof config === "object" && "translateConfig" in config) {
+        return config.translateConfig;
+    }
+
+    return config;
+}
 
 async function main() {
     const {
@@ -41,7 +56,12 @@ async function main() {
         process.exit(1);
     }
 
-    const resolvedConfig = result.config as ResolvedConfig;
+    const resolvedConfig = unwrapConfig(result.config);
+    if (!resolvedConfig) {
+        logger.error("Invalid configuration file");
+        process.exit(1);
+    }
+
     const effectiveLogLevel = (logLevel as LogLevel | undefined) ?? resolvedConfig.logLevel ?? defaultLogLevel;
     const config: ResolvedConfig = {
         ...resolvedConfig,
