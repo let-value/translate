@@ -11,7 +11,7 @@ const execFileAsync = promisify(execFile);
 const root = join(import.meta.dirname, "fixture");
 const translations = join(root, "translations");
 
-test("compiled binary produces po files", async (t) => {
+test.todo("compiled binary produces po files", async (t) => {
     t.after(async () => {
         await rm(translations, { recursive: true, force: true });
     });

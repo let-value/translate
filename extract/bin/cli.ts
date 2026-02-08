@@ -40,8 +40,11 @@ async function main() {
         process.exit(1);
     }
 
-    const config = result.config as ResolvedConfig;
-    config.logLevel = (logLevel as LogLevel) ?? config.logLevel;
+    const resolvedConfig = result.config as ResolvedConfig;
+    const config: ResolvedConfig = {
+        ...resolvedConfig,
+        logLevel: (logLevel as LogLevel) ?? resolvedConfig.logLevel,
+    };
     logger.setLevel(config.logLevel);
 
     const tasks: Promise<unknown>[] = [];
