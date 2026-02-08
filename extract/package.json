@@ -24,6 +24,10 @@
             "import": "./dist/src/static.js",
             "require": "./dist/src/static.cjs"
         },
+        "./cli": {
+            "import": "./dist/bin/cli.js",
+            "require": "./dist/bin/cli.cjs"
+        },
         "./package.json": "./package.json"
     },
     "files": [
