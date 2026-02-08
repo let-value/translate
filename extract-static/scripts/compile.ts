@@ -1,7 +1,7 @@
 import { resolve } from "node:path";
 import { type Build, build } from "bun";
-import { MUSL } from "detect-libc";
-import { arch, getBinaryName, libc, platform } from "../src/binary.ts";
+import { GLIBC, MUSL } from "detect-libc";
+import { arch, getBinaryName, platform } from "../src/binary.ts";
 
 const root = resolve(import.meta.dirname, "../../");
 const os = platform === "win32" ? "windows" : platform;
@@ -28,36 +28,40 @@ const treeSitterPatch: import("bun").BunPlugin = {
 };
 
 async function main() {
-    const target = `bun-${os}-${arch}${libc === MUSL ? `-${libc}` : ""}` as Build.CompileTarget;
-    const file = getBinaryName(platform, arch, libc);
+    const libcs = platform === "linux" ? [GLIBC, MUSL] : [null];
 
-    console.log("Building:", {
-        target,
-        file,
-    });
+    for (const libc of libcs) {
+        const target = `bun-${os}-${arch}${libc === MUSL ? `-${MUSL}` : ""}` as Build.CompileTarget;
+        const file = getBinaryName(platform, arch, libc);
 
-    const result = await build({
-        entrypoints: [resolve(root, "extract-static/src/launcher.ts")],
-        plugins: [treeSitterPatch],
-        compile: {
+        console.log("Building:", {
             target,
-            outfile: resolve(root, "extract-static/prebuilts", file),
-            windows: {
-                hideConsole: true,
+            file,
+        });
+
+        const result = await build({
+            entrypoints: [resolve(root, "extract-static/src/launcher.ts")],
+            plugins: [treeSitterPatch],
+            compile: {
+                target,
+                outfile: resolve(root, "extract-static/prebuilts", file),
+                windows: {
+                    hideConsole: true,
+                },
+                autoloadDotenv: false,
+                autoloadBunfig: false,
+                autoloadTsconfig: false,
+                autoloadPackageJson: false,
             },
-            autoloadDotenv: false,
-            autoloadBunfig: false,
-            autoloadTsconfig: false,
-            autoloadPackageJson: false,
-        },
-        minify: false,
-    });
+            minify: false,
+        });
 
-    if (!result.success) {
-        throw new Error("Bun compile failed");
+        if (!result.success) {
+            throw new Error("Bun compile failed");
+        }
+
+        console.log(result);
     }
-
-    console.log(result);
 }
 
 await main();
