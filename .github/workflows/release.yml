@@ -15,8 +15,8 @@ jobs:
         include:
           - runner: ubuntu-latest
           - runner: windows-latest
-          - runner: macos-13
-          - runner: macos-14
+          - runner: macos-15-intel
+          - runner: macos-15
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
