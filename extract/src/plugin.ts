@@ -7,6 +7,7 @@ type MaybePromise<T> = T | Promise<T>;
 export interface Context {
     config: ResolvedConfig;
     generatedAt: Date;
+    entrypoints: Set<string>;
     logger?: Logger;
 }
 

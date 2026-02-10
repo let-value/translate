@@ -4,7 +4,7 @@ import { parseArgs } from "node:util";
 import { cosmiconfig } from "cosmiconfig";
 import type { ResolvedConfig } from "../src/configuration.ts";
 import { type LogLevel, logger } from "../src/logger.ts";
-import { run } from "../src/run.ts";
+import { resolveConfiguredEntrypoints, run } from "../src/run.ts";
 
 const moduleName = "translate";
 const defaultLogLevel: LogLevel = "info";
@@ -69,9 +69,11 @@ async function main() {
     };
     logger.setLevel(effectiveLogLevel);
 
+    const entrypoints = await resolveConfiguredEntrypoints(config.entrypoints);
+
     const tasks: Promise<unknown>[] = [];
     for (const entrypoint of config.entrypoints) {
-        tasks.push(run(entrypoint, { config, logger }));
+        tasks.push(run(entrypoint, { config, logger, entrypoints }));
     }
 
     await Promise.all(tasks);

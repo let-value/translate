@@ -1,3 +1,4 @@
+import { resolve } from "node:path";
 import glob from "fast-glob";
 import type { ResolvedConfig, ResolvedEntrypoint } from "./configuration.ts";
 import { Defer } from "./defer.ts";
@@ -29,18 +30,30 @@ export type Task =
           args: ProcessArgs;
       };
 
+function normalizePath(path: string) {
+    return resolve(path);
+}
+
+async function resolveEntrypointPaths(entrypoint: string) {
+    const pattern = entrypoint.replace(/\\/g, "/");
+    const paths = glob.isDynamicPattern(pattern) ? await glob(pattern, { onlyFiles: true }) : [entrypoint];
+    return paths.map(normalizePath);
+}
+
 export async function run(
     entrypoint: ResolvedEntrypoint,
-    { config, logger }: { config: ResolvedConfig; logger?: Logger },
+    { config, logger, entrypoints }: { config: ResolvedConfig; logger?: Logger; entrypoints?: Set<string> },
 ) {
     const destination = entrypoint.destination ?? config.destination;
     const obsolete = entrypoint.obsolete ?? config.obsolete;
     const exclude = entrypoint.exclude ?? config.exclude;
     const walk = entrypoint.walk ?? config.walk;
+    const activeEntrypoints = entrypoints ?? new Set(await resolveEntrypointPaths(entrypoint.entrypoint));
 
     const context: Context = {
         config: { ...config, destination, obsolete, exclude, walk },
         generatedAt: new Date(),
+        entrypoints: activeEntrypoints,
         logger,
     };
 
@@ -72,7 +85,7 @@ export async function run(
         return defer.promise;
     }
 
-    function resolve(args: ResolveArgs) {
+    function resolveTask(args: ResolveArgs) {
         const { entrypoint, path, namespace } = args;
         const skipped = context.config.exclude.some((ex) => (typeof ex === "function" ? ex(args) : ex.test(args.path)));
         logger?.debug({ entrypoint, path, namespace, skipped }, "resolve");
@@ -103,7 +116,7 @@ export async function run(
 
     const build: Build = {
         context,
-        resolve,
+        resolve: resolveTask,
         load,
         process,
         defer,
@@ -124,12 +137,11 @@ export async function run(
         plugin.setup(build);
     }
 
-    const pattern = entrypoint.entrypoint.replace(/\\/g, "/");
-    const paths = glob.isDynamicPattern(pattern) ? await glob(pattern, { onlyFiles: true }) : [entrypoint.entrypoint];
+    const paths = await resolveEntrypointPaths(entrypoint.entrypoint);
     logger?.debug({ entrypoint: entrypoint.entrypoint, paths }, "resolved paths");
 
     for (const path of paths) {
-        resolve({ entrypoint: path, path, namespace: "source" });
+        resolveTask({ entrypoint: path, path, namespace: "source" });
     }
 
     async function processTask(task: Task) {
@@ -174,4 +186,15 @@ export async function run(
     }
 
     logger?.info(entrypoint, "extraction completed");
+}
+
+export async function resolveConfiguredEntrypoints(entrypoints: ResolvedEntrypoint[]) {
+    const resolved = new Set<string>();
+    for (const entrypoint of entrypoints) {
+        const paths = await resolveEntrypointPaths(entrypoint.entrypoint);
+        for (const path of paths) {
+            resolved.add(path);
+        }
+    }
+    return resolved;
 }
