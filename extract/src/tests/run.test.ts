@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdtemp, writeFile } from "node:fs/promises";
+import { mkdtemp, readFile, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { test } from "node:test";
@@ -226,4 +226,98 @@ export const component = "shared";
         resolve(component),
         resolve(component),
     ]);
+});
+
+test("keeps promoted entrypoint messages out of original entrypoints when runs overlap", async () => {
+    const directory = await mkdtemp(join(tmpdir(), "translate-extract-"));
+    const pageA = join(directory, "page-a.ts");
+    const pageB = join(directory, "page-b.ts");
+    const component = join(directory, "component.ts");
+
+    await writeFile(
+        pageA,
+        `import "./component";
+message("page-a");
+`,
+    );
+    await writeFile(
+        pageB,
+        `import "./component";
+message("page-b");
+`,
+    );
+    await writeFile(
+        component,
+        `// translate-entrypoint
+message("component");
+`,
+    );
+
+    const config = defineConfig({ entrypoints: [pageA, pageB] });
+
+    await Promise.all(config.entrypoints.map((entrypoint) => run(entrypoint, { config })));
+
+    const pageAPo = await readFile(join(directory, "translations", "page-a.en.po"), "utf8");
+    const pageBPo = await readFile(join(directory, "translations", "page-b.en.po"), "utf8");
+    const componentPo = await readFile(join(directory, "translations", "component.en.po"), "utf8");
+
+    assert.equal(pageAPo.includes('msgid "page-a"'), true);
+    assert.equal(pageAPo.includes('msgid "component"'), false);
+
+    assert.equal(pageBPo.includes('msgid "page-b"'), true);
+    assert.equal(pageBPo.includes('msgid "component"'), false);
+
+    assert.equal(componentPo.includes('msgid "component"'), true);
+    assert.equal(componentPo.includes('msgid "page-a"'), false);
+    assert.equal(componentPo.includes('msgid "page-b"'), false);
+});
+
+test("does not leak promoted entrypoint messages when entrypoints come from a relative glob", async () => {
+    const directory = await mkdtemp(join(tmpdir(), "translate-extract-"));
+    const pageA = join(directory, "page-a.ts");
+    const pageB = join(directory, "page-b.ts");
+    const component = join(directory, "component.ts");
+
+    await writeFile(
+        pageA,
+        `import "./component";
+message("page-a");
+`,
+    );
+    await writeFile(
+        pageB,
+        `import "./component";
+message("page-b");
+`,
+    );
+    await writeFile(
+        component,
+        `// translate-entrypoint
+message("component");
+`,
+    );
+
+    const previousCwd = process.cwd();
+    process.chdir(directory);
+
+    try {
+        const config = defineConfig({ entrypoints: "./*.ts" });
+        await run(config.entrypoints[0], { config });
+    } finally {
+        process.chdir(previousCwd);
+    }
+
+    const pageAPo = await readFile(join(directory, "translations", "page-a.en.po"), "utf8");
+    const pageBPo = await readFile(join(directory, "translations", "page-b.en.po"), "utf8");
+    const componentPo = await readFile(join(directory, "translations", "component.en.po"), "utf8");
+
+    assert.equal(pageAPo.includes('msgid "page-a"'), true);
+    assert.equal(pageAPo.includes('msgid "component"'), false);
+
+    assert.equal(pageBPo.includes('msgid "page-b"'), true);
+    assert.equal(pageBPo.includes('msgid "component"'), false);
+
+    assert.equal(componentPo.includes('msgid "component"'), true);
+    assert.equal(componentPo.includes('msgid "page-a"'), false);
+    assert.equal(componentPo.includes('msgid "page-b"'), false);
 });
