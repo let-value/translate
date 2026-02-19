@@ -48,8 +48,7 @@ export const contextMsgQuery: QuerySpec = withComment({
             }
         }
 
-        const contextText =
-            contextNode.type === "template_string" ? contextNode.text.slice(1, -1) : contextNode.text;
+        const contextText = contextNode.type === "template_string" ? contextNode.text.slice(1, -1) : contextNode.text;
         return {
             node: result.node,
             translation: {

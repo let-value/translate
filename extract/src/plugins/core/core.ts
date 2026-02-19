@@ -33,11 +33,22 @@ export function core(): Plugin<string, Translation[]> {
             });
 
             build.onProcess({ filter, namespace }, ({ entrypoint, path, data }) => {
-                const { translations, imports, warnings } = parseSource(data, path);
+                const result = parseSource(data, path);
+
+                if (result.entrypoint && entrypoint !== path) {
+                    build.source(path);
+                    return;
+                }
+
+                const { translations, imports, warnings } = result;
 
                 if (build.context.config.walk) {
                     const paths = resolveImports(path, imports);
                     for (const path of paths) {
+                        if (build.context.paths.has(path)) {
+                            continue;
+                        }
+
                         build.resolve({ entrypoint, path, namespace });
                     }
                 }

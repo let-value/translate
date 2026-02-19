@@ -31,7 +31,7 @@ export function merge(
     let headers: Record<string, string> = {};
     let translations: GetTextTranslationRecord = { "": {} };
     let obsoleteTranslations: GetTextTranslationRecord = {};
-    const nplurals = getNPlurals(locale);
+    const nplurals = Number(getNPlurals(locale));
 
     if (existing) {
         headers = existing.headers ? structuredClone(existing.headers) : {};

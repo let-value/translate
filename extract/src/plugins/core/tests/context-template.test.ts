@@ -27,3 +27,17 @@ test("extracts context from tagged template builder alongside plain message", ()
         { id: "Sign out", context: undefined },
     ]);
 });
+
+test("detects magic comment entrypoint promotion", () => {
+    const source = [
+        'import { message } from "@let-value/translate";',
+        "",
+        "/* translate-entrypoint */",
+        'message("Hello");',
+        "",
+    ].join("\n");
+
+    const result = parseSource(source, "/project/example.ts");
+
+    assert.equal(result.entrypoint, true);
+});

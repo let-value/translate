@@ -9,7 +9,7 @@ export function getReference(node: Parser.SyntaxNode, { path }: Context) {
     return `${rel}:${line}`;
 }
 
-function getComment(node: Parser.SyntaxNode): string {
+export function getComment(node: Parser.SyntaxNode): string {
     const text = node.text;
     if (text.startsWith("/*")) {
         return text
