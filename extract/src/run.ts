@@ -1,3 +1,4 @@
+import { resolve as resolvePath } from "node:path";
 import glob from "fast-glob";
 import type { ResolvedConfig, ResolvedEntrypoint } from "./configuration.ts";
 import { Defer } from "./defer.ts";
@@ -32,7 +33,7 @@ export type Task =
 async function getPaths(entrypoint: ResolvedEntrypoint) {
     const pattern = entrypoint.entrypoint.replace(/\\/g, "/");
     const paths = glob.isDynamicPattern(pattern) ? await glob(pattern, { onlyFiles: true }) : [entrypoint.entrypoint];
-    return new Set(paths);
+    return new Set(paths.map((path) => resolvePath(path)));
 }
 
 export async function run(
@@ -81,14 +82,16 @@ export async function run(
     }
 
     function source(path: string) {
-        if (paths.has(path)) {
+        const resolvedPath = resolvePath(path);
+
+        if (paths.has(resolvedPath)) {
             return;
         }
 
-        logger?.debug({ entrypoint: entrypoint.entrypoint, path }, "resolved path");
+        logger?.debug({ entrypoint: entrypoint.entrypoint, path: resolvedPath }, "resolved path");
 
-        paths.add(path);
-        resolve({ entrypoint: path, path, namespace: "source" });
+        paths.add(resolvedPath);
+        resolve({ entrypoint: resolvedPath, path: resolvedPath, namespace: "source" });
     }
 
     function resolve(args: ResolveArgs) {
