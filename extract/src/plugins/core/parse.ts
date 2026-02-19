@@ -5,12 +5,11 @@ import Parser from "@keqingmoe/tree-sitter";
 import JavaScript from "tree-sitter-javascript";
 import TS from "tree-sitter-typescript";
 
-import { getComment, getReference } from "./queries/comment.ts";
+import { getReference } from "./queries/comment.ts";
+import { entrypointQuery } from "./queries/entrypoint.ts";
 import { importQuery } from "./queries/import.ts";
 import { queries } from "./queries/index.ts";
 import type { Context, Translation, Warning } from "./queries/types.ts";
-
-const entrypointCommentPattern = /(?:^|\s)@?translate-entrypoint(?:\s|$)/;
 
 export interface ParseResult {
     translations: Translation[];
@@ -84,6 +83,9 @@ export function parseSource(source: string, path: string): ParseResult {
     const { parser, language } = getParser(path);
     const tree = parser.parse(source);
 
+    const commentQuery = getCachedQuery(language, entrypointQuery.pattern);
+    const entrypoint = commentQuery.matches(tree.rootNode).some(entrypointQuery.extract);
+
     const translations: Translation[] = [];
     const warnings: Warning[] = [];
     const imports: string[] = [];
@@ -131,15 +133,6 @@ export function parseSource(source: string, path: string): ParseResult {
             imports.push(imp);
         }
     }
-
-    const commentQuery = getCachedQuery(language, "(comment) @comment");
-    const entrypoint = commentQuery
-        .matches(tree.rootNode)
-        .some((match) =>
-            match.captures
-                .filter((capture) => capture.name === "comment")
-                .some((capture) => entrypointCommentPattern.test(getComment(capture.node))),
-        );
 
     return { translations, imports, warnings, entrypoint };
 }

@@ -7,7 +7,7 @@ type MaybePromise<T> = T | Promise<T>;
 export interface Context {
     config: ResolvedConfig;
     generatedAt: Date;
-    entrypoints: Set<string>;
+    paths: Set<string>;
     logger?: Logger;
 }
 
@@ -64,6 +64,7 @@ export type ProcessHook<TInput = unknown, TOutput = unknown> = (
 
 export interface Build<TInput = unknown, TOutput = unknown> {
     context: Context;
+    source(path: string): void;
     resolve(args: ResolveArgs<unknown>): void;
     load(args: LoadArgs<unknown>): void;
     process(args: ProcessArgs<unknown>): void;

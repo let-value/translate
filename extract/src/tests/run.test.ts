@@ -5,8 +5,8 @@ import { join, resolve } from "node:path";
 import { test } from "node:test";
 
 import { defineConfig } from "../configuration.ts";
-import type { Plugin } from "../plugin.ts";
-import { resolveConfiguredEntrypoints, run } from "../run.ts";
+import type { Plugin, ResolveArgs } from "../plugin.ts";
+import { run } from "../run.ts";
 
 test("runs all process hooks for a file", async () => {
     const entrypoint = "dummy.tsx";
@@ -122,19 +122,6 @@ test("resolves glob entrypoints to matched files", async () => {
     assert.deepEqual(seen, [file]);
 });
 
-test("expands configured entrypoint globs before running extraction", async () => {
-    const directory = await mkdtemp(join(tmpdir(), "translate-extract-"));
-    const pageA = join(directory, "page-a.ts");
-    const pageB = join(directory, "page-b.ts");
-    await writeFile(pageA, "export const a = 1;\n");
-    await writeFile(pageB, "export const b = 1;\n");
-
-    const config = defineConfig({ entrypoints: join(directory, "**/*.ts").replaceAll("\\", "/") });
-    const entrypoints = await resolveConfiguredEntrypoints(config.entrypoints);
-
-    assert.deepEqual(Array.from(entrypoints).sort(), [resolve(pageA), resolve(pageB)]);
-});
-
 test("does not walk into files that are configured as entrypoints", async () => {
     const directory = await mkdtemp(join(tmpdir(), "translate-extract-"));
     const pageA = join(directory, "page-a.ts");
@@ -176,10 +163,9 @@ export const b = 1;
         plugins: ({ core }) => [core(), plugin],
     });
 
-    const entrypoints = new Set([resolve(pageA), resolve(pageB), resolve(component)]);
-    await run(config.entrypoints[0], { config, entrypoints });
+    await run(config.entrypoints[0], { config });
 
-    assert.deepEqual(seenSourcePaths, [resolve(pageA)]);
+    assert.deepEqual(seenSourcePaths, [resolve(pageA), resolve(component)]);
 });
 
 test("promotes files with magic comment to entrypoints and skips duplicate walks", async () => {
@@ -191,28 +177,33 @@ test("promotes files with magic comment to entrypoints and skips duplicate walks
     await writeFile(
         pageA,
         `import "./component";
+message("page-a");
 export const a = 1;
 `,
     );
     await writeFile(
         pageB,
         `import "./component";
+message("page-b");
 export const b = 1;
 `,
     );
     await writeFile(
         component,
         `// translate-entrypoint
+message("component");
 export const component = "shared";
 `,
     );
 
+    const seenResolves: ResolveArgs[] = [];
     const seenSourcePaths: string[] = [];
 
     const plugin: Plugin = {
         name: "source-spy",
         setup(build) {
             build.onResolve({ filter: /.*/, namespace: "source" }, (args) => {
+                seenResolves.push(args);
                 seenSourcePaths.push(resolve(args.path));
                 return args;
             });
@@ -221,14 +212,18 @@ export const component = "shared";
 
     const config = defineConfig({
         entrypoints: [pageA, pageB],
-        plugins: ({ core }) => [core(), plugin],
+        plugins: [plugin],
     });
 
-    const entrypoints = new Set([resolve(pageA), resolve(pageB)]);
+    await run(config.entrypoints[0], { config });
+    await run(config.entrypoints[1], { config });
 
-    await run(config.entrypoints[0], { config, entrypoints });
-    await run(config.entrypoints[1], { config, entrypoints });
-
-    assert.deepEqual(seenSourcePaths, [resolve(pageA), resolve(component), resolve(pageB)]);
-    assert.equal(entrypoints.has(resolve(component)), true);
+    assert.deepEqual(seenSourcePaths, [
+        resolve(pageA),
+        resolve(component),
+        resolve(component),
+        resolve(pageB),
+        resolve(component),
+        resolve(component),
+    ]);
 });

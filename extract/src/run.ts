@@ -1,4 +1,3 @@
-import { resolve } from "node:path";
 import glob from "fast-glob";
 import type { ResolvedConfig, ResolvedEntrypoint } from "./configuration.ts";
 import { Defer } from "./defer.ts";
@@ -30,30 +29,26 @@ export type Task =
           args: ProcessArgs;
       };
 
-function normalizePath(path: string) {
-    return resolve(path);
-}
-
-async function resolveEntrypointPaths(entrypoint: string) {
-    const pattern = entrypoint.replace(/\\/g, "/");
-    const paths = glob.isDynamicPattern(pattern) ? await glob(pattern, { onlyFiles: true }) : [entrypoint];
-    return paths.map(normalizePath);
+async function getPaths(entrypoint: ResolvedEntrypoint) {
+    const pattern = entrypoint.entrypoint.replace(/\\/g, "/");
+    const paths = glob.isDynamicPattern(pattern) ? await glob(pattern, { onlyFiles: true }) : [entrypoint.entrypoint];
+    return new Set(paths);
 }
 
 export async function run(
     entrypoint: ResolvedEntrypoint,
-    { config, logger, entrypoints }: { config: ResolvedConfig; logger?: Logger; entrypoints?: Set<string> },
+    { config, logger }: { config: ResolvedConfig; logger?: Logger },
 ) {
     const destination = entrypoint.destination ?? config.destination;
     const obsolete = entrypoint.obsolete ?? config.obsolete;
     const exclude = entrypoint.exclude ?? config.exclude;
     const walk = entrypoint.walk ?? config.walk;
-    const activeEntrypoints = entrypoints ?? new Set(await resolveEntrypointPaths(entrypoint.entrypoint));
+    const paths = new Set<string>();
 
     const context: Context = {
         config: { ...config, destination, obsolete, exclude, walk },
         generatedAt: new Date(),
-        entrypoints: activeEntrypoints,
+        paths,
         logger,
     };
 
@@ -85,7 +80,18 @@ export async function run(
         return defer.promise;
     }
 
-    function resolveTask(args: ResolveArgs) {
+    function source(path: string) {
+        if (paths.has(path)) {
+            return;
+        }
+
+        logger?.debug({ entrypoint: entrypoint.entrypoint, path }, "resolved path");
+
+        paths.add(path);
+        resolve({ entrypoint: path, path, namespace: "source" });
+    }
+
+    function resolve(args: ResolveArgs) {
         const { entrypoint, path, namespace } = args;
         const skipped = context.config.exclude.some((ex) => (typeof ex === "function" ? ex(args) : ex.test(args.path)));
         logger?.debug({ entrypoint, path, namespace, skipped }, "resolve");
@@ -116,7 +122,8 @@ export async function run(
 
     const build: Build = {
         context,
-        resolve: resolveTask,
+        source,
+        resolve,
         load,
         process,
         defer,
@@ -137,11 +144,8 @@ export async function run(
         plugin.setup(build);
     }
 
-    const paths = await resolveEntrypointPaths(entrypoint.entrypoint);
-    logger?.debug({ entrypoint: entrypoint.entrypoint, paths }, "resolved paths");
-
-    for (const path of paths) {
-        resolveTask({ entrypoint: path, path, namespace: "source" });
+    for (const path of await getPaths(entrypoint)) {
+        source(path);
     }
 
     async function processTask(task: Task) {
@@ -186,15 +190,4 @@ export async function run(
     }
 
     logger?.info(entrypoint, "extraction completed");
-}
-
-export async function resolveConfiguredEntrypoints(entrypoints: ResolvedEntrypoint[]) {
-    const resolved = new Set<string>();
-    for (const entrypoint of entrypoints) {
-        const paths = await resolveEntrypointPaths(entrypoint.entrypoint);
-        for (const path of paths) {
-            resolved.add(path);
-        }
-    }
-    return resolved;
 }
