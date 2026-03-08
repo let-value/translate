@@ -321,3 +321,42 @@ message("component");
     assert.equal(componentPo.includes('msgid "page-a"'), false);
     assert.equal(componentPo.includes('msgid "page-b"'), false);
 });
+
+test("deduplicates repeated tasks to avoid resolve/load/process loops", { timeout: 1000 }, async () => {
+    const entrypoint = "loop.ts";
+    let resolveCalls = 0;
+    let loadCalls = 0;
+    let processCalls = 0;
+
+    const plugin: Plugin = {
+        name: "loop-plugin",
+        setup(build) {
+            build.onResolve({ filter: /.*/, namespace: "source" }, (args) => {
+                resolveCalls += 1;
+                return args;
+            });
+
+            build.onLoad({ filter: /.*/, namespace: "source" }, (args) => {
+                loadCalls += 1;
+                return { ...args, data: "" };
+            });
+
+            build.onProcess({ filter: /.*/, namespace: "source" }, (args) => {
+                processCalls += 1;
+                build.resolve({
+                    entrypoint: args.entrypoint,
+                    path: args.path,
+                    namespace: args.namespace,
+                });
+                return undefined;
+            });
+        },
+    };
+
+    const config = defineConfig({ entrypoints: entrypoint, plugins: () => [plugin] });
+    await run(config.entrypoints[0], { config });
+
+    assert.equal(resolveCalls, 1);
+    assert.equal(loadCalls, 1);
+    assert.equal(processCalls, 1);
+});

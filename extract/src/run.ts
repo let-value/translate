@@ -66,6 +66,11 @@ export async function run(
 
     const pending = new Map<string, Defer>();
     const queue: Task[] = [];
+    const seen = new Set<string>();
+
+    function getTaskKey(type: Task["type"], args: ResolveArgs | LoadArgs | ProcessArgs) {
+        return `${type}:${args.namespace}:${args.entrypoint}:${args.path}`;
+    }
 
     function getDeferred(namespace: string) {
         let defer = pending.get(namespace);
@@ -96,20 +101,31 @@ export async function run(
 
     function resolve(args: ResolveArgs) {
         const { entrypoint, path, namespace } = args;
+        const key = getTaskKey("resolve", args);
         const skipped = context.config.exclude.some((ex) => (typeof ex === "function" ? ex(args) : ex.test(args.path)));
-        logger?.debug({ entrypoint, path, namespace, skipped }, "resolve");
+        const duplicate = seen.has(key);
+        logger?.debug({ entrypoint, path, namespace, skipped, duplicate }, "resolve");
 
-        if (skipped) {
+        if (skipped || duplicate) {
             return;
         }
 
+        seen.add(key);
         queue.push({ type: "resolve", args });
         getDeferred(namespace).enqueue();
     }
 
     function load(args: LoadArgs) {
         const { entrypoint, path, namespace } = args;
-        logger?.debug({ entrypoint, path, namespace }, "load");
+        const key = getTaskKey("load", args);
+        const duplicate = seen.has(key);
+        logger?.debug({ entrypoint, path, namespace, duplicate }, "load");
+
+        if (duplicate) {
+            return;
+        }
+
+        seen.add(key);
 
         queue.push({ type: "load", args });
         getDeferred(namespace).enqueue();
@@ -117,7 +133,15 @@ export async function run(
 
     function process(args: ProcessArgs) {
         const { entrypoint, path, namespace } = args;
-        logger?.debug({ entrypoint, path, namespace }, "process");
+        const key = getTaskKey("process", args);
+        const duplicate = seen.has(key);
+        logger?.debug({ entrypoint, path, namespace, duplicate }, "process");
+
+        if (duplicate) {
+            return;
+        }
+
+        seen.add(key);
 
         queue.push({ type: "process", args });
         getDeferred(namespace).enqueue();
