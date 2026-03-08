@@ -14,6 +14,7 @@ export function core(): Plugin<string, Translation[]> {
         name: "core",
         setup(build) {
             build.context.logger?.debug("core plugin initialized");
+
             build.onResolve({ filter, namespace }, ({ entrypoint, path }) => {
                 return {
                     entrypoint,
@@ -37,7 +38,7 @@ export function core(): Plugin<string, Translation[]> {
 
                 if (result.entrypoint && entrypoint !== path) {
                     build.source(path);
-                    return;
+                    return { entrypoint, path, namespace, data: [] as Translation[] };
                 }
 
                 const { translations, imports, warnings } = result;

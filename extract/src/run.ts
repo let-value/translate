@@ -45,6 +45,7 @@ export async function run(
     const exclude = entrypoint.exclude ?? config.exclude;
     const walk = entrypoint.walk ?? config.walk;
     const paths = new Set<string>();
+    const resolved = new Set<string>();
 
     const context: Context = {
         config: { ...config, destination, obsolete, exclude, walk },
@@ -96,8 +97,16 @@ export async function run(
 
     function resolve(args: ResolveArgs) {
         const { entrypoint, path, namespace } = args;
+        const key = `${entrypoint}:${namespace}:${path}`;
+
+        const visited = resolved.has(key);
         const skipped = context.config.exclude.some((ex) => (typeof ex === "function" ? ex(args) : ex.test(args.path)));
-        logger?.debug({ entrypoint, path, namespace, skipped }, "resolve");
+        logger?.debug({ entrypoint, path, namespace, skipped, visited }, "resolve");
+
+        if (namespace === "source" && visited) {
+            return;
+        }
+        resolved.add(key);
 
         if (skipped) {
             return;
@@ -164,6 +173,7 @@ export async function run(
             const result = await hook(args as never);
             if (result !== undefined) {
                 args = result as never;
+                break;
             }
         }
 

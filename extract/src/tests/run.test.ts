@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdtemp, readFile, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { test } from "node:test";
@@ -19,9 +19,9 @@ test("runs all process hooks for a file", async () => {
         setup(build) {
             build.onResolve({ filter: /.*/, namespace: "source" }, (args) => args);
             build.onLoad({ filter: /.*/, namespace: "source" }, (args) => ({ ...args, data: "" }));
-            build.onProcess({ filter: /.*/, namespace: "source" }, (args) => {
+            build.onProcess({ filter: /.*/, namespace: "source" }, () => {
                 collected.push(coreTranslations);
-                return { ...args, data: coreTranslations };
+                return undefined;
             });
         },
     };
@@ -29,20 +29,9 @@ test("runs all process hooks for a file", async () => {
     const reactPlugin: Plugin = {
         name: "react-plugin",
         setup(build) {
-            build.onResolve({ filter: /.*/, namespace: "source" }, ({ entrypoint, path, namespace }) => ({
-                entrypoint,
-                path,
-                namespace,
-            }));
-            build.onLoad({ filter: /.*/, namespace: "source" }, ({ entrypoint, path, namespace }) => ({
-                entrypoint,
-                path,
-                namespace,
-                data: "",
-            }));
-            build.onProcess({ filter: /.*/, namespace: "source" }, (args) => {
+            build.onProcess({ filter: /.*/, namespace: "source" }, () => {
                 collected.push(reactTranslations);
-                return { ...args, data: reactTranslations };
+                return undefined;
             });
         },
     };
@@ -153,14 +142,14 @@ export const b = 1;
         setup(build) {
             build.onResolve({ filter: /.*/, namespace: "source" }, (args) => {
                 seenSourcePaths.push(resolve(args.path));
-                return args;
+                return undefined;
             });
         },
     };
 
     const config = defineConfig({
         entrypoints: [pageA, pageB, component],
-        plugins: ({ core }) => [core(), plugin],
+        plugins: ({ core }) => [plugin, core()],
     });
 
     await run(config.entrypoints[0], { config });
@@ -205,14 +194,14 @@ export const component = "shared";
             build.onResolve({ filter: /.*/, namespace: "source" }, (args) => {
                 seenResolves.push(args);
                 seenSourcePaths.push(resolve(args.path));
-                return args;
+                return undefined;
             });
         },
     };
 
     const config = defineConfig({
         entrypoints: [pageA, pageB],
-        plugins: [plugin],
+        plugins: ({ core, po, cleanup }) => [plugin, core(), po(), cleanup()],
     });
 
     await run(config.entrypoints[0], { config });
@@ -320,4 +309,86 @@ message("component");
     assert.equal(componentPo.includes('msgid "component"'), true);
     assert.equal(componentPo.includes('msgid "page-a"'), false);
     assert.equal(componentPo.includes('msgid "page-b"'), false);
+});
+
+test("terminates when walked children have circular imports", async () => {
+    const directory = await mkdtemp(join(tmpdir(), "translate-extract-"));
+    const page = join(directory, "page.ts");
+    const childA = join(directory, "child-a.ts");
+    const childB = join(directory, "child-b.ts");
+
+    await writeFile(
+        page,
+        `import "./child-a";
+message("page");
+`,
+    );
+    await writeFile(
+        childA,
+        `import "./child-b";
+export const a = 1;
+`,
+    );
+    await writeFile(
+        childB,
+        `import "./child-a";
+export const b = 2;
+`,
+    );
+
+    const config = defineConfig({ entrypoints: page });
+    await run(config.entrypoints[0], { config });
+
+    const pagePo = await readFile(join(directory, "translations", "page.en.po"), "utf8");
+    assert.equal(pagePo.includes('msgid "page"'), true);
+});
+
+test("terminates when promoted entrypoint children have circular imports", async () => {
+    const directory = await mkdtemp(join(tmpdir(), "translate-extract-"));
+    const componentsDir = join(directory, "components");
+    await mkdir(componentsDir, { recursive: true });
+
+    const page = join(directory, "page.ts");
+    const menu = join(componentsDir, "menu.ts");
+    const childA = join(componentsDir, "child-a.ts");
+    const childB = join(componentsDir, "child-b.ts");
+
+    await writeFile(
+        page,
+        `import "./components/menu";
+message("page");
+`,
+    );
+    await writeFile(
+        menu,
+        `// translate-entrypoint
+import "./child-a";
+import "./child-b";
+message("menu");
+`,
+    );
+    await writeFile(
+        childA,
+        `import "./child-b";
+export const a = 1;
+`,
+    );
+    await writeFile(
+        childB,
+        `import "./child-a";
+export const b = 2;
+`,
+    );
+
+    const config = defineConfig({ entrypoints: page });
+    await run(config.entrypoints[0], { config });
+
+    const pagePo = await readFile(join(directory, "translations", "page.en.po"), "utf8");
+    const menuPo = await readFile(join(componentsDir, "translations", "menu.en.po"), "utf8");
+
+    assert.equal(pagePo.includes('msgid "page"'), true);
+    assert.equal(pagePo.includes('msgid "menu"'), false);
+
+    assert.equal(menuPo.includes('msgid "menu"'), true);
+    assert.equal(menuPo.includes('msgid "page"'), false);
 });
