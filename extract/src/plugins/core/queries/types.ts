@@ -32,6 +32,11 @@ export interface Context {
     path: string;
 }
 
+export interface EntrypointSpec {
+    pattern: string;
+    extract(match: Parser.QueryMatch): boolean | undefined;
+}
+
 export interface QuerySpec {
     pattern: string;
     extract(match: Parser.QueryMatch): MessageMatch | undefined;

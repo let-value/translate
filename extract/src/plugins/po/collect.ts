@@ -5,7 +5,7 @@ import type { Translation } from "../core/queries/types.ts";
 
 export function collect(source: Translation[], locale?: string): GetTextTranslationRecord {
     const translations: GetTextTranslationRecord = { "": {} };
-    const nplurals = locale ? getNPlurals(locale) : undefined;
+    const nplurals = locale ? Number(getNPlurals(locale)) : undefined;
 
     for (const { context, id, message, comments, obsolete, plural } of source) {
         const ctx = context || "";
