@@ -6,6 +6,7 @@ import JavaScript from "tree-sitter-javascript";
 import TS from "tree-sitter-typescript";
 
 import { getReference } from "./queries/comment.ts";
+import { entrypointQuery } from "./queries/entrypoint.ts";
 import { importQuery } from "./queries/import.ts";
 import { queries } from "./queries/index.ts";
 import type { Context, Translation, Warning } from "./queries/types.ts";
@@ -14,6 +15,7 @@ export interface ParseResult {
     translations: Translation[];
     imports: string[];
     warnings: Warning[];
+    entrypoint: boolean;
 }
 
 function getLanguage(ext: string) {
@@ -81,6 +83,9 @@ export function parseSource(source: string, path: string): ParseResult {
     const { parser, language } = getParser(path);
     const tree = parser.parse(source);
 
+    const commentQuery = getCachedQuery(language, entrypointQuery.pattern);
+    const entrypoint = commentQuery.matches(tree.rootNode).some(entrypointQuery.extract);
+
     const translations: Translation[] = [];
     const warnings: Warning[] = [];
     const imports: string[] = [];
@@ -129,5 +134,5 @@ export function parseSource(source: string, path: string): ParseResult {
         }
     }
 
-    return { translations, imports, warnings };
+    return { translations, imports, warnings, entrypoint };
 }

@@ -69,12 +69,9 @@ async function main() {
     };
     logger.setLevel(effectiveLogLevel);
 
-    const tasks: Promise<unknown>[] = [];
     for (const entrypoint of config.entrypoints) {
-        tasks.push(run(entrypoint, { config, logger }));
+        await run(entrypoint, { config, logger });
     }
-
-    await Promise.all(tasks);
 }
 
 void main().catch((err) => {
