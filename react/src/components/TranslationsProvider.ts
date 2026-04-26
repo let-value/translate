@@ -1,24 +1,17 @@
 import type { Locale } from "@let-value/translate";
-import { Translator } from "@let-value/translate";
-import type { GetTextTranslations } from "gettext-parser";
-import { createElement, type ReactNode, Suspense, use, useMemo } from "react";
+import { createElement, type ReactNode, use } from "react";
 import { translatorContext } from "../context.ts";
-
-type TranslationLoader = () => Promise<GetTextTranslations>;
-type TranslationEntry = GetTextTranslations | TranslationLoader;
+import { type TranslationEntry, type TranslationsMap, getCachedTranslator } from "../translatorCache.ts";
 
 export interface TranslationsProviderProps {
     translations?: Partial<Record<Locale, TranslationEntry>>;
     children?: ReactNode;
 }
 
-export function TranslationsProvider({ translations = {}, children }: TranslationsProviderProps) {
+const EMPTY_TRANSLATIONS: TranslationsMap = {};
+
+export function TranslationsProvider({ translations = EMPTY_TRANSLATIONS, children }: TranslationsProviderProps) {
     const parent = use(translatorContext);
-
-    const translator = useMemo(() => {
-        // Create a nested Translator that inherits from parent and merges entries
-        return new Translator(translations, parent);
-    }, [parent, translations]);
-
-    return createElement(translatorContext.Provider, { value: translator }, createElement(Suspense, null, children));
+    const translator = getCachedTranslator(translations, parent);
+    return createElement(translatorContext.Provider, { value: translator }, children);
 }

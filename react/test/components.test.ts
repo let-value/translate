@@ -34,7 +34,7 @@ test("Message matches translate message function", async () => {
             createElement(TranslationsProvider, { translations: { en: translations } }, el),
         );
         const result = normalize(await renderStream(stream));
-        assert.equal(result, `<!--$-->${expected}<!--/$-->`);
+        assert.equal(result, expected);
     }
 });
 
@@ -79,6 +79,6 @@ test("Plural matches translate plural function", async () => {
             createElement(TranslationsProvider, { translations: { en: translations } }, el),
         );
         const result = normalize(await renderStream(stream));
-        assert.equal(result, `<!--$-->${expected}<!--/$-->`);
+        assert.equal(result, expected);
     }
 });
