@@ -4,7 +4,7 @@ import { suite, test } from "node:test";
 import { fileURLToPath } from "node:url";
 
 import { parseFile } from "../parse.ts";
-import { resolveImport, resolveImports } from "../resolve.ts";
+import { resolveImport, resolveImportResults, resolveImports } from "../resolve.ts";
 
 const appEntryUrl = new URL("./fixtures/project/packages/app/src/index.ts", import.meta.url);
 const appEntryPath = fileURLToPath(appEntryUrl);
@@ -26,6 +26,7 @@ const appCases: Record<string, string> = {
     "./dynamic-import": path.join(appRoot, "dynamic-import.ts"),
     "./async-import": path.join(appRoot, "async-import.ts"),
     "@app/alias/alias-module": path.join(appRoot, "alias/alias-module.ts"),
+    "#/alias/alias-module": path.join(appRoot, "alias/alias-module.ts"),
     "base-module": path.join(appRoot, "base-module.ts"),
     "@lib/resolved-module": path.join(libRoot, "resolved-module/index.ts"),
 };
@@ -44,6 +45,15 @@ suite("resolveImports - app", () => {
         const resolved = resolveImports(appEntryPath, imports).sort();
         const expected = Object.values(appCases).sort();
         assert.deepEqual(resolved, expected);
+    });
+
+    test("reports unresolved imports", () => {
+        const result = resolveImportResults(appEntryPath, ["#/missing"]);
+
+        assert.deepEqual(result.resolved, []);
+        assert.equal(result.unresolved.length, 1);
+        assert.equal(result.unresolved[0]?.spec, "#/missing");
+        assert.match(result.unresolved[0]?.error ?? "", /Can't resolve|Cannot find module|not found/i);
     });
 });
 
