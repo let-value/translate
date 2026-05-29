@@ -1,10 +1,14 @@
 {
     "name": "@let-value/translate-react",
-    "version": "1.1.4",
+    "version": "1.1.5-beta.3",
     "type": "module",
     "main": "dist/index.cjs",
     "module": "dist/index.js",
     "types": "dist/index.d.ts",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/let-value/translate"
+    },
     "exports": {
         ".": {
             "types": "./dist/index.d.ts",
@@ -24,10 +28,10 @@
         "test": "node --test"
     },
     "dependencies": {
-        "@let-value/translate": "1.1.4"
+        "@let-value/translate": "1.1.5-beta.3"
     },
     "devDependencies": {
-        "@let-value/translate-e2e": "1.1.4",
+        "@let-value/translate-e2e": "1.1.5-beta.3",
         "@types/gettext-parser": "8.0.0",
         "@types/react": "19.1.13",
         "@types/react-dom": "19.1.9",

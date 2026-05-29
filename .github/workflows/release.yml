@@ -19,11 +19,11 @@ jobs:
           - runner: macos-15-intel
           - runner: macos-15
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
         with:
           node-version: 22
-          cache: npm
+          package-manager-cache: false
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: 1.3.8
@@ -36,32 +36,59 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
 
-  publish:
+  publish-github-packages:
     runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
-    strategy:
-      matrix:
-        registry: [
-          { enabled: true, public: true, url: 'https://npm.pkg.github.com', token: GITHUB_TOKEN,  },
-          { enabled: true, public: true, url: 'https://registry.npmjs.org', token: NPM_TOKEN,  },
-        ]
-      fail-fast: false
     steps:
-      - name: Early exit
-        if: matrix.registry.enabled == false
-        run: exit 1
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
         with:
           node-version: 22
-          cache: npm
-          registry-url: ${{ matrix.registry.url }}
+          package-manager-cache: false
+          registry-url: https://npm.pkg.github.com
           scope: '@let-value'
-          token: ${{ secrets[matrix.registry.token] }}
       - run: npm ci
       - run: npm run build
-      - run: npm publish --workspaces --access ${{ matrix.registry.public && 'public' || 'restricted' }}
+      - name: Resolve npm publish tag
+        id: npm-publish-tag
+        shell: bash
+        run: |
+          version="$(node -p "require('./package.json').version")"
+          prerelease="${version#*-}"
+          if [ "$prerelease" = "$version" ]; then
+            echo "tag=latest" >> "$GITHUB_OUTPUT"
+          else
+            echo "tag=${prerelease%%.*}" >> "$GITHUB_OUTPUT"
+          fi
+      - run: npm publish --workspaces --access public --tag ${{ steps.npm-publish-tag.outputs.tag }}
         env:
-          NODE_AUTH_TOKEN: ${{ secrets[matrix.registry.token] }}
+          NODE_AUTH_TOKEN: ${{ github.token }}
+
+  publish-npm:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          package-manager-cache: false
+          registry-url: https://registry.npmjs.org
+      - run: npm ci
+      - run: npm run build
+      - name: Resolve npm publish tag
+        id: npm-publish-tag
+        shell: bash
+        run: |
+          version="$(node -p "require('./package.json').version")"
+          prerelease="${version#*-}"
+          if [ "$prerelease" = "$version" ]; then
+            echo "tag=latest" >> "$GITHUB_OUTPUT"
+          else
+            echo "tag=${prerelease%%.*}" >> "$GITHUB_OUTPUT"
+          fi
+      - run: npm publish --workspaces --access public --tag ${{ steps.npm-publish-tag.outputs.tag }}
