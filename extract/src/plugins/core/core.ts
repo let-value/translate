@@ -4,7 +4,7 @@ import { resolve } from "node:path";
 import type { Plugin } from "../../plugin.ts";
 import { parseSource } from "./parse.ts";
 import type { Translation } from "./queries/types.ts";
-import { resolveImports } from "./resolve.ts";
+import { resolveImportResults } from "./resolve.ts";
 
 const filter = /\.([cm]?tsx?|jsx?)$/;
 const namespace = "source";
@@ -44,13 +44,18 @@ export function core(): Plugin<string, Translation[]> {
                 const { translations, imports, warnings } = result;
 
                 if (build.context.config.walk) {
-                    const paths = resolveImports(path, imports);
+                    const { resolved: paths, unresolved } = resolveImportResults(path, imports);
                     for (const path of paths) {
                         if (build.context.paths.has(path)) {
                             continue;
                         }
 
                         build.resolve({ entrypoint, path, namespace });
+                    }
+                    for (const { spec, error } of unresolved) {
+                        build.context.logger?.warn(
+                            `Unable to resolve import "${spec}" from ${path}${error ? `: ${error}` : ""}`,
+                        );
                     }
                 }
 

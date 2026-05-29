@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import { test } from "node:test";
 import * as gettextParser from "gettext-parser";
 
-import { plural as buildPlural, message } from "../src/messages.ts";
+import { message } from "../src/messages.ts";
 import { LocaleTranslator } from "../src/translator.ts";
 
 function createTranslator(): LocaleTranslator {

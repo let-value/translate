@@ -2,6 +2,16 @@ import fs from "node:fs";
 import path from "node:path";
 import { ResolverFactory } from "oxc-resolver";
 
+export interface UnresolvedImport {
+    spec: string;
+    error?: string;
+}
+
+export interface ResolveImportsResult {
+    resolved: string[];
+    unresolved: UnresolvedImport[];
+}
+
 function findTsconfig(dir: string): string | undefined {
     let current = dir;
     while (true) {
@@ -42,18 +52,38 @@ function resolveFromDir(dir: string, spec: string): string | undefined {
 
 export function resolveImport(file: string, spec: string): string | undefined {
     const dir = path.dirname(path.resolve(file));
-    return resolveFromDir(dir, spec);
+    try {
+        return resolveFromDir(dir, spec);
+    } catch {
+        return undefined;
+    }
 }
 
 export function resolveImports(file: string, imports: string[]): string[] {
+    return resolveImportResults(file, imports).resolved;
+}
+
+export function resolveImportResults(file: string, imports: string[]): ResolveImportsResult {
     const dir = path.dirname(path.resolve(file));
     const resolver = getResolver(dir);
     const resolved: string[] = [];
+    const unresolved: UnresolvedImport[] = [];
+
     for (const spec of imports) {
-        const res = resolver.sync(dir, spec) as { path?: string };
-        if (res.path) {
-            resolved.push(res.path);
+        try {
+            const res = resolver.sync(dir, spec) as { error?: string; path?: string };
+            if (res.path) {
+                resolved.push(res.path);
+            } else {
+                unresolved.push({ spec, error: res.error });
+            }
+        } catch (error) {
+            unresolved.push({
+                spec,
+                error: error instanceof Error ? error.message : String(error),
+            });
         }
     }
-    return resolved;
+
+    return { resolved, unresolved };
 }

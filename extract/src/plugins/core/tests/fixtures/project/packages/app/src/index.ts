@@ -16,3 +16,4 @@ async function load() {
 import alias from "@app/alias/alias-module";
 import lib from "@lib/resolved-module";
 import base from "base-module";
+import packageImportAlias from "#/alias/alias-module";
