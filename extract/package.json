@@ -41,7 +41,7 @@
         "gettext-parser": "8.0.0",
         "loglevel": "1.9.1",
         "loglevel-plugin-prefix": "0.8.4",
-        "oxc-resolver": "11.8.0",
+        "oxc-resolver": "11.20.0",
         "plural-forms": "0.5.5",
         "@keqingmoe/tree-sitter": "0.26.2",
         "tree-sitter-javascript": "0.25.0",

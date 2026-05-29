@@ -145,7 +145,7 @@ test("returns true when a translation is removed", () => {
             ...baseTranslations.translations,
             "": {
                 "": baseTranslations.translations[""][""],
-                Hello: baseTranslations.translations[""]["Hello"],
+                Hello: baseTranslations.translations[""].Hello,
             },
         },
     };

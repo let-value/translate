@@ -173,5 +173,5 @@ test("mergeTranslations handles overlapping keys by keeping primary", () => {
     const merged = mergeTranslations(primary, secondary);
 
     // Should keep primary's translation
-    assert.deepEqual(merged.translations[""]["Hello"], { msgid: "Hello", msgstr: ["Hello"] });
+    assert.deepEqual(merged.translations[""].Hello, { msgid: "Hello", msgstr: ["Hello"] });
 });
