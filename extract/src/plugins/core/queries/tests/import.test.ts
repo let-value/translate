@@ -12,18 +12,43 @@ suite("should extract imports", () =>
     paths.forEach((path) => {
         test(path, () => {
             const matches = getMatches(fixture, path, importQuery);
-            assert.deepEqual(matches, [
-                "default-export",
-                "named-export",
-                "namespace-export",
-                "side-effect",
-                "export-all",
-                "export-from",
-                "cjs-module",
-                "resolved-module",
-                "dynamic-import",
-                "async-import",
-            ]);
+            assert.deepEqual(
+                matches.map((match) => match.spec),
+                [
+                    "default-export",
+                    "named-export",
+                    "namespace-export",
+                    "side-effect",
+                    "export-all",
+                    "export-from",
+                    "cjs-module",
+                    "resolved-module",
+                    "dynamic-import",
+                    "async-import",
+                ],
+            );
         });
     }),
 );
+
+test("marks type-only and dynamic imports", () => {
+    const matches = getMatches(
+        `
+import type { Props } from "./props";
+export type { Model } from "./model";
+export { type Shape } from "./shape";
+import { type Label, value } from "./mixed";
+import("./lazy");
+`,
+        "test.ts",
+        importQuery,
+    );
+
+    assert.deepEqual(matches, [
+        { spec: "./props", kind: "static", typeOnly: true },
+        { spec: "./model", kind: "static", typeOnly: true },
+        { spec: "./shape", kind: "static", typeOnly: true },
+        { spec: "./mixed", kind: "static", typeOnly: false },
+        { spec: "./lazy", kind: "dynamic", typeOnly: false },
+    ]);
+});

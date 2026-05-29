@@ -5,6 +5,7 @@ import Parser from "@keqingmoe/tree-sitter";
 import JavaScript from "tree-sitter-javascript";
 import TS from "tree-sitter-typescript";
 
+import type { ImportReference } from "../../plugin.ts";
 import { getReference } from "./queries/comment.ts";
 import { entrypointQuery } from "./queries/entrypoint.ts";
 import { importQuery } from "./queries/import.ts";
@@ -13,7 +14,7 @@ import type { Context, Translation, Warning } from "./queries/types.ts";
 
 export interface ParseResult {
     translations: Translation[];
-    imports: string[];
+    imports: ImportReference[];
     warnings: Warning[];
     entrypoint: boolean;
 }
@@ -88,7 +89,7 @@ export function parseSource(source: string, path: string): ParseResult {
 
     const translations: Translation[] = [];
     const warnings: Warning[] = [];
-    const imports: string[] = [];
+    const imports: ImportReference[] = [];
 
     const seen = new Set<number>();
 

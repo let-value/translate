@@ -55,6 +55,11 @@ suite("resolveImports - app", () => {
         assert.equal(result.unresolved[0]?.spec, "#/missing");
         assert.match(result.unresolved[0]?.error ?? "", /Can't resolve|Cannot find module|not found/i);
     });
+
+    test("ignores Node builtins", () => {
+        assert.equal(resolveImport(appEntryPath, "node:path/posix"), undefined);
+        assert.deepEqual(resolveImportResults(appEntryPath, ["node:path", "fs"]).unresolved, []);
+    });
 });
 
 const libCases: Record<string, string> = {

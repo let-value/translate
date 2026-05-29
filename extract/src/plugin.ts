@@ -11,10 +11,17 @@ export interface Context {
     logger?: Logger;
 }
 
+export interface ImportReference {
+    spec: string;
+    kind: "static" | "dynamic";
+    typeOnly: boolean;
+}
+
 export interface ResolveArgs<TInput = unknown> {
     entrypoint: string;
     path: string;
     namespace: string;
+    import?: ImportReference;
     data?: TInput;
 }
 
@@ -22,6 +29,7 @@ export interface ResolveResult<TInput = unknown> {
     entrypoint: string;
     path: string;
     namespace: string;
+    import?: ImportReference;
     data?: TInput;
 }
 

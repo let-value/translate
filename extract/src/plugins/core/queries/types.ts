@@ -1,4 +1,5 @@
 import type Parser from "@keqingmoe/tree-sitter";
+import type { ImportReference } from "../../../plugin.ts";
 
 export interface Comments {
     translator?: string;
@@ -44,5 +45,5 @@ export interface QuerySpec {
 
 export interface ImportQuerySpec {
     pattern: string;
-    extract(match: Parser.QueryMatch): string | undefined;
+    extract(match: Parser.QueryMatch): ImportReference | undefined;
 }

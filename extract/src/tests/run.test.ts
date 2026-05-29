@@ -74,7 +74,7 @@ test("skips resolving paths matching exclude", async () => {
 
     const config = defineConfig({
         entrypoints: entrypoint,
-        exclude: (p) => p.path === extra,
+        exclude: [(p) => p.path === extra],
         plugins: () => [plugin],
     });
     await run(config.entrypoints[0], { config });
@@ -391,4 +391,108 @@ export const b = 2;
 
     assert.equal(menuPo.includes('msgid "menu"'), true);
     assert.equal(menuPo.includes('msgid "page"'), false);
+});
+
+test("does not walk type-only imports by default and allows excluding dynamic router imports", async () => {
+    const directory = await mkdtemp(join(tmpdir(), "translate-extract-"));
+    const authDir = join(directory, "auth", "signIn");
+    const providersDir = join(directory, "auth", "providers");
+    const appDir = join(directory, "app");
+    const userDir = join(appDir, "user");
+    await mkdir(authDir, { recursive: true });
+    await mkdir(providersDir, { recursive: true });
+    await mkdir(userDir, { recursive: true });
+
+    const page = join(authDir, "page.tsx");
+    const button = join(providersDir, "button.tsx");
+    const oauth = join(providersDir, "oauth.tsx");
+    const ioc = join(directory, "ioc.ts");
+    const route = join(appDir, "route.ts");
+    const userRoute = join(userDir, "route.tsx");
+    const userPage = join(userDir, "page.tsx");
+    const followButton = join(userDir, "follow-button.tsx");
+    const serverTypes = join(authDir, "server-types.ts");
+    const dynamicImportSpecs: string[] = [];
+
+    await writeFile(
+        page,
+        `import type { ServerParams } from "./server-types";
+import "../providers/button";
+message("sign-in");
+export type { ServerParams };
+`,
+    );
+    await writeFile(button, `import "./oauth";`);
+    await writeFile(oauth, `import { container } from "../../ioc"; export { container };`);
+    await writeFile(
+        ioc,
+        `export const container = {
+    router: async () => {
+        const { createRouter } = await import("./app/route");
+        return createRouter();
+    },
+};
+`,
+    );
+    await writeFile(route, `import { user } from "./user/route"; export const createRouter = () => user;`);
+    await writeFile(userRoute, `export const user = { lazy: () => import("./page") };`);
+    await writeFile(userPage, `import "./follow-button";`);
+    await writeFile(followButton, `message("Friends", { context: "follow-button" });`);
+    await writeFile(serverTypes, `message("server-only"); export interface ServerParams { id: string }`);
+
+    const config = defineConfig({
+        entrypoints: page,
+        exclude: [
+            (args) => {
+                if (args.import?.kind !== "dynamic") {
+                    return false;
+                }
+                dynamicImportSpecs.push(args.import.spec);
+                return true;
+            },
+        ],
+    });
+    await run(config.entrypoints[0], { config });
+
+    const pagePo = await readFile(join(authDir, "translations", "page.en.po"), "utf8");
+    assert.equal(pagePo.includes('msgid "sign-in"'), true);
+    assert.equal(pagePo.includes('msgid "Friends"'), false);
+    assert.equal(pagePo.includes('msgid "server-only"'), false);
+    assert.deepEqual(dynamicImportSpecs, [route]);
+});
+
+test("keeps default path excludes when custom excludes are configured", async () => {
+    const entrypoint = "entry.ts";
+    const dependency = String.raw`D:\repos\log\node_modules\.pnpm\pkg\node_modules\pkg\index.js`;
+    let resolvedDependency = false;
+
+    const plugin: Plugin = {
+        name: "default-exclude-spy",
+        setup(build) {
+            build.onResolve({ filter: /.*/, namespace: "source" }, ({ path }) => {
+                if (path === dependency) {
+                    resolvedDependency = true;
+                }
+                return undefined;
+            });
+            build.onLoad({ filter: /.*/, namespace: "source" }, (args) => ({ ...args, data: "" }));
+            build.onProcess({ filter: /.*/, namespace: "source" }, (args) => {
+                build.resolve({
+                    entrypoint: args.entrypoint,
+                    path: dependency,
+                    namespace: "source",
+                });
+                return undefined;
+            });
+        },
+    };
+
+    const config = defineConfig({
+        entrypoints: entrypoint,
+        exclude: /custom-skip/,
+        plugins: () => [plugin],
+    });
+    await run(config.entrypoints[0], { config });
+
+    assert.equal(resolvedDependency, false);
 });
