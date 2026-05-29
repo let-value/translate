@@ -51,7 +51,18 @@ jobs:
           scope: '@let-value'
       - run: npm ci
       - run: npm run build
-      - run: npm publish --workspaces --access public
+      - name: Resolve npm publish tag
+        id: npm-publish-tag
+        shell: bash
+        run: |
+          version="$(node -p "require('./package.json').version")"
+          prerelease="${version#*-}"
+          if [ "$prerelease" = "$version" ]; then
+            echo "tag=latest" >> "$GITHUB_OUTPUT"
+          else
+            echo "tag=${prerelease%%.*}" >> "$GITHUB_OUTPUT"
+          fi
+      - run: npm publish --workspaces --access public --tag ${{ steps.npm-publish-tag.outputs.tag }}
         env:
           NODE_AUTH_TOKEN: ${{ github.token }}
 
@@ -69,4 +80,15 @@ jobs:
           registry-url: https://registry.npmjs.org
       - run: npm ci
       - run: npm run build
-      - run: npm publish --workspaces --access public
+      - name: Resolve npm publish tag
+        id: npm-publish-tag
+        shell: bash
+        run: |
+          version="$(node -p "require('./package.json').version")"
+          prerelease="${version#*-}"
+          if [ "$prerelease" = "$version" ]; then
+            echo "tag=latest" >> "$GITHUB_OUTPUT"
+          else
+            echo "tag=${prerelease%%.*}" >> "$GITHUB_OUTPUT"
+          fi
+      - run: npm publish --workspaces --access public --tag ${{ steps.npm-publish-tag.outputs.tag }}
