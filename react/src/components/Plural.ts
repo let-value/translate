@@ -26,7 +26,7 @@ export function Plural({ number, forms, context }: PluralProps) {
         ? translator.translate({ context: context as "", id: input })
         : translator.translate(input);
 
-    // biome-ignore lint/suspicious/noControlCharactersInRegex: using null separators
+    // oxlint-disable-next-line no-control-regex -- using null separators
     const parts = translated.split(/\u0000(\d+)-(\d+)\u0000/);
     const result: ReactNode[] = [];
     for (let i = 0; i < parts.length; ) {

@@ -27,7 +27,7 @@ export function Message({ context, children }: MessageProps) {
         ? translator.translate({ context: context as "", id: built })
         : translator.translate(built);
 
-    // biome-ignore lint/suspicious/noControlCharactersInRegex: using null separators
+    // oxlint-disable-next-line no-control-regex -- using null separators
     const parts = translated.split(/\u0000(\d+)\u0000/);
     const result: ReactNode[] = [];
     for (let i = 0; i < parts.length; i += 2) {

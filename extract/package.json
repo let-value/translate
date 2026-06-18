@@ -12,27 +12,27 @@
         "dist"
     ],
     "type": "module",
-    "main": "dist/index.cjs",
-    "module": "dist/index.js",
-    "types": "dist/index.d.ts",
+    "main": "dist/src/index.cjs",
+    "module": "dist/src/index.mjs",
+    "types": "dist/src/index.d.mts",
     "exports": {
         ".": {
-            "types": "./dist/src/index.d.ts",
-            "import": "./dist/src/index.js",
+            "types": "./dist/src/index.d.mts",
+            "import": "./dist/src/index.mjs",
             "require": "./dist/src/index.cjs"
         },
         "./core": {
-            "types": "./dist/src/core.d.ts",
-            "import": "./dist/src/core.js",
+            "types": "./dist/src/core.d.mts",
+            "import": "./dist/src/core.mjs",
             "require": "./dist/src/core.cjs"
         },
         "./static": {
-            "types": "./dist/src/static.d.ts",
-            "import": "./dist/src/static.js",
+            "types": "./dist/src/static.d.mts",
+            "import": "./dist/src/static.mjs",
             "require": "./dist/src/static.cjs"
         },
         "./cli": {
-            "import": "./dist/bin/cli.js",
+            "import": "./dist/bin/cli.mjs",
             "require": "./dist/bin/cli.cjs"
         },
         "./package.json": "./package.json"
