@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { suite, test } from "node:test";
+import { describe, test } from "vite-plus/test";
 import { messageInvalidQuery, messageQuery } from "../message.ts";
 import { getMatches } from "./utils.ts";
 
@@ -8,7 +8,7 @@ const fixture = readFileSync(new URL("./fixtures/message.ts", import.meta.url)).
 
 const paths = ["test.js", "test.jsx", "test.ts", "test.tsx"];
 
-suite("should extract messages", () =>
+describe("should extract messages", () =>
     paths.forEach((path) => {
         test(path, () => {
             const matches = getMatches(fixture, path, messageQuery);
@@ -78,10 +78,9 @@ suite("should extract messages", () =>
                 ],
             );
         });
-    }),
-);
+    }));
 
-suite("should extract errors", () =>
+describe("should extract errors", () =>
     paths.forEach((path) => {
         test(path, () => {
             const matches = getMatches(fixture, path, messageInvalidQuery);
@@ -107,5 +106,4 @@ suite("should extract errors", () =>
                 ],
             );
         });
-    }),
-);
+    }));

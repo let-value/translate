@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { suite, test } from "node:test";
+import { describe, test } from "vite-plus/test";
 import { messageQuery } from "../message.ts";
 import { npgettextQuery } from "../npgettext.ts";
 import { getMatches } from "./utils.ts";
@@ -9,7 +9,7 @@ const fixture = readFileSync(new URL("./fixtures/npgettext.ts", import.meta.url)
 
 const paths = ["test.js", "test.jsx", "test.ts", "test.tsx"];
 
-suite("should extract context plural messages", () =>
+describe("should extract context plural messages", () =>
     paths.forEach((path) => {
         test(path, () => {
             const matches = getMatches(fixture, path, npgettextQuery);
@@ -71,14 +71,12 @@ suite("should extract context plural messages", () =>
                 ],
             );
         });
-    }),
-);
+    }));
 
-suite("message query should ignore npgettext arguments", () =>
+describe("message query should ignore npgettext arguments", () =>
     paths.forEach((path) => {
         test(path, () => {
             const matches = getMatches(fixture, path, messageQuery);
             assert.equal(matches.length, 0);
         });
-    }),
-);
+    }));

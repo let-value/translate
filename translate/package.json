@@ -26,7 +26,7 @@
         "check": "vp check",
         "format": "vp fmt",
         "typecheck": "tsc --build",
-        "test": "node --test"
+        "test": "vp test"
     },
     "dependencies": {
         "plural-forms": "0.5.5"

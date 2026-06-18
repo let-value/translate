@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { suite, test } from "node:test";
+import { describe, test } from "vite-plus/test";
 import { importQuery } from "../import.ts";
 import { getMatches } from "./utils.ts";
 
@@ -8,7 +8,7 @@ const fixture = readFileSync(new URL("./fixtures/imports.ts", import.meta.url)).
 
 const paths = ["test.js", "test.cjs", "test.mjs", "test.ts", "test.tsx"];
 
-suite("should extract imports", () =>
+describe("should extract imports", () =>
     paths.forEach((path) => {
         test(path, () => {
             const matches = getMatches(fixture, path, importQuery);
@@ -28,8 +28,7 @@ suite("should extract imports", () =>
                 ],
             );
         });
-    }),
-);
+    }));
 
 test("marks type-only and dynamic imports", () => {
     const matches = getMatches(

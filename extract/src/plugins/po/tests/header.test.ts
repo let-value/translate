@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { test } from "node:test";
+import { test } from "vite-plus/test";
 import { type Collected, formatDate, merge } from "../merge.ts";
 
 test("sets POT-Creation-Date header from context timestamp", () => {

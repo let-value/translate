@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import fs from "node:fs/promises";
 import { dirname, join } from "node:path";
-import { test } from "node:test";
+import { test } from "vite-plus/test";
 
 import { defineConfig } from "../../../configuration.ts";
 import type { Plugin } from "../../../plugin.ts";

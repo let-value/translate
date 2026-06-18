@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { suite, test } from "node:test";
+import { describe, test } from "vite-plus/test";
 import { pgettextQuery } from "../pgettext.ts";
 import { getMatches } from "./utils.ts";
 
@@ -8,7 +8,7 @@ const fixture = readFileSync(new URL("./fixtures/pgettext.ts", import.meta.url))
 
 const paths = ["test.js", "test.jsx", "test.ts", "test.tsx"];
 
-suite("should extract context messages", () =>
+describe("should extract context messages", () =>
     paths.forEach((path) => {
         test(path, () => {
             const matches = getMatches(fixture, path, pgettextQuery);
@@ -75,5 +75,4 @@ suite("should extract context messages", () =>
                 ],
             );
         });
-    }),
-);
+    }));

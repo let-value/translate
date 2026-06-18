@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { suite, test } from "node:test";
+import { describe, expect, test } from "vite-plus/test";
 
 import { gettextInvalidQuery, gettextQuery } from "../gettext.ts";
 import { getMatches } from "./utils.ts";
@@ -9,11 +9,11 @@ const fixture = readFileSync(new URL("./fixtures/gettext.ts", import.meta.url)).
 
 const paths = ["test.js", "test.jsx", "test.ts", "test.tsx"];
 
-test("should match snapshot", (t) => {
-    t.assert.snapshot(gettextQuery.pattern);
+test("should match snapshot", () => {
+    expect(gettextQuery.pattern).toMatchSnapshot();
 });
 
-suite("should extract messages", () =>
+describe("should extract messages", () =>
     paths.forEach((path) => {
         test(path, () => {
             const matches = getMatches(fixture, path, gettextQuery);
@@ -76,10 +76,9 @@ suite("should extract messages", () =>
                 ],
             );
         });
-    }),
-);
+    }));
 
-suite("should extract errors", () =>
+describe("should extract errors", () =>
     paths.forEach((path) => {
         test(path, () => {
             const matches = getMatches(fixture, path, gettextInvalidQuery);
@@ -97,5 +96,4 @@ suite("should extract errors", () =>
                 ],
             );
         });
-    }),
-);
+    }));

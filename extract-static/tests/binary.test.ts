@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { execFile } from "node:child_process";
 import { readdir, readFile, rm } from "node:fs/promises";
 import { join } from "node:path";
-import { test } from "node:test";
+import { afterAll, test } from "vite-plus/test";
 import { promisify } from "node:util";
 import { binaryPath } from "../src/binary.ts";
 
@@ -11,11 +11,11 @@ const execFileAsync = promisify(execFile);
 const root = join(import.meta.dirname, "fixture");
 const translations = join(root, "translations");
 
-test.todo("compiled binary produces po files", async (t) => {
-    t.after(async () => {
-        await rm(translations, { recursive: true, force: true });
-    });
+afterAll(async () => {
+    await rm(translations, { recursive: true, force: true });
+});
 
+test.skip("compiled binary produces po files", async () => {
     await execFileAsync(binaryPath, [], { cwd: root, timeout: 30_000 });
 
     const files = await readdir(translations);

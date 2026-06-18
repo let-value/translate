@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { join } from "node:path";
-import { test } from "node:test";
+import { test } from "vite-plus/test";
 import { type DestinationFn, defineConfig } from "../configuration.ts";
 import { isExcluded } from "../exclude.ts";
 import type { Plugin } from "../plugin.ts";

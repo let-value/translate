@@ -2,7 +2,7 @@
 import assert from "node:assert/strict";
 import fs from "node:fs/promises";
 import { dirname, join } from "node:path";
-import { test } from "node:test";
+import { afterAll, test } from "vite-plus/test";
 import { fileURLToPath } from "node:url";
 import * as gettextParser from "gettext-parser";
 import { defineConfig, run } from "../../../extract/src/index.ts";
@@ -12,6 +12,10 @@ import { runApp } from "./app.ts";
 const appPath = fileURLToPath(new URL("./app.ts", import.meta.url));
 const appDir = dirname(appPath);
 const translationsDir = join(appDir, "translations");
+
+afterAll(async () => {
+    await fs.rm(translationsDir, { recursive: true, force: true });
+});
 
 async function extract() {
     await fs.rm(translationsDir, { recursive: true, force: true });
@@ -39,11 +43,8 @@ async function update(
     await fs.writeFile(file, gettextParser.po.compile(po));
 }
 
-test("node app works end to end", async (t) => {
+test("node app works end to end", async () => {
     await extract();
-    t.after(async () => {
-        await fs.rm(translationsDir, { recursive: true, force: true });
-    });
 
     // Default locale - Japanese
     let result = await runApp("ja", 1);

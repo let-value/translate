@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { promises as fs } from "node:fs";
-import { test } from "node:test";
+import { test } from "vite-plus/test";
 import { fileURLToPath } from "node:url";
 import * as gettextParser from "gettext-parser";
 

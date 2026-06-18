@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { test } from "node:test";
+import { test } from "vite-plus/test";
 import { fileURLToPath } from "node:url";
 import type { GetTextTranslations } from "gettext-parser";
 import * as gettextParser from "gettext-parser";

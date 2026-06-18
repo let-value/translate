@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import path from "node:path";
-import { suite, test } from "node:test";
+import { describe, test } from "vite-plus/test";
 import { fileURLToPath } from "node:url";
 
 import { parseFile } from "../parse.ts";
@@ -31,7 +31,7 @@ const appCases: Record<string, string> = {
     "@lib/resolved-module": path.join(libRoot, "resolved-module/index.ts"),
 };
 
-suite("resolveImport - app", () => {
+describe("resolveImport - app", () => {
     for (const [spec, expected] of Object.entries(appCases)) {
         test(spec, () => {
             assert.equal(resolveImport(appEntryPath, spec), expected);
@@ -39,7 +39,7 @@ suite("resolveImport - app", () => {
     }
 });
 
-suite("resolveImports - app", () => {
+describe("resolveImports - app", () => {
     test("resolves all imports from app index", () => {
         const { imports } = parseFile(appEntryPath);
         const resolved = resolveImports(appEntryPath, imports).sort();
@@ -67,7 +67,7 @@ const libCases: Record<string, string> = {
     "@app/default-export": path.join(appRoot, "default-export.ts"),
 };
 
-suite("resolveImport - lib", () => {
+describe("resolveImport - lib", () => {
     for (const [spec, expected] of Object.entries(libCases)) {
         test(spec, () => {
             assert.equal(resolveImport(libEntryPath, spec), expected);
@@ -75,7 +75,7 @@ suite("resolveImport - lib", () => {
     }
 });
 
-suite("resolveImports - lib", () => {
+describe("resolveImports - lib", () => {
     test("resolves all imports from lib index", () => {
         const { imports } = parseFile(libEntryPath);
         const resolved = resolveImports(libEntryPath, imports).sort();

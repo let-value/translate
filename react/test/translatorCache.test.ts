@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { test } from "node:test";
+import { test } from "vite-plus/test";
 import { Translator } from "@let-value/translate";
 import type { GetTextTranslations } from "gettext-parser";
 import { _structuralCacheSize, getCachedTranslator } from "../src/translatorCache.ts";

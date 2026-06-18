@@ -1,5 +1,5 @@
 import assert from "node:assert";
-import { test } from "node:test";
+import { test } from "vite-plus/test";
 
 import * as expected from "@let-value/translate-extract";
 import * as actual from "../src/index.ts";

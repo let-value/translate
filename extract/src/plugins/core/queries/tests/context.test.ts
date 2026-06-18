@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { suite, test } from "node:test";
+import { describe, test } from "vite-plus/test";
 import { contextInvalidQuery, contextMsgQuery } from "../context.ts";
 import { getMatches } from "./utils.ts";
 
@@ -8,7 +8,7 @@ const fixture = readFileSync(new URL("./fixtures/context.ts", import.meta.url)).
 
 const paths = ["test.js", "test.jsx", "test.ts", "test.tsx"];
 
-suite("should extract context builder messages", () =>
+describe("should extract context builder messages", () =>
     paths.forEach((path) => {
         test(path, () => {
             const matches = getMatches(fixture, path, contextMsgQuery);
@@ -75,10 +75,9 @@ suite("should extract context builder messages", () =>
                 ],
             );
         });
-    }),
-);
+    }));
 
-suite("should extract context builder errors", () =>
+describe("should extract context builder errors", () =>
     paths.forEach((path) => {
         test(path, () => {
             const matches = getMatches(fixture, path, contextInvalidQuery);
@@ -92,5 +91,4 @@ suite("should extract context builder errors", () =>
                 ],
             );
         });
-    }),
-);
+    }));

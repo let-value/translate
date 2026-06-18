@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { test } from "node:test";
+import { test } from "vite-plus/test";
 import { context, message } from "../src/messages.ts";
 
 test("context builder attaches context to message", () => {

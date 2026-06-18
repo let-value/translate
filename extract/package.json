@@ -42,7 +42,7 @@
         "check": "vp check",
         "format": "vp fmt",
         "typecheck": "tsc --build",
-        "test": "node --test"
+        "test": "vp test"
     },
     "dependencies": {
         "@keqingmoe/tree-sitter": "0.26.2",

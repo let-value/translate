@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { suite, test } from "node:test";
+import { describe, test } from "vite-plus/test";
 import { messageQuery } from "../message.ts";
 import { pluralQuery } from "../plural.ts";
 import { getMatches } from "./utils.ts";
@@ -9,7 +9,7 @@ const fixture = readFileSync(new URL("./fixtures/plural.ts", import.meta.url)).t
 
 const paths = ["test.js", "test.jsx", "test.ts", "test.tsx"];
 
-suite("should extract plural messages", () =>
+describe("should extract plural messages", () =>
     paths.forEach((path) => {
         test(path, () => {
             const matches = getMatches(fixture, path, pluralQuery);
@@ -59,14 +59,12 @@ suite("should extract plural messages", () =>
                 ],
             );
         });
-    }),
-);
+    }));
 
-suite("message query should ignore plural arguments", () =>
+describe("message query should ignore plural arguments", () =>
     paths.forEach((path) => {
         test(path, () => {
             const matches = getMatches(fixture, path, messageQuery);
             assert.equal(matches.length, 0);
         });
-    }),
-);
+    }));

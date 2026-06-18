@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import fs from "node:fs";
-import { test } from "node:test";
+import { test } from "vite-plus/test";
 import type { GetTextTranslations } from "gettext-parser";
 import * as gettextParser from "gettext-parser";
 import { message } from "../src/messages.ts";

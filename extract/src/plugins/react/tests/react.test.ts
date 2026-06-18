@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { suite, test } from "node:test";
+import { describe, test } from "vite-plus/test";
 import { getMatches } from "../../core/queries/tests/utils.ts";
 import { parseSource } from "../parse.ts";
 import { messageQuery } from "../queries/message.ts";
@@ -9,7 +9,7 @@ import { pluralQuery } from "../queries/plural.ts";
 const valid = readFileSync(new URL("./fixtures/valid.tsx", import.meta.url), "utf8");
 const invalid = readFileSync(new URL("./fixtures/invalid.tsx", import.meta.url), "utf8");
 
-suite("react plugin", () => {
+describe("react plugin", () => {
     test("extracts messages and plurals", () => {
         const { translations } = parseSource(valid, "valid.tsx");
         const simple = translations.map(({ id, plural, context, message }) => ({

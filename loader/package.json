@@ -61,7 +61,7 @@
         "check": "vp check",
         "format": "vp fmt",
         "typecheck": "tsc --build",
-        "test": "node --test"
+        "test": "vp test"
     },
     "dependencies": {
         "gettext-parser": "8.0.0",

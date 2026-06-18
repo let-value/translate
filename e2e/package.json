@@ -11,7 +11,7 @@
         "check": "biome check .",
         "format": "biome check --write .",
         "typecheck": "tsc --build",
-        "test": "node --test"
+        "test": "vp test"
     },
     "dependencies": {
         "@let-value/translate": "1.1.5-beta.3",
@@ -20,5 +20,9 @@
         "gettext-parser": "8.0.0",
         "react": "19.1.1",
         "react-dom": "19.1.1"
+    },
+    "devDependencies": {
+        "typescript": "5.9.2",
+        "vite-plus": "latest"
     }
 }

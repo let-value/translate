@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { test } from "node:test";
+import { test } from "vite-plus/test";
 
 import type { Translation } from "../../core/queries/types.ts";
 import { collect } from "../collect.ts";

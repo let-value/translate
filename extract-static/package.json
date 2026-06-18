@@ -30,7 +30,7 @@
         "check": "vp check",
         "format": "vp fmt",
         "typecheck": "tsc --build",
-        "test": "node --test"
+        "test": "vp test"
     },
     "dependencies": {
         "detect-libc": "2.1.2"
