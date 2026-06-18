@@ -31,14 +31,16 @@
         "@let-value/translate": "1.1.5-beta.3"
     },
     "devDependencies": {
-        "@let-value/translate-e2e": "1.1.5-beta.3",
         "@types/gettext-parser": "8.0.0",
         "@types/react": "19.1.13",
         "@types/react-dom": "19.1.9",
+        "@vitest/browser-playwright": "4.1.9",
+        "playwright": "latest",
         "react": "19.1.1",
         "react-dom": "19.1.1",
         "typescript": "5.9.2",
-        "vite-plus": "latest"
+        "vite-plus": "latest",
+        "vitest-browser-react": "latest"
     },
     "peerDependencies": {
         "react": ">=19"

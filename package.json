@@ -27,6 +27,7 @@
     "devDependencies": {
         "bumpp": "10.2.3",
         "typescript": "5.9.2",
+        "vite": "npm:@voidzero-dev/vite-plus-core@latest",
         "vite-plus": "latest"
     },
     "overrides": {

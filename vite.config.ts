@@ -8,8 +8,9 @@ export default defineConfig({
     },
     lint: {
         jsPlugins: [{ name: "vite-plus", specifier: "vite-plus/oxlint-plugin" }],
-        plugins: ["import"],
+        plugins: ["import", "react"],
         rules: {
+            "react/react-compiler": "error",
             "vite-plus/prefer-vite-plus-imports": "error",
             "no-template-curly-in-string": "off",
             "import/extensions": "error",
