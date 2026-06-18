@@ -1,7 +1,6 @@
 {
     "name": "translate",
     "version": "1.1.5-beta.3",
-    "type": "module",
     "private": true,
     "repository": {
         "type": "git",
@@ -15,11 +14,8 @@
         "react",
         "e2e"
     ],
-    "engines": {
-        "node": ">=22"
-    },
+    "type": "module",
     "scripts": {
-        "biome": "biome",
         "build": "npm run build --workspaces",
         "check": "npm run check --workspaces",
         "format": "npm run format --workspaces",
@@ -29,8 +25,22 @@
         "publish": "npm publish --workspaces"
     },
     "devDependencies": {
-        "@biomejs/biome": "2.2.4",
         "bumpp": "10.2.3",
-        "typescript": "5.9.2"
+        "typescript": "5.9.2",
+        "vite-plus": "latest"
+    },
+    "overrides": {
+        "vite": "npm:@voidzero-dev/vite-plus-core@latest",
+        "vitest": "4.1.9"
+    },
+    "devEngines": {
+        "packageManager": {
+            "name": "npm",
+            "version": "11.17.0",
+            "onFail": "download"
+        }
+    },
+    "engines": {
+        "node": ">=22"
     }
 }

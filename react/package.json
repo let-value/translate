@@ -1,14 +1,17 @@
 {
     "name": "@let-value/translate-react",
     "version": "1.1.5-beta.3",
-    "type": "module",
-    "main": "dist/index.cjs",
-    "module": "dist/index.js",
-    "types": "dist/index.d.ts",
     "repository": {
         "type": "git",
         "url": "https://github.com/let-value/translate"
     },
+    "files": [
+        "dist"
+    ],
+    "type": "module",
+    "main": "dist/index.cjs",
+    "module": "dist/index.js",
+    "types": "dist/index.d.ts",
     "exports": {
         ".": {
             "types": "./dist/index.d.ts",
@@ -17,13 +20,10 @@
         },
         "./package.json": "./package.json"
     },
-    "files": [
-        "dist"
-    ],
     "scripts": {
-        "build": "tsdown",
-        "check": "biome check .",
-        "format": "biome check --write .",
+        "build": "vp pack",
+        "check": "vp check",
+        "format": "vp fmt",
         "typecheck": "tsc --build",
         "test": "node --test"
     },
@@ -37,8 +37,8 @@
         "@types/react-dom": "19.1.9",
         "react": "19.1.1",
         "react-dom": "19.1.1",
-        "tsdown": "0.15.2",
-        "typescript": "5.9.2"
+        "typescript": "5.9.2",
+        "vite-plus": "latest"
     },
     "peerDependencies": {
         "react": ">=19"

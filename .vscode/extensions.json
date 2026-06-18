@@ -1,6 +1,3 @@
 {
-    "recommendations": [
-        "streetsidesoftware.code-spell-checker",
-        "connor4312.nodejs-testing"
-    ]
+    "recommendations": ["streetsidesoftware.code-spell-checker", "connor4312.nodejs-testing"]
 }

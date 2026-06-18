@@ -1,14 +1,17 @@
 {
     "name": "@let-value/translate",
     "version": "1.1.5-beta.3",
-    "type": "module",
-    "main": "dist/index.cjs",
-    "module": "dist/index.js",
-    "types": "dist/index.d.ts",
     "repository": {
         "type": "git",
         "url": "https://github.com/let-value/translate"
     },
+    "files": [
+        "dist"
+    ],
+    "type": "module",
+    "main": "dist/index.cjs",
+    "module": "dist/index.js",
+    "types": "dist/index.d.ts",
     "exports": {
         ".": {
             "types": "./dist/index.d.ts",
@@ -17,14 +20,11 @@
         },
         "./package.json": "./package.json"
     },
-    "files": [
-        "dist"
-    ],
     "scripts": {
-        "build": "tsdown",
+        "build": "vp pack",
         "pretest": "npm run build",
-        "check": "biome check .",
-        "format": "biome check --write .",
+        "check": "vp check",
+        "format": "vp fmt",
         "typecheck": "tsc --build",
         "test": "node --test"
     },
@@ -33,7 +33,7 @@
     },
     "devDependencies": {
         "@types/gettext-parser": "8.0.0",
-        "tsdown": "0.15.2",
-        "typescript": "5.9.2"
+        "typescript": "5.9.2",
+        "vite-plus": "latest"
     }
 }
