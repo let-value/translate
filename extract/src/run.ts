@@ -2,6 +2,7 @@ import { resolve as resolvePath } from "node:path";
 import glob from "fast-glob";
 import type { ResolvedConfig, ResolvedEntrypoint } from "./configuration.ts";
 import { Defer } from "./defer.ts";
+import { isExcluded } from "./exclude.ts";
 import type { Logger } from "./logger.ts";
 import type {
     Build,
@@ -100,7 +101,7 @@ export async function run(
         const key = `${entrypoint}:${namespace}:${path}`;
 
         const visited = resolved.has(key);
-        const skipped = context.config.exclude.some((ex) => (typeof ex === "function" ? ex(args) : ex.test(args.path)));
+        const skipped = isExcluded(args, context.config.exclude);
         logger?.debug({ entrypoint, path, namespace, skipped, visited }, "resolve");
 
         if (namespace === "source" && visited) {

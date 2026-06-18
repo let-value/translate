@@ -1,6 +1,8 @@
 import fs from "node:fs";
+import { builtinModules } from "node:module";
 import path from "node:path";
 import { ResolverFactory } from "oxc-resolver";
+import type { ImportReference } from "../../plugin.ts";
 
 export interface UnresolvedImport {
     spec: string;
@@ -8,7 +10,7 @@ export interface UnresolvedImport {
 }
 
 export interface ResolveImportsResult {
-    resolved: string[];
+    resolved: Array<{ path: string; import: ImportReference }>;
     unresolved: UnresolvedImport[];
 }
 
@@ -28,6 +30,17 @@ function findTsconfig(dir: string): string | undefined {
 }
 
 const resolverCache = new Map<string, ResolverFactory>();
+const builtins = new Set([...builtinModules, ...builtinModules.map((name) => `node:${name}`)]);
+
+function isBuiltin(spec: string) {
+    if (builtins.has(spec)) {
+        return true;
+    }
+
+    const withoutNodePrefix = spec.startsWith("node:") ? spec.slice("node:".length) : spec;
+    const [base, subpath] = withoutNodePrefix.split("/", 2);
+    return subpath !== undefined && builtins.has(base);
+}
 
 function getResolver(dir: string) {
     const tsconfig = findTsconfig(dir);
@@ -51,6 +64,10 @@ function resolveFromDir(dir: string, spec: string): string | undefined {
 }
 
 export function resolveImport(file: string, spec: string): string | undefined {
+    if (isBuiltin(spec)) {
+        return undefined;
+    }
+
     const dir = path.dirname(path.resolve(file));
     try {
         return resolveFromDir(dir, spec);
@@ -59,21 +76,34 @@ export function resolveImport(file: string, spec: string): string | undefined {
     }
 }
 
-export function resolveImports(file: string, imports: string[]): string[] {
-    return resolveImportResults(file, imports).resolved;
+export function resolveImports(file: string, imports: Array<string | ImportReference>): string[] {
+    return resolveImportResults(file, imports).resolved.map((result) => result.path);
 }
 
-export function resolveImportResults(file: string, imports: string[]): ResolveImportsResult {
+function normalizeImportReference(imp: string | ImportReference): ImportReference {
+    if (typeof imp === "string") {
+        return { spec: imp, kind: "static", typeOnly: false };
+    }
+    return imp;
+}
+
+export function resolveImportResults(file: string, imports: Array<string | ImportReference>): ResolveImportsResult {
     const dir = path.dirname(path.resolve(file));
     const resolver = getResolver(dir);
-    const resolved: string[] = [];
+    const resolved: Array<{ path: string; import: ImportReference }> = [];
     const unresolved: UnresolvedImport[] = [];
 
-    for (const spec of imports) {
+    for (const imp of imports) {
+        const ref = normalizeImportReference(imp);
+        const { spec } = ref;
+        if (isBuiltin(spec)) {
+            continue;
+        }
+
         try {
             const res = resolver.sync(dir, spec) as { error?: string; path?: string };
             if (res.path) {
-                resolved.push(res.path);
+                resolved.push({ path: res.path, import: { ...ref, spec: res.path } });
             } else {
                 unresolved.push({ spec, error: res.error });
             }

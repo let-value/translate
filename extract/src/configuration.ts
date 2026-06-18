@@ -1,13 +1,15 @@
 import { basename, dirname, extname, join } from "node:path";
 import type { PluralFormsLocale } from "@let-value/translate";
+import { type DefaultExclude, defaultExclude, defaultExcludes } from "./exclude.ts";
 import type { LogLevel } from "./logger.ts";
 
-import type { UniversalPlugin } from "./plugin.ts";
+import type { ResolveArgs, UniversalPlugin } from "./plugin.ts";
 import { cleanup, core, po } from "./static.ts";
 
 export type DestinationFn = (args: { locale: string; entrypoint: string; path: string }) => string;
-export type ExcludeFn = (args: { entrypoint: string; path: string }) => boolean;
+export type ExcludeFn = (args: ResolveArgs) => boolean;
 export type Exclude = RegExp | ExcludeFn;
+export type ExcludeConfig = RegExp | Exclude[] | ((defaultExclude: DefaultExclude) => Exclude[]);
 
 const defaultPlugins = { core, po, cleanup };
 type DefaultPlugins = typeof defaultPlugins;
@@ -24,7 +26,7 @@ export interface EntrypointConfig {
     destination?: DestinationFn;
     obsolete?: ObsoleteStrategy;
     walk?: boolean;
-    exclude?: Exclude | Exclude[];
+    exclude?: ExcludeConfig;
 }
 
 export interface UserConfig {
@@ -79,7 +81,7 @@ export interface UserConfig {
      * @default [/node_modules/, /dist/, /build/]
      * @see Can be overridden per entrypoint via `exclude` in {@link EntrypointConfig}.
      */
-    exclude?: Exclude | Exclude[];
+    exclude?: ExcludeConfig;
     /**
      * Log level for the extraction process
      * @default "info"
@@ -106,15 +108,17 @@ export interface ResolvedConfig {
 const defaultDestination: DestinationFn = ({ entrypoint, locale }) =>
     join(dirname(entrypoint), "translations", `${basename(entrypoint, extname(entrypoint))}.${locale}.po`);
 
-const defaultExclude: Exclude[] = [
-    /(?:^|[\\/])node_modules(?:[\\/]|$)/,
-    /(?:^|[\\/])dist(?:[\\/]|$)/,
-    /(?:^|[\\/])build(?:[\\/]|$)/,
-];
-
-function normalizeExclude(exclude?: Exclude | Exclude[]): Exclude[] {
+function normalizeExclude(exclude?: RegExp | Exclude[]): Exclude[] {
     if (!exclude) return [];
     return Array.isArray(exclude) ? exclude : [exclude];
+}
+
+function resolveExcludes(exclude?: ExcludeConfig): Exclude[] {
+    if (typeof exclude === "function") {
+        return exclude(defaultExclude);
+    }
+
+    return [...defaultExcludes, ...normalizeExclude(exclude)];
 }
 
 function resolveEntrypoint(ep: string | EntrypointConfig): ResolvedEntrypoint {
@@ -122,7 +126,13 @@ function resolveEntrypoint(ep: string | EntrypointConfig): ResolvedEntrypoint {
         return { entrypoint: ep };
     }
     const { entrypoint, destination, obsolete, walk, exclude } = ep;
-    return { entrypoint, destination, obsolete, walk, exclude: exclude ? normalizeExclude(exclude) : undefined };
+    return {
+        entrypoint,
+        destination,
+        obsolete,
+        walk,
+        exclude: exclude ? resolveExcludes(exclude) : undefined,
+    };
 }
 
 function resolvePlugins(user?: UserConfig["plugins"]): UniversalPlugin[] {
@@ -156,6 +166,6 @@ export function defineConfig(config: UserConfig): ResolvedConfig {
         obsolete: config.obsolete ?? "mark",
         walk: config.walk ?? true,
         logLevel: config.logLevel ?? "info",
-        exclude: config.exclude ? normalizeExclude(config.exclude) : defaultExclude,
+        exclude: resolveExcludes(config.exclude),
     };
 }

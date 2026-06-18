@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { join } from "node:path";
 import { test } from "node:test";
 import { type DestinationFn, defineConfig } from "../configuration.ts";
+import { isExcluded } from "../exclude.ts";
 import type { Plugin } from "../plugin.ts";
 import type { StaticPlugin } from "../static.ts";
 
@@ -79,12 +80,29 @@ test("configures walk option", () => {
 
 test("provides default excludes", () => {
     const cfg = defineConfig({ entrypoints: "src/index.ts" });
-    assert(cfg.exclude.some((e) => e instanceof RegExp && e.test("node_modules/somefile")));
-    assert(cfg.exclude.some((e) => e instanceof RegExp && e.test("dist/somefile")));
-    assert(cfg.exclude.some((e) => e instanceof RegExp && e.test("build/somefile")));
+    assert(isExcluded({ entrypoint: "src/index.ts", path: "node_modules/somefile", namespace: "source" }, cfg.exclude));
+    assert(
+        isExcluded(
+            { entrypoint: "src/index.ts", path: String.raw`D:\repo\node_modules\pkg\index.js`, namespace: "source" },
+            cfg.exclude,
+        ),
+    );
+    assert(isExcluded({ entrypoint: "src/index.ts", path: "dist/somefile", namespace: "source" }, cfg.exclude));
+    assert(isExcluded({ entrypoint: "src/index.ts", path: "build/somefile", namespace: "source" }, cfg.exclude));
+    assert(
+        isExcluded(
+            {
+                entrypoint: "src/index.ts",
+                path: join(process.cwd(), "types.ts"),
+                namespace: "source",
+                import: { spec: join(process.cwd(), "types.ts"), kind: "static", typeOnly: true },
+            },
+            cfg.exclude,
+        ),
+    );
 });
 
-test("supports exclude overrides", () => {
+test("adds custom excludes to defaults", () => {
     const cfg = defineConfig({
         entrypoints: [{ entrypoint: "src/index.ts", exclude: /skip/ }],
         exclude: [/global/, /node_modules/],
@@ -94,8 +112,29 @@ test("supports exclude overrides", () => {
     const epExclude = cfg.entrypoints[0].exclude;
     assert(epExclude);
     assert(epExclude.some((e) => e instanceof RegExp && e.test("skip")));
+    assert(isExcluded({ entrypoint: "src/index.ts", path: "node_modules/foo", namespace: "source" }, epExclude));
     assert(!epExclude.some((e) => e instanceof RegExp && e.test("global")));
-    assert(!epExclude.some((e) => e instanceof RegExp && e.test("node_modules/foo")));
+});
+
+test("allows selecting named default excludes", () => {
+    const cfg = defineConfig({
+        entrypoints: "src/index.ts",
+        exclude: ({ modules, types }) => [modules, types],
+    });
+
+    assert(isExcluded({ entrypoint: "src/index.ts", path: "node_modules/foo", namespace: "source" }, cfg.exclude));
+    assert(!isExcluded({ entrypoint: "src/index.ts", path: "dist/foo", namespace: "source" }, cfg.exclude));
+    assert(
+        isExcluded(
+            {
+                entrypoint: "src/index.ts",
+                path: join(process.cwd(), "types.ts"),
+                namespace: "source",
+                import: { spec: join(process.cwd(), "types.ts"), kind: "static", typeOnly: true },
+            },
+            cfg.exclude,
+        ),
+    );
 });
 
 test("defaults log level to info", () => {
