@@ -12,6 +12,7 @@ jobs:
               with:
                   node-version: "lts"
             - run: vp install
+            - run: pnpm --filter @let-value/translate-react exec playwright install chromium
             - run: vp run build
             - run: vp check
             - run: vp run test
