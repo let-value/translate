@@ -32,6 +32,7 @@
             "require": "./dist/src/static.cjs"
         },
         "./cli": {
+            "bun": "./bin/cli.ts",
             "import": "./dist/bin/cli.mjs",
             "require": "./dist/bin/cli.cjs"
         },
