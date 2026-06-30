@@ -8,26 +8,25 @@ jobs:
         runs-on: ubuntu-latest
         steps:
             - uses: actions/checkout@v4
-            - uses: actions/setup-node@v4
+            - uses: voidzero-dev/setup-vp@v1
               with:
-                  node-version: 22
-                  cache: npm
-            - run: npm ci
-            - run: npm run build
-            - run: npm run test
-            - run: npm run typecheck
+                  node-version: "lts"
+            - run: vp install
+            - run: vp check
+            - run: vp run build
+            - run: vp run test
+            - run: vp run typecheck
 
     compile:
         runs-on: ubuntu-latest
         steps:
             - uses: actions/checkout@v4
-            - uses: actions/setup-node@v4
+            - uses: voidzero-dev/setup-vp@v1
               with:
-                  node-version: 22
-                  cache: npm
+                  node-version: "lts"
             - uses: oven-sh/setup-bun@v2
               with:
                   bun-version: 1.3.8
-            - run: npm ci
+            - run: vp install
             - run: bun run extract-static/scripts/compile.ts
             - run: ls -la extract-static/prebuilts

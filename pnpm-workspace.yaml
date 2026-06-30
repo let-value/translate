@@ -1,19 +1,19 @@
 packages:
-  - loader
-  - translate
-  - extract
-  - extract-static
-  - react
-  - e2e
+    - loader
+    - translate
+    - extract
+    - extract-static
+    - react
+    - e2e
 
 overrides:
-  vite: "npm:@voidzero-dev/vite-plus-core@latest"
-  vitest: "4.1.9"
+    vite: "npm:@voidzero-dev/vite-plus-core@latest"
+    vitest: "4.1.9"
 
 allowedDeprecatedVersions:
-  vitest: "*"
+    vitest: "*"
 
 allowBuilds:
-  "@keqingmoe/tree-sitter": true
-  tree-sitter-javascript: true
-  tree-sitter-typescript: true
+    "@keqingmoe/tree-sitter": true
+    tree-sitter-javascript: true
+    tree-sitter-typescript: true

@@ -1,4 +1,3 @@
-/** biome-ignore-all lint/complexity/useLiteralKeys: jp */
 import assert from "node:assert/strict";
 import fs from "node:fs/promises";
 import { dirname, join } from "node:path";

@@ -8,7 +8,6 @@ export interface MessageDescriptor {
 export interface Message {
     msgid: string;
     msgstr: string;
-    // biome-ignore lint/suspicious/noExplicitAny: true
     values?: any[];
 }
 
