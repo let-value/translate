@@ -245,6 +245,15 @@ importers:
         specifier: 19.2.7
         version: 19.2.7(react@19.2.7)
     devDependencies:
+      '@types/gettext-parser':
+        specifier: 9.0.0
+        version: 9.0.0
+      '@types/react':
+        specifier: 19.2.17
+        version: 19.2.17
+      '@types/react-dom':
+        specifier: 19.2.3
+        version: 19.2.3(@types/react@19.2.17)
       typescript:
         specifier: 6.0.3
         version: 6.0.3
@@ -307,6 +316,9 @@ importers:
         specifier: 2.1.2
         version: 2.1.2
     devDependencies:
+      '@let-value/translate':
+        specifier: workspace:*
+        version: link:../translate
       '@let-value/translate-extract':
         specifier: workspace:*
         version: link:../extract
@@ -391,6 +403,9 @@ importers:
       '@types/gettext-parser':
         specifier: 9.0.0
         version: 9.0.0
+      gettext-parser:
+        specifier: 9.0.2
+        version: 9.0.2
       typescript:
         specifier: 6.0.3
         version: 6.0.3
@@ -891,9 +906,6 @@ packages:
 
   '@types/gettext-parser@9.0.0':
     resolution: {integrity: sha512-LpZ+LeNa/tiFTxouKLkoyXVFF7JChu32YcZfnu+k54NfmlwlIiR017o3r+2yyB1FLg6LDzbF/UyH+AfhqffmXA==}
-
-  '@types/node@22.10.2':
-    resolution: {integrity: sha512-Xxr6BBRCAOQixvonOye19wnzyDiUtTeqldOOmj3CkeblonbccA12PFwlufvRdrpjXxqnmUaeiU5EOA+7s5diUQ==}
 
   '@types/node@26.0.1':
     resolution: {integrity: sha512-fc3KiUoBt6kie0N9bIW3E47vZsuaMf0PM2AaUpLCLT0s/LvX1nxAim6Fc049cNxODPpGm6qRAuUOB86SkRuPQw==}
@@ -1576,9 +1588,6 @@ packages:
   unconfig@7.5.0:
     resolution: {integrity: sha512-oi8Qy2JV4D3UQ0PsopR28CzdQ3S/5A1zwsUwp/rosSbfhJ5z7b90bIyTwi/F7hCLD4SGcZVjDzd4XoUQcEanvA==}
 
-  undici-types@6.20.0:
-    resolution: {integrity: sha512-Ny6QZ2Nju20vw1SRHe3d9jVu6gJ+4e3+MMpqu7pqE5HT6WsTSlce++GQmK5UXS8mzV8DSYHrQH+Xrf2jVcuKNg==}
-
   undici-types@8.3.0:
     resolution: {integrity: sha512-j375ScV60dom+YkPFIfTLcOiPxkN/buHz5GobjLhixFuANaNs3C9l4GmrWqejgXWJ7BbJcFYpTEUkS1Ge8bpZQ==}
 
@@ -2033,10 +2042,6 @@ snapshots:
     dependencies:
       '@types/node': 26.0.1
 
-  '@types/node@22.10.2':
-    dependencies:
-      undici-types: 6.20.0
-
   '@types/node@26.0.1':
     dependencies:
       undici-types: 8.3.0
@@ -2201,7 +2206,7 @@ snapshots:
 
   bun-types@1.2.21(@types/react@19.2.17):
     dependencies:
-      '@types/node': 22.10.2
+      '@types/node': 26.0.1
       '@types/react': 19.2.17
 
   bun-types@1.3.14:
@@ -2619,8 +2624,6 @@ snapshots:
       jiti: 2.7.0
       quansync: 1.0.0
       unconfig-core: 7.5.0
-
-  undici-types@6.20.0: {}
 
   undici-types@8.3.0: {}
 

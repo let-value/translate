@@ -32,7 +32,7 @@ async function loadRunApp() {
         compilerOptions: {
             module: ts.ModuleKind.ES2022,
             target: ts.ScriptTarget.ES2022,
-            jsx: ts.JsxEmit.React,
+            jsx: ts.JsxEmit.ReactJSX,
         },
     });
     const jsPath = join(appDir, "app.mjs");
