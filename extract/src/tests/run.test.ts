@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdir, mkdtemp, readFile, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, realpath, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { test } from "vite-plus/test";
@@ -83,7 +83,7 @@ test("skips resolving paths matching exclude", async () => {
 });
 
 test("resolves glob entrypoints to matched files", async () => {
-    const directory = await mkdtemp(join(tmpdir(), "translate-extract-"));
+    const directory = await realpath(await mkdtemp(join(tmpdir(), "translate-extract-")));
     const file = join(directory, "entry.ts");
     await writeFile(file, "export const foo = 'bar';");
 
@@ -112,7 +112,7 @@ test("resolves glob entrypoints to matched files", async () => {
 });
 
 test("does not walk into files that are configured as entrypoints", async () => {
-    const directory = await mkdtemp(join(tmpdir(), "translate-extract-"));
+    const directory = await realpath(await mkdtemp(join(tmpdir(), "translate-extract-")));
     const pageA = join(directory, "page-a.ts");
     const pageB = join(directory, "page-b.ts");
     const component = join(directory, "component.ts");
@@ -158,7 +158,7 @@ export const b = 1;
 });
 
 test("promotes files with magic comment to entrypoints and skips duplicate walks", async () => {
-    const directory = await mkdtemp(join(tmpdir(), "translate-extract-"));
+    const directory = await realpath(await mkdtemp(join(tmpdir(), "translate-extract-")));
     const pageA = join(directory, "page-a.ts");
     const pageB = join(directory, "page-b.ts");
     const component = join(directory, "component.ts");
@@ -218,7 +218,7 @@ export const component = "shared";
 });
 
 test("keeps promoted entrypoint messages out of original entrypoints when runs overlap", async () => {
-    const directory = await mkdtemp(join(tmpdir(), "translate-extract-"));
+    const directory = await realpath(await mkdtemp(join(tmpdir(), "translate-extract-")));
     const pageA = join(directory, "page-a.ts");
     const pageB = join(directory, "page-b.ts");
     const component = join(directory, "component.ts");
@@ -262,7 +262,7 @@ message("component");
 });
 
 test("does not leak promoted entrypoint messages when entrypoints come from a relative glob", async () => {
-    const directory = await mkdtemp(join(tmpdir(), "translate-extract-"));
+    const directory = await realpath(await mkdtemp(join(tmpdir(), "translate-extract-")));
     const pageA = join(directory, "page-a.ts");
     const pageB = join(directory, "page-b.ts");
     const component = join(directory, "component.ts");
@@ -312,7 +312,7 @@ message("component");
 });
 
 test("terminates when walked children have circular imports", async () => {
-    const directory = await mkdtemp(join(tmpdir(), "translate-extract-"));
+    const directory = await realpath(await mkdtemp(join(tmpdir(), "translate-extract-")));
     const page = join(directory, "page.ts");
     const childA = join(directory, "child-a.ts");
     const childB = join(directory, "child-b.ts");
@@ -344,7 +344,7 @@ export const b = 2;
 });
 
 test("terminates when promoted entrypoint children have circular imports", async () => {
-    const directory = await mkdtemp(join(tmpdir(), "translate-extract-"));
+    const directory = await realpath(await mkdtemp(join(tmpdir(), "translate-extract-")));
     const componentsDir = join(directory, "components");
     await mkdir(componentsDir, { recursive: true });
 
@@ -394,7 +394,7 @@ export const b = 2;
 });
 
 test("does not walk type-only imports by default and allows excluding dynamic router imports", async () => {
-    const directory = await mkdtemp(join(tmpdir(), "translate-extract-"));
+    const directory = await realpath(await mkdtemp(join(tmpdir(), "translate-extract-")));
     const authDir = join(directory, "auth", "signIn");
     const providersDir = join(directory, "auth", "providers");
     const appDir = join(directory, "app");

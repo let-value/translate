@@ -36,10 +36,10 @@
         "detect-libc": "2.1.2"
     },
     "devDependencies": {
-        "@let-value/translate-extract": "1.1.5-beta.3",
-        "@types/bun": "1.3.8",
-        "@types/node": "22.10.2",
-        "typescript": "5.9.2",
+        "@let-value/translate-extract": "workspace:*",
+        "@types/bun": "1.3.14",
+        "@types/node": "26.0.1",
+        "typescript": "6.0.3",
         "vite-plus": "latest"
     }
 }

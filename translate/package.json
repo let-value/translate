@@ -22,7 +22,7 @@
     },
     "scripts": {
         "build": "vp pack",
-        "pretest": "npm run build",
+        "pretest": "pnpm run build",
         "check": "vp check",
         "format": "vp fmt",
         "typecheck": "tsc --build",
@@ -32,8 +32,8 @@
         "plural-forms": "0.5.5"
     },
     "devDependencies": {
-        "@types/gettext-parser": "8.0.0",
-        "typescript": "5.9.2",
+        "@types/gettext-parser": "9.0.0",
+        "typescript": "6.0.3",
         "vite-plus": "latest"
     }
 }

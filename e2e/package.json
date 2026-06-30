@@ -8,21 +8,21 @@
     },
     "scripts": {
         "build": "tsc -p tsconfig.json",
-        "check": "biome check .",
-        "format": "biome check --write .",
+        "check": "vp check",
+        "format": "vp check --fix",
         "typecheck": "tsc --build",
         "test": "vp test"
     },
     "dependencies": {
-        "@let-value/translate": "1.1.5-beta.3",
-        "@let-value/translate-extract": "1.1.5-beta.3",
-        "@let-value/translate-react": "1.1.5-beta.3",
-        "gettext-parser": "8.0.0",
-        "react": "19.1.1",
-        "react-dom": "19.1.1"
+        "@let-value/translate": "workspace:*",
+        "@let-value/translate-extract": "workspace:*",
+        "@let-value/translate-react": "workspace:*",
+        "gettext-parser": "9.0.2",
+        "react": "19.2.7",
+        "react-dom": "19.2.7"
     },
     "devDependencies": {
-        "typescript": "5.9.2",
+        "typescript": "6.0.3",
         "vite-plus": "latest"
     }
 }

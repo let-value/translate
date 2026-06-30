@@ -46,21 +46,21 @@
     },
     "dependencies": {
         "@keqingmoe/tree-sitter": "0.26.2",
-        "@let-value/translate": "1.1.5-beta.3",
-        "chalk": "5.3.0",
-        "cosmiconfig": "9.0.0",
-        "fast-glob": "3.3.2",
-        "gettext-parser": "8.0.0",
-        "loglevel": "1.9.1",
+        "@let-value/translate": "workspace:*",
+        "chalk": "5.6.2",
+        "cosmiconfig": "9.0.2",
+        "fast-glob": "3.3.3",
+        "gettext-parser": "9.0.2",
+        "loglevel": "1.9.2",
         "loglevel-plugin-prefix": "0.8.4",
-        "oxc-resolver": "11.20.0",
+        "oxc-resolver": "11.21.3",
         "plural-forms": "0.5.5",
         "tree-sitter-javascript": "0.25.0",
         "tree-sitter-typescript": "0.23.2"
     },
     "devDependencies": {
-        "@types/gettext-parser": "8.0.0",
-        "typescript": "5.9.2",
+        "@types/gettext-parser": "9.0.0",
+        "typescript": "6.0.3",
         "vite-plus": "latest"
     }
 }

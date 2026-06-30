@@ -1,3 +1,4 @@
+import { realpathSync } from "node:fs";
 import { resolve as resolvePath } from "node:path";
 import glob from "fast-glob";
 import type { ResolvedConfig, ResolvedEntrypoint } from "./configuration.ts";
@@ -84,7 +85,13 @@ export async function run(
     }
 
     function source(path: string) {
-        const resolvedPath = resolvePath(path);
+        const abs = resolvePath(path);
+        let resolvedPath: string;
+        try {
+            resolvedPath = realpathSync(abs);
+        } catch {
+            resolvedPath = abs;
+        }
 
         if (paths.has(resolvedPath)) {
             return;
