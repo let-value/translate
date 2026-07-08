@@ -8,7 +8,7 @@ const root = resolve(import.meta.dirname, "../../");
 type CompileArch = "x64" | "arm64";
 type CompileTarget =
     | `bun-darwin-${CompileArch}`
-    | `bun-linux-${CompileArch}-glibc`
+    | `bun-linux-${CompileArch}`
     | `bun-linux-${CompileArch}-musl`
     | "bun-windows-x64";
 
@@ -36,7 +36,7 @@ function getCompileTarget(
             return `bun-linux-${compileArch}-musl`;
         }
 
-        return `bun-linux-${compileArch}-glibc`;
+        return `bun-linux-${compileArch}`;
     }
 
     if (valuePlatform === "win32") {
