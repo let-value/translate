@@ -4,7 +4,7 @@
 
 ## Supported Stack & Non‑Goals
 
-- **Runtime:** Node **>=22** (engines enforced). ESM only (`"type": "module"`).
+- **Runtime:** Node **>=24** (engines enforced). ESM only (`"type": "module"`).
 - **Workspace:** **npm workspaces** (no pnpm/bun/yarn). One repo, multiple packages.
 - **Language:** TypeScript for source; plain JS allowed for tests.
 - **Testing:** Node’s **built‑in** runner (`node --test`). No third‑party test libs.
@@ -88,7 +88,7 @@ These scripts are present in **every package** and wired in CI:
 ## Publishing Notes
 
 - Ensure `files: ["dist"]` is set; never publish `src/`.
-- Confirm `engines.node >= 22`; consumers on older Node must transpile on their side.
+- Confirm `engines.node >= 24`; consumers on older Node must transpile on their side.
 - Keep semantic versioning. Breaking changes require major bump + deprecation note.
 
 ## Quick Start (for Agents)
