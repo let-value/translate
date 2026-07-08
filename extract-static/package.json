@@ -6,7 +6,7 @@
         "url": "https://github.com/let-value/translate"
     },
     "bin": {
-        "extract": "./dist/bin/cli.js"
+        "extract": "./dist/bin/cli.mjs"
     },
     "files": [
         "dist",

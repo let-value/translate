@@ -1,10 +1,54 @@
 import { resolve } from "node:path";
-import { type Build, build } from "bun";
+import { build } from "bun";
 import { GLIBC, MUSL } from "detect-libc";
 import { arch, getBinaryName, platform } from "../src/binary.ts";
 
 const root = resolve(import.meta.dirname, "../../");
-const os = platform === "win32" ? "windows" : platform;
+
+type CompileArch = "x64" | "arm64";
+type CompileTarget =
+    | `bun-darwin-${CompileArch}`
+    | `bun-linux-${CompileArch}-glibc`
+    | `bun-linux-${CompileArch}-musl`
+    | "bun-windows-x64";
+
+function getCompileArch(value: NodeJS.Architecture): CompileArch {
+    if (value === "x64" || value === "arm64") {
+        return value;
+    }
+
+    throw new Error(`Unsupported compile architecture: ${value}`);
+}
+
+function getCompileTarget(
+    valuePlatform: NodeJS.Platform,
+    valueArch: NodeJS.Architecture,
+    valueLibc: string | null,
+): CompileTarget {
+    const compileArch = getCompileArch(valueArch);
+
+    if (valuePlatform === "darwin") {
+        return `bun-darwin-${compileArch}`;
+    }
+
+    if (valuePlatform === "linux") {
+        if (valueLibc === MUSL) {
+            return `bun-linux-${compileArch}-musl`;
+        }
+
+        return `bun-linux-${compileArch}-glibc`;
+    }
+
+    if (valuePlatform === "win32") {
+        if (compileArch !== "x64") {
+            throw new Error(`Unsupported Windows compile architecture: ${compileArch}`);
+        }
+
+        return "bun-windows-x64";
+    }
+
+    throw new Error(`Unsupported compile platform: ${valuePlatform}`);
+}
 
 const treeSitterPatch: import("bun").BunPlugin = {
     name: "tree-sitter-patch",
@@ -31,7 +75,7 @@ async function main() {
     const libcs = platform === "linux" ? [GLIBC, MUSL] : [null];
 
     for (const libc of libcs) {
-        const target = `bun-${os}-${arch}${libc === MUSL ? `-${MUSL}` : ""}` as Build.CompileTarget;
+        const target = getCompileTarget(platform, arch, libc);
         const file = getBinaryName(platform, arch, libc);
 
         console.log("Building:", {
@@ -39,20 +83,22 @@ async function main() {
             file,
         });
 
+        const compile = {
+            target,
+            outfile: resolve(root, "extract-static/prebuilts", file),
+            windows: {
+                hideConsole: true,
+            },
+            autoloadDotenv: false,
+            autoloadBunfig: false,
+            autoloadTsconfig: true,
+            autoloadPackageJson: true,
+        } satisfies Bun.CompileBuildOptions;
+
         const result = await build({
             entrypoints: [resolve(root, "extract-static/src/launcher.ts")],
             plugins: [treeSitterPatch],
-            compile: {
-                target,
-                outfile: resolve(root, "extract-static/prebuilts", file),
-                windows: {
-                    hideConsole: true,
-                },
-                autoloadDotenv: false,
-                autoloadBunfig: false,
-                autoloadTsconfig: true,
-                autoloadPackageJson: true,
-            },
+            compile,
             minify: false,
         });
 

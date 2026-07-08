@@ -1,27 +1,12 @@
 #!/usr/bin/env node
 
 import { parseArgs } from "node:util";
-import { cosmiconfig } from "cosmiconfig";
 import type { ResolvedConfig } from "../src/configuration.ts";
 import { type LogLevel, logger } from "../src/logger.ts";
 import { run } from "../src/run.ts";
+import { createConfigExplorer, unwrapConfig } from "./config-loader.ts";
 
-const moduleName = "translate";
 const defaultLogLevel: LogLevel = "info";
-
-function unwrapConfig(
-    config: ResolvedConfig | { default: ResolvedConfig } | { translateConfig: ResolvedConfig } | undefined,
-) {
-    if (config && typeof config === "object" && "default" in config) {
-        return config.default;
-    }
-
-    if (config && typeof config === "object" && "translateConfig" in config) {
-        return config.translateConfig;
-    }
-
-    return config;
-}
 
 async function main() {
     const {
@@ -33,24 +18,7 @@ async function main() {
         },
     });
 
-    const explorer = cosmiconfig(moduleName, {
-        searchPlaces: [
-            `.${moduleName}rc.js`,
-            `.${moduleName}rc.ts`,
-            `.${moduleName}rc.mjs`,
-            `.${moduleName}rc.cjs`,
-            `.config/${moduleName}rc.js`,
-            `.config/${moduleName}rc.ts`,
-            `.config/${moduleName}rc.mjs`,
-            `.config/${moduleName}rc.cjs`,
-            `${moduleName}.config.js`,
-            `${moduleName}.config.ts`,
-            `${moduleName}.config.mjs`,
-            `${moduleName}.config.cjs`,
-        ],
-    });
-
-    const result = await explorer.search();
+    const result = await createConfigExplorer().search();
     if (!result || !result.config) {
         logger.error("No configuration file found");
         process.exit(1);
