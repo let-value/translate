@@ -40,12 +40,10 @@ test("message with template string returns placeholders and values", () => {
 test("message disallows computed strings", () => {
     const variable: string = "v";
     // @ts-expect-error computed strings are not allowed
-    // biome-ignore lint/style/useTemplate: true
     message("Computed" + variable + "string");
 });
 
 test("message disallows variables", () => {
-    // biome-ignore lint/style/useConst: true
     let name = "World";
     // @ts-expect-error dynamic template strings are not allowed
     message(name);

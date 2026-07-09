@@ -1,4 +1,3 @@
-/** biome-ignore-all lint/complexity/useLiteralKeys: jp */
 import assert from "node:assert/strict";
 import fs from "node:fs/promises";
 import { dirname, join } from "node:path";
@@ -33,7 +32,7 @@ async function loadRunApp() {
         compilerOptions: {
             module: ts.ModuleKind.ES2022,
             target: ts.ScriptTarget.ES2022,
-            jsx: ts.JsxEmit.React,
+            jsx: ts.JsxEmit.ReactJSX,
         },
     });
     const jsPath = join(appDir, "app.mjs");

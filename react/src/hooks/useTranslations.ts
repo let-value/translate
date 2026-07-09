@@ -4,7 +4,6 @@ import { use } from "react";
 import { localeContext, translatorContext } from "../context.ts";
 
 /** @deprecated replace with `use` from react */
-// biome-ignore lint/suspicious/noExplicitAny: we need to decorate the promise
 function getPromiseState(promise: any) {
     switch (promise.status) {
         case "pending":

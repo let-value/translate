@@ -1,8 +1,5 @@
-/** biome-ignore-all lint/correctness/useUniqueElementIds: true */
 import fs from "node:fs/promises";
 import * as gettextParser from "gettext-parser";
-// biome-ignore lint/correctness/noUnusedImports: need for jsx
-import React from "react";
 import { renderToPipeableStream } from "react-dom/server";
 import {
     LocaleProvider,

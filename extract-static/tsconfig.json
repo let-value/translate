@@ -4,5 +4,6 @@
         "noEmit": true,
         "types": ["node"]
     },
-    "include": ["src/**/*.ts", "bin/*.ts", "scripts/*.ts", "tests/*.test.ts"]
+    "include": ["src/**/*.ts", "src/**/*.d.ts", "bin/*.ts", "scripts/*.ts", "tests/*.test.ts"],
+    "references": [{ "path": "../extract" }, { "path": "../translate" }]
 }

@@ -1,6 +1,6 @@
 {
     "name": "@let-value/translate",
-    "version": "1.1.5-beta.3",
+    "version": "1.1.6-beta.1",
     "repository": {
         "type": "git",
         "url": "https://github.com/let-value/translate"
@@ -22,7 +22,7 @@
     },
     "scripts": {
         "build": "vp pack",
-        "pretest": "npm run build",
+        "pretest": "pnpm run build",
         "check": "vp check",
         "format": "vp fmt",
         "typecheck": "tsc --build",
@@ -32,8 +32,9 @@
         "plural-forms": "0.5.5"
     },
     "devDependencies": {
-        "@types/gettext-parser": "8.0.0",
-        "typescript": "5.9.2",
+        "@types/gettext-parser": "9.0.0",
+        "gettext-parser": "9.0.2",
+        "typescript": "6.0.3",
         "vite-plus": "latest"
     }
 }
