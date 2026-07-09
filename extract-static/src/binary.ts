@@ -1,18 +1,56 @@
-import { resolve } from "node:path";
-import { familySync } from "detect-libc";
+import { createRequire } from "node:module";
+import { familySync, MUSL } from "detect-libc";
 
-export const root = resolve(import.meta.dirname, "..");
-export const platform = process.platform;
-export const arch = process.arch;
-export const libc = familySync() || null;
+const require = createRequire(import.meta.url);
+const packagePrefix = "@let-value/translate-extract-static";
 
-export function getBinaryName(platform: string, arch: string, libc?: string | null) {
-    const extension = platform === "win32" ? ".exe" : "";
+export function getBinaryPackageSuffix(platform: string, arch: string, libc?: string | null): string | null {
+    if (platform === "darwin" && (arch === "arm64" || arch === "x64")) {
+        return `darwin-${arch}`;
+    }
 
-    return `extract-${platform}-${arch}${libc ? `-${libc}` : ""}${extension}`;
+    if (platform === "linux" && (arch === "arm64" || arch === "x64")) {
+        return `linux-${arch}-${libc === MUSL ? "musl" : "gnu"}`;
+    }
+
+    if (platform === "win32" && arch === "x64") {
+        return "win32-x64";
+    }
+
+    return null;
 }
 
-export const binaryName = getBinaryName(platform, arch, libc);
-export const binaryPath = resolve(root, "prebuilts", binaryName);
+export function getBinaryPackageName(platform: string, arch: string, libc?: string | null): string | null {
+    const suffix = getBinaryPackageSuffix(platform, arch, libc);
+    return suffix ? `${packagePrefix}-${suffix}` : null;
+}
 
-export default binaryPath;
+export function getBinaryName(platform: string, arch: string, libc?: string | null): string {
+    const binaryPlatform = platform === "win32" ? "win" : platform;
+    const libcSuffix = platform === "linux" && libc === MUSL ? "-musl" : "";
+    const extension = platform === "win32" ? ".exe" : "";
+    return `extract-${binaryPlatform}-${arch}${libcSuffix}${extension}`;
+}
+
+export function getBinaryPath(
+    platform = process.platform,
+    arch = process.arch,
+    libc = platform === "linux" ? familySync() : null,
+    resolvePackage: (name: string) => string = require.resolve,
+): string | null {
+    const packageName = getBinaryPackageName(platform, arch, libc);
+
+    if (!packageName) {
+        console.warn(`The static extractor does not support ${platform}-${arch}.`);
+        return null;
+    }
+
+    try {
+        return resolvePackage(packageName);
+    } catch {
+        console.warn(`Could not find ${packageName}. Reinstall @let-value/translate-extract-static.`);
+        return null;
+    }
+}
+
+export default getBinaryPath;

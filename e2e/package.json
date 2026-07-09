@@ -17,7 +17,7 @@
         "@let-value/translate": "workspace:*",
         "@let-value/translate-extract": "workspace:*",
         "@let-value/translate-react": "workspace:*",
-        "gettext-parser": "9.0.2",
+        "gettext-parser": "9.1.1",
         "react": "19.2.7",
         "react-dom": "19.2.7"
     },

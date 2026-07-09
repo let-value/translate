@@ -3,6 +3,7 @@ packages:
     - translate
     - extract
     - extract-static
+    - extract-static/npm/*
     - react
     - e2e
 

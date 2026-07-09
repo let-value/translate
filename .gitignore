@@ -1,4 +1,5 @@
 node_modules/
 prebuilts
 dist
+*.bun-build
 tsconfig.tsbuildinfo

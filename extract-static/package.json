@@ -9,8 +9,7 @@
         "extract": "./dist/bin/cli.mjs"
     },
     "files": [
-        "dist",
-        "postinstall.cjs"
+        "dist"
     ],
     "type": "module",
     "main": "./dist/src/index.cjs",
@@ -25,8 +24,8 @@
         "./package.json": "./package.json"
     },
     "scripts": {
-        "postinstall": "node postinstall.cjs",
         "build": "vp pack",
+        "compile": "bun run scripts/compile.ts",
         "check": "vp check",
         "format": "vp fmt",
         "typecheck": "tsc --build",
@@ -39,8 +38,17 @@
         "@let-value/translate": "workspace:*",
         "@let-value/translate-extract": "workspace:*",
         "@types/bun": "1.3.14",
-        "@types/node": "26.0.1",
+        "@types/node": "26.1.0",
         "typescript": "6.0.3",
         "vite-plus": "latest"
+    },
+    "optionalDependencies": {
+        "@let-value/translate-extract-static-darwin-arm64": "workspace:*",
+        "@let-value/translate-extract-static-darwin-x64": "workspace:*",
+        "@let-value/translate-extract-static-linux-arm64-gnu": "workspace:*",
+        "@let-value/translate-extract-static-linux-arm64-musl": "workspace:*",
+        "@let-value/translate-extract-static-linux-x64-gnu": "workspace:*",
+        "@let-value/translate-extract-static-linux-x64-musl": "workspace:*",
+        "@let-value/translate-extract-static-win32-x64": "workspace:*"
     }
 }

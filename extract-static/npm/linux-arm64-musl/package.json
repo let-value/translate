@@ -1,0 +1,22 @@
+{
+    "name": "@let-value/translate-extract-static-linux-arm64-musl",
+    "version": "1.1.6-beta.1",
+    "description": "Standalone translate extractor for Linux ARM64 musl",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/let-value/translate"
+    },
+    "files": [
+        "prebuilts"
+    ],
+    "os": [
+        "linux"
+    ],
+    "cpu": [
+        "arm64"
+    ],
+    "libc": [
+        "musl"
+    ],
+    "main": "prebuilts/extract-linux-arm64-musl"
+}

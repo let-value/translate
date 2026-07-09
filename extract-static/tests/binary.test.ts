@@ -4,7 +4,7 @@ import { readdir, readFile, rm } from "node:fs/promises";
 import { join } from "node:path";
 import { afterAll, test } from "vite-plus/test";
 import { promisify } from "node:util";
-import { binaryPath } from "../src/binary.ts";
+import { getBinaryPackageName, getBinaryPath } from "../src/binary.ts";
 
 const execFileAsync = promisify(execFile);
 
@@ -15,7 +15,29 @@ afterAll(async () => {
     await rm(translations, { recursive: true, force: true });
 });
 
+test("selects the package for each supported platform", () => {
+    assert.equal(getBinaryPackageName("darwin", "arm64"), "@let-value/translate-extract-static-darwin-arm64");
+    assert.equal(getBinaryPackageName("darwin", "x64"), "@let-value/translate-extract-static-darwin-x64");
+    assert.equal(getBinaryPackageName("linux", "arm64"), "@let-value/translate-extract-static-linux-arm64-gnu");
+    assert.equal(getBinaryPackageName("linux", "x64"), "@let-value/translate-extract-static-linux-x64-gnu");
+    assert.equal(
+        getBinaryPackageName("linux", "arm64", "musl"),
+        "@let-value/translate-extract-static-linux-arm64-musl",
+    );
+    assert.equal(getBinaryPackageName("linux", "x64", "musl"), "@let-value/translate-extract-static-linux-x64-musl");
+    assert.equal(getBinaryPackageName("win32", "x64"), "@let-value/translate-extract-static-win32-x64");
+    assert.equal(getBinaryPackageName("win32", "arm64"), null);
+});
+
+test("resolves the selected optional package", () => {
+    const binaryPath = getBinaryPath("linux", "x64", "glibc", (name) => `/packages/${name}/extract`);
+
+    assert.equal(binaryPath, "/packages/@let-value/translate-extract-static-linux-x64-gnu/extract");
+});
+
 test.skip("compiled binary produces po files", async () => {
+    const binaryPath = getBinaryPath();
+    assert.ok(binaryPath);
     await execFileAsync(binaryPath, [], { cwd: root, timeout: 30_000 });
 
     const files = await readdir(translations);
