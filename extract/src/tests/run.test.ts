@@ -5,7 +5,7 @@ import { join, resolve } from "node:path";
 import { test } from "vite-plus/test";
 
 import { defineConfig } from "../configuration.ts";
-import type { Plugin, ResolveArgs } from "../plugin.ts";
+import type { Plugin } from "../plugin.ts";
 import { run } from "../run.ts";
 
 test("runs all process hooks for a file", async () => {
@@ -17,9 +17,8 @@ test("runs all process hooks for a file", async () => {
     const corePlugin: Plugin = {
         name: "core-plugin",
         setup(build) {
-            build.onResolve({ filter: /.*/, namespace: "source" }, (args) => args);
-            build.onLoad({ filter: /.*/, namespace: "source" }, (args) => ({ ...args, data: "" }));
-            build.onProcess({ filter: /.*/, namespace: "source" }, () => {
+            build.onLoad(/.*/, () => "");
+            build.onProcess(/.*/, () => {
                 collected.push(coreTranslations);
                 return undefined;
             });
@@ -29,7 +28,7 @@ test("runs all process hooks for a file", async () => {
     const reactPlugin: Plugin = {
         name: "react-plugin",
         setup(build) {
-            build.onProcess({ filter: /.*/, namespace: "source" }, () => {
+            build.onProcess(/.*/, () => {
                 collected.push(reactTranslations);
                 return undefined;
             });
@@ -51,22 +50,12 @@ test("skips resolving paths matching exclude", async () => {
     const plugin: Plugin = {
         name: "mock",
         setup(build) {
-            build.onResolve({ filter: /.*/, namespace: "source" }, ({ entrypoint, path, namespace }) => {
+            build.onLoad(/.*/, ({ path }) => {
                 if (path === extra) resolvedExtra = true;
-                return { entrypoint, path, namespace };
+                return "";
             });
-            build.onLoad({ filter: /.*/, namespace: "source" }, ({ entrypoint, path, namespace }) => ({
-                entrypoint,
-                path,
-                namespace,
-                data: "",
-            }));
-            build.onProcess({ filter: /.*/, namespace: "source" }, (args) => {
-                build.resolve({
-                    entrypoint: args.entrypoint,
-                    path: extra,
-                    namespace: "source",
-                });
+            build.onProcess(/.*/, (args) => {
+                build.source({ entrypoint: args.entrypoint, path: extra });
                 return undefined;
             });
         },
@@ -93,15 +82,11 @@ test("resolves glob entrypoints to matched files", async () => {
     const plugin: Plugin = {
         name: "glob-entrypoint",
         setup(build) {
-            build.onResolve({ filter: /.*/, namespace: "source" }, (args) => {
+            build.onLoad(/.*/, (args) => {
                 seen.push(resolve(args.entrypoint));
-                return args;
+                return "";
             });
-            build.onLoad({ filter: /.*/, namespace: "source" }, (args) => ({
-                ...args,
-                data: "",
-            }));
-            build.onProcess({ filter: /.*/, namespace: "source" }, () => undefined);
+            build.onProcess(/.*/, () => undefined);
         },
     };
 
@@ -140,7 +125,7 @@ export const b = 1;
     const plugin: Plugin = {
         name: "source-spy",
         setup(build) {
-            build.onResolve({ filter: /.*/, namespace: "source" }, (args) => {
+            build.onProcess(/.*/, (args) => {
                 seenSourcePaths.push(resolve(args.path));
                 return undefined;
             });
@@ -185,14 +170,12 @@ export const component = "shared";
 `,
     );
 
-    const seenResolves: ResolveArgs[] = [];
     const seenSourcePaths: string[] = [];
 
     const plugin: Plugin = {
         name: "source-spy",
         setup(build) {
-            build.onResolve({ filter: /.*/, namespace: "source" }, (args) => {
-                seenResolves.push(args);
+            build.onProcess(/.*/, (args) => {
                 seenSourcePaths.push(resolve(args.path));
                 return undefined;
             });
@@ -469,19 +452,14 @@ test("keeps default path excludes when custom excludes are configured", async ()
     const plugin: Plugin = {
         name: "default-exclude-spy",
         setup(build) {
-            build.onResolve({ filter: /.*/, namespace: "source" }, ({ path }) => {
+            build.onLoad(/.*/, ({ path }) => {
                 if (path === dependency) {
                     resolvedDependency = true;
                 }
-                return undefined;
+                return "";
             });
-            build.onLoad({ filter: /.*/, namespace: "source" }, (args) => ({ ...args, data: "" }));
-            build.onProcess({ filter: /.*/, namespace: "source" }, (args) => {
-                build.resolve({
-                    entrypoint: args.entrypoint,
-                    path: dependency,
-                    namespace: "source",
-                });
+            build.onProcess(/.*/, (args) => {
+                build.source({ entrypoint: args.entrypoint, path: dependency });
                 return undefined;
             });
         },

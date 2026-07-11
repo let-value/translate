@@ -1,0 +1,35 @@
+{
+    "name": "@let-value/graph",
+    "version": "1.1.6-beta.1",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/let-value/translate"
+    },
+    "files": [
+        "dist"
+    ],
+    "type": "module",
+    "main": "dist/index.cjs",
+    "module": "dist/index.mjs",
+    "types": "dist/index.d.mts",
+    "exports": {
+        ".": {
+            "types": "./dist/index.d.mts",
+            "import": "./dist/index.mjs",
+            "require": "./dist/index.cjs"
+        },
+        "./package.json": "./package.json"
+    },
+    "scripts": {
+        "build": "vp pack",
+        "check": "vp check",
+        "format": "vp fmt",
+        "typecheck": "tsc --build",
+        "test": "vp test"
+    },
+    "devDependencies": {
+        "@types/node": "26.0.1",
+        "typescript": "6.0.3",
+        "vite-plus": "latest"
+    }
+}

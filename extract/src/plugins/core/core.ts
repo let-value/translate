@@ -1,47 +1,28 @@
 import { readFile } from "node:fs/promises";
-import { resolve } from "node:path";
 
 import { isExcluded } from "../../exclude.ts";
 import type { Plugin } from "../../plugin.ts";
 import { parseSource } from "./parse.ts";
-import type { Translation } from "./queries/types.ts";
 import { resolveImportResults } from "./resolve.ts";
 
 const filter = /\.([cm]?tsx?|jsx?)$/;
-const namespace = "source";
 
-export function core(): Plugin<string, Translation[]> {
+export function core(): Plugin {
     return {
         name: "core",
         setup(build) {
             build.context.logger?.debug("core plugin initialized");
 
-            build.onResolve({ filter, namespace }, ({ entrypoint, path, import: imp, data }) => {
-                return {
-                    entrypoint,
-                    namespace,
-                    path: resolve(path),
-                    import: imp,
-                    data,
-                };
-            });
+            build.onLoad(filter, ({ path }) => readFile(path, "utf8"));
 
-            build.onLoad({ filter, namespace }, async ({ entrypoint, path }) => {
-                const data = await readFile(path, "utf8");
-                return {
-                    entrypoint,
-                    path,
-                    namespace,
-                    data,
-                };
-            });
-
-            build.onProcess({ filter, namespace }, ({ entrypoint, path, data }) => {
-                const result = parseSource(data, path);
+            build.onProcess(filter, ({ entrypoint, path, contents, emit }) => {
+                const result = parseSource(contents, path);
 
                 if (result.entrypoint && entrypoint !== path) {
-                    build.source(path);
-                    return { entrypoint, path, namespace, data: [] as Translation[] };
+                    // Promote to its own extraction pipeline and keep its
+                    // messages out of the current entrypoint.
+                    build.source({ entrypoint: path, path });
+                    return true;
                 }
 
                 const { translations, imports, warnings } = result;
@@ -53,13 +34,16 @@ export function core(): Plugin<string, Translation[]> {
                             continue;
                         }
 
-                        build.resolve({ entrypoint, path: result.path, namespace, import: result.import });
+                        build.source({ entrypoint, path: result.path, import: result.import });
                     }
                     for (const { spec, error } of unresolved) {
                         const imp = imports.find((imp) => imp.spec === spec);
                         if (
                             imp &&
-                            isExcluded({ entrypoint, path: spec, namespace, import: imp }, build.context.config.exclude)
+                            isExcluded(
+                                { entrypoint, path: spec, namespace: "source", import: imp },
+                                build.context.config.exclude,
+                            )
                         ) {
                             continue;
                         }
@@ -73,13 +57,7 @@ export function core(): Plugin<string, Translation[]> {
                     build.context.logger?.warn(`${warning.error} at ${warning.reference}`);
                 }
 
-                build.resolve({
-                    entrypoint,
-                    path,
-                    namespace: "translate",
-                    data: translations,
-                });
-
+                emit(translations);
                 return undefined;
             });
         },

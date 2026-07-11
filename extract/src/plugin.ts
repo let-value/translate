@@ -1,5 +1,6 @@
 import type { ResolvedConfig } from "./configuration.ts";
 import type { Logger } from "./logger.ts";
+import type { Translation } from "./plugins/core/queries/types.ts";
 import type { StaticPlugin } from "./static.ts";
 
 type MaybePromise<T> = T | Promise<T>;
@@ -7,6 +8,7 @@ type MaybePromise<T> = T | Promise<T>;
 export interface Context {
     config: ResolvedConfig;
     generatedAt: Date;
+    /** Entrypoint roots discovered in this run (including promoted ones). */
     paths: Set<string>;
     logger?: Logger;
 }
@@ -17,6 +19,7 @@ export interface ImportReference {
     typeOnly: boolean;
 }
 
+/** Arguments passed to exclude filters. */
 export interface ResolveArgs<TInput = unknown> {
     entrypoint: string;
     path: string;
@@ -25,66 +28,73 @@ export interface ResolveArgs<TInput = unknown> {
     data?: TInput;
 }
 
-export interface ResolveResult<TInput = unknown> {
+export interface SourceArgs {
     entrypoint: string;
     path: string;
-    namespace: string;
     import?: ImportReference;
-    data?: TInput;
 }
 
-export interface LoadArgs<TInput = unknown> {
+export interface LoadArgs {
     entrypoint: string;
     path: string;
-    namespace: string;
-    data?: TInput;
 }
 
-export interface LoadResult<TInput = unknown> {
+/** Produces the contents of a source file; return undefined to let the next loader try. */
+export type LoadHook = (args: LoadArgs) => MaybePromise<string | undefined>;
+
+export interface ProcessArgs {
     entrypoint: string;
     path: string;
-    namespace: string;
-    data: TInput;
+    contents: string;
+    /** Emits translations extracted from this file. */
+    emit(translations: Translation[]): void;
 }
 
-export interface ProcessArgs<TInput = unknown> {
-    entrypoint: string;
+/** Runs for every loaded source file. Return a non-undefined value to stop later processors for this file. */
+export type ProcessHook = (args: ProcessArgs) => MaybePromise<unknown>;
+
+export interface FileTranslations {
     path: string;
-    namespace: string;
-    data: TInput;
+    translations: Translation[];
 }
 
-export interface ProcessResult<TOutput = unknown> {
+export interface CollectedArgs {
     entrypoint: string;
-    path: string;
-    namespace: string;
-    data: TOutput;
+    /** Translations of every processed source file of this entrypoint, one entry per file. */
+    files: FileTranslations[];
+    /** Schedules an output artifact. Outputs run in parallel; writes to the same path are serialized. */
+    output(path: string, produce: () => MaybePromise<void>): void;
 }
 
-export type Filter = { filter: RegExp; namespace?: string };
-export type ResolveHook<TInput = unknown> = (
-    args: ResolveArgs<TInput>,
-) => MaybePromise<ResolveResult<TInput> | undefined>;
-export type LoadHook<TInput = unknown> = (args: LoadArgs<TInput>) => MaybePromise<LoadResult<TInput> | undefined>;
-export type ProcessHook<TInput = unknown, TOutput = unknown> = (
-    args: ProcessArgs<TInput>,
-) => MaybePromise<ProcessResult<TOutput> | undefined>;
+/** Runs once per entrypoint, after all of its source files settled and translations are known. */
+export type CollectedHook = (args: CollectedArgs) => MaybePromise<void>;
 
-export interface Build<TInput = unknown, TOutput = unknown> {
+export interface OutputsArgs {
+    /** Every output path produced in this run, across all entrypoints. */
+    outputs: string[];
+}
+
+/** Runs once per run, after every entrypoint produced its outputs. */
+export type OutputsHook = (args: OutputsArgs) => MaybePromise<void>;
+
+export interface Build {
     context: Context;
-    source(path: string): void;
-    resolve(args: ResolveArgs<unknown>): void;
-    load(args: LoadArgs<unknown>): void;
-    process(args: ProcessArgs<unknown>): void;
-    defer(namespace: string): Promise<void>;
-    onResolve(options: Filter, hook: ResolveHook<TInput>): void;
-    onLoad(options: Filter, hook: LoadHook<TInput>): void;
-    onProcess(options: Filter, hook: ProcessHook<TInput, TOutput>): void;
+    /**
+     * Discovers a source file. When `path` equals `entrypoint` a new
+     * extraction pipeline is started for it (entrypoint promotion);
+     * otherwise the file joins the given entrypoint's walk. Excluded and
+     * already-known paths are ignored.
+     */
+    source(args: SourceArgs): void;
+    onLoad(filter: RegExp, hook: LoadHook): void;
+    onProcess(filter: RegExp, hook: ProcessHook): void;
+    onCollected(hook: CollectedHook): void;
+    onOutputs(hook: OutputsHook): void;
 }
 
-export interface Plugin<TInput = unknown, TOutput = unknown> {
+export interface Plugin {
     name: string;
-    setup(build: Build<TInput, TOutput>): void;
+    setup(build: Build): void;
 }
 
 export type UniversalPlugin = Plugin | StaticPlugin;
