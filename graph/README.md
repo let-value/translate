@@ -64,19 +64,19 @@ await graph.run({ concurrency: 8 });
 
 Semantics worth knowing:
 
-- **Serial kinds** — `graph.kind(name, { serial: true })` never runs two
-  nodes with the same key concurrently, even across scopes: they chain in
-  creation order (e.g. writers of the same file). A failed node skips later
-  same-key nodes like any dependency failure.
-
 - **Completion / sealing** — `scope.completion(kind)` waits for all activity
   in the scope and its descendants, except nodes that depend on the
   completion itself (its consumers). After it fires the scope is sealed:
   adding a non-consumer node throws instead of silently missing the barrier.
 - **Scope independence** — completions only wait on their own scope subtree,
   so one entry point can serialize while another is still being walked.
-- **Registration order** — `each` and `wrap` must be registered before any
-  node of the kind exists.
+- **Definition phase** — `each` and `wrap` may be registered any time before
+  `run()`, in any order relative to node creation (workers attach
+  retroactively when the run starts). Registering after `run()` throws.
+- **Wrappers are real nodes** — the wrapped computation is materialized as
+  lazy intermediate nodes (`<id>@raw`, `<id>@<name>`) evaluated on demand: a
+  wrapper that answers without calling `next()` (a cache hit) leaves the
+  inner computation dormant, and it settles as `skipped`.
 - **Dedup** — `scope.add` throws on duplicate keys; `scope.ensure` returns
   the existing node, which is what recursive walkers want.
 
@@ -87,6 +87,11 @@ Semantics worth knowing:
   is running.
 - **Ordering edges** — `graph.connect(dependency, dependent)` adds an edge
   without passing a value.
+- **Demand-driven evaluation** — `graph.add(id, { lazy: true, run })` stays
+  dormant until demanded, either statically (a non-lazy node depends on it)
+  or dynamically via `context.demand(node)`, which records a real dependency
+  edge and awaits the value. A suspended demander releases its concurrency
+  slot; a lazy node nobody demanded settles as `skipped` when the run ends.
 - **Failure isolation** — a rejected node skips its transitive dependents;
   unrelated branches keep running. `run()` rejects with an `AggregateError`
   of all node failures after everything has settled.

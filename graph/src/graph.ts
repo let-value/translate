@@ -624,18 +624,39 @@ export class Scope {
         this.#assertOpen(`${kind.name}:${key}`, dependencies);
 
         const scope = this;
-        const wrappers = internals.wrappers.get(kind.name) ?? [];
-        const node = this.#graph.add(`${this.#prefix()}${kind.name}:${key}`, {
+        const graph = this.#graph;
+        const id = `${this.#prefix()}${kind.name}:${key}`;
+        const node = graph.add(id, {
             dependencies,
             run: (context: NodeContext, ...values: NodeValues<TDeps>) => {
-                const scoped: ScopeContext = { id: context.id, key, signal: context.signal, scope };
-                let next: () => Promise<TResult> = () =>
-                    Promise.resolve(options.run(scoped, ...values)) as Promise<TResult>;
-                for (const wrapper of wrappers) {
-                    const inner = next;
-                    next = () => Promise.resolve(wrapper.wrap(scoped, inner)) as Promise<TResult>;
+                const scoped: ScopeContext = {
+                    id: context.id,
+                    key,
+                    signal: context.signal,
+                    scope,
+                    demand: context.demand,
+                };
+                const compute = () => options.run(scoped, ...values);
+                const wrappers = internals.wrappers.get(kind.name) ?? [];
+                if (wrappers.length === 0) {
+                    return compute();
                 }
-                return next();
+                // The wrapper chain is real intermediate nodes evaluated on
+                // demand: a wrapper that answers without calling next() (a
+                // cache hit) leaves the inner nodes dormant.
+                let inner = graph.add(`${id}@raw`, { lazy: true, run: () => compute() }) as GraphNode<TResult>;
+                for (const registration of wrappers.slice(0, -1)) {
+                    const previous = inner;
+                    inner = graph.add(`${id}@${registration.name}`, {
+                        lazy: true,
+                        run: (innerContext) =>
+                            registration.wrap({ ...scoped, id: innerContext.id, demand: innerContext.demand }, () => {
+                                return innerContext.demand(previous);
+                            }),
+                    }) as GraphNode<TResult>;
+                }
+                const outermost = wrappers[wrappers.length - 1];
+                return outermost.wrap(scoped, () => context.demand(inner)) as TResult | PromiseLike<TResult>;
             },
         });
 
@@ -652,15 +673,6 @@ export class Scope {
             }
         }
 
-        if (internals.serial.has(kind.name)) {
-            const tail = `${kind.name}\u0000${key}`;
-            const previous = internals.tails.get(tail);
-            if (previous) {
-                this.#graph.connect(previous, node);
-            }
-            internals.tails.set(tail, node);
-        }
-
         for (const registration of internals.workers.get(kind.name) ?? []) {
             this.#create(registration.kind, key, {
                 dependencies: [node] as const,
@@ -668,6 +680,30 @@ export class Scope {
             });
         }
         return node;
+    }
+
+    /**
+     * Attaches workers registered after some nodes of their kind were
+     * already added. Runs once when the definition phase ends (run()).
+     */
+    static materialize(scope: Scope): void {
+        const internals = INTERNALS.get(scope.#graph) as Internals;
+        for (const [kindName, byKey] of scope.#entries) {
+            for (const registration of internals.workers.get(kindName) ?? []) {
+                for (const [key, node] of [...byKey]) {
+                    if (scope.#entries.get(registration.kind.name)?.has(key)) {
+                        continue;
+                    }
+                    scope.#create(registration.kind, key, {
+                        dependencies: [node] as const,
+                        run: (context, value) => registration.worker(context, value, node),
+                    });
+                }
+            }
+        }
+        for (const child of scope.#children.values()) {
+            Scope.materialize(child);
+        }
     }
 
     /**

@@ -18,6 +18,9 @@ import type {
 import type { Translation } from "./plugins/core/queries/types.ts";
 import { resolveStaticPlugin } from "./plugins/static.ts";
 
+/** A pending write requested by an onCollected hook via output(). */
+type Contribution = { path: string; produce: () => unknown };
+
 async function getPaths(entrypoint: ResolvedEntrypoint) {
     const pattern = entrypoint.entrypoint.replace(/\\/g, "/");
     const paths = glob.isDynamicPattern(pattern) ? await glob(pattern, { onlyFiles: true }) : [entrypoint.entrypoint];
@@ -58,10 +61,12 @@ export async function run(
 
     const graph = new Graph();
     const source = graph.kind<string | undefined>("source");
-    const collect = graph.kind<void>("collect");
-    // Serial: writers of the same output path never overlap, even when
-    // several entrypoints target the same file.
-    const output = graph.kind<string>("output", { serial: true });
+    // A collect node's value is what its hook asked to write; a root plan
+    // node fans contributions in per destination, so writers of the same
+    // output path become a single node instead of racing.
+    const collect = graph.kind<Contribution[]>("collect");
+    const plan = graph.kind<void>("plan");
+    const output = graph.kind<string>("output");
     const finalize = graph.kind<void>("finalize");
 
     // One worker per source file runs the processor hooks in registration
@@ -133,20 +138,17 @@ export async function run(
         collectors.forEach((hook, index) => {
             scope.add(collect, String(index), {
                 dependencies: [collected],
-                run: (_node, files) =>
-                    hook({
+                run: async (_node, files) => {
+                    const contributions: Contribution[] = [];
+                    await hook({
                         entrypoint: path,
                         files: files.filter((file) => file !== undefined),
                         output: (outputPath, produce) => {
-                            scope.ensure(output, outputPath, {
-                                dependencies: [collected],
-                                run: async () => {
-                                    await produce();
-                                    return outputPath;
-                                },
-                            });
+                            contributions.push({ path: outputPath, produce });
                         },
-                    }),
+                    });
+                    return contributions;
+                },
             });
         });
     }
@@ -179,6 +181,33 @@ export async function run(
         logger?.debug({ plugin: plugin.name }, "setting up plugin");
         plugin.setup(build);
     }
+
+    // Once every entrypoint has collected, group contributions by destination
+    // and spawn one writer node per output path: same-file writes are ordered
+    // by structure, not by locks.
+    const contributed = graph.root.completion(collect);
+    graph.root.add(plan, "outputs", {
+        dependencies: [contributed],
+        run: (_node, collections) => {
+            const byPath = new Map<string, Contribution[]>();
+            for (const contribution of collections.flat()) {
+                const group = byPath.get(contribution.path) ?? [];
+                group.push(contribution);
+                byPath.set(contribution.path, group);
+            }
+            for (const [outputPath, contributions] of byPath) {
+                graph.root.add(output, outputPath, {
+                    dependencies: [contributed],
+                    run: async () => {
+                        for (const { produce } of contributions) {
+                            await produce();
+                        }
+                        return outputPath;
+                    },
+                });
+            }
+        },
+    });
 
     // Finalizers see the outputs of every entrypoint of this run, so cleanup
     // can reason about directories shared between entrypoints.

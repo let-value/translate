@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { setTimeout as delay } from "node:timers/promises";
 import { test } from "vite-plus/test";
-import { Graph } from "../graph.ts";
+import { CycleError, Graph, type GraphNode } from "../graph.ts";
 
 test("completion collects kind values across the scope subtree", async () => {
     const graph = new Graph();
@@ -74,6 +74,9 @@ test("wrappers interpose on a kind: consumers read the cached value, cache hits 
     assert.equal(cold.value, "parsed contents of cold.ts");
     assert.deepEqual(reads, ["cached contents of warm.ts", "cached contents of warm.ts"]);
     assert.equal(cache.get("cold.ts"), "parsed contents of cold.ts"); // miss populated the cache
+    // The raw computation is a real lazy node: dormant on a hit, demanded on a miss.
+    assert.equal(graph.get("entry/contents:warm.ts@raw")?.status, "skipped");
+    assert.equal(graph.get("entry/contents:cold.ts@raw")?.status, "fulfilled");
 });
 
 test("wrappers compose with the last registered one outermost", async () => {
@@ -143,13 +146,22 @@ test("consumers of a completion may be added to the scope after it fired", async
     assert.equal(late.value.value, 1);
 });
 
-test("worker and wrapper registration must precede nodes of the kind", () => {
+test("workers apply retroactively to earlier nodes; registration freezes at run()", async () => {
     const graph = new Graph();
     const item = graph.kind<number>("item");
-    graph.scope("s").add(item, "x", () => 1);
+    const scope = graph.scope("s");
+    scope.add(item, "x", () => 1);
 
-    assert.throws(() => graph.each(item, "worker", () => 0), /already exist/);
-    assert.throws(() => graph.wrap(item, "cache", (_context, next) => next()), /already exist/);
+    // Registered after the node exists: materialized when run() starts.
+    const doubled = graph.each(item, "double", (_context, value) => value * 2);
+    const done = scope.completion(doubled);
+
+    const finished = graph.run();
+    assert.throws(() => graph.each(item, "late", () => 0), /after run/);
+    assert.throws(() => graph.wrap(item, "late", (_context, next) => next()), /after run/);
+    await finished;
+
+    assert.deepEqual(done.value, [2]);
 });
 
 test("scope.add rejects duplicate keys while ensure() reuses them", async () => {
@@ -168,67 +180,71 @@ test("scope.add rejects duplicate keys while ensure() reuses them", async () => 
     assert.equal(first.value, 1);
 });
 
-test("serial kinds never run same-key nodes concurrently across scopes", async () => {
+test("lazy nodes run only when demanded; undemanded ones settle skipped", async () => {
     const graph = new Graph();
-    const write = graph.kind<number>("write", { serial: true });
-    let active = 0;
-    let maxActive = 0;
-    const order: number[] = [];
-
-    const writer = (scope: string, sequence: number, key: string) =>
-        graph.scope(scope).add(write, key, async () => {
-            active += 1;
-            maxActive = Math.max(maxActive, active);
-            await delay(5);
-            order.push(sequence);
-            active -= 1;
-            return sequence;
-        });
-
-    writer("a", 1, "same.po");
-    writer("b", 2, "same.po");
-    writer("c", 3, "same.po");
+    let ran = 0;
+    const worker = (value: number) => () => {
+        ran += 1;
+        return value;
+    };
+    const wanted = graph.add("wanted", { lazy: true, run: worker(42) });
+    const unwanted = graph.add("unwanted", { lazy: true, run: worker(0) });
+    const consumer = graph.add("consumer", { run: (context) => context.demand(wanted) });
 
     await graph.run();
 
-    assert.equal(maxActive, 1);
-    assert.deepEqual(order, [1, 2, 3]);
+    assert.equal(ran, 1);
+    assert.equal(consumer.value, 42);
+    assert.equal(wanted.status, "fulfilled");
+    assert.equal(unwanted.status, "skipped");
+    assert.ok(graph.dependsOn(consumer, wanted)); // demand recorded a real edge
 });
 
-test("serial kinds still run different keys in parallel", async () => {
+test("a static dependent wakes a lazy node", async () => {
     const graph = new Graph();
-    const write = graph.kind<void>("write", { serial: true });
-    let active = 0;
-    let maxActive = 0;
-
-    for (const key of ["a.po", "b.po", "c.po"]) {
-        graph.scope(key).add(write, key, async () => {
-            active += 1;
-            maxActive = Math.max(maxActive, active);
-            await delay(5);
-            active -= 1;
-        });
-    }
-
-    await graph.run();
-
-    assert.equal(maxActive, 3);
-});
-
-test("a failed serial node skips later writers of the same key", async () => {
-    const graph = new Graph();
-    const write = graph.kind<string>("write", { serial: true });
-    const failure = new Error("disk full");
-
-    const first = graph.scope("a").add(write, "same.po", () => {
-        throw failure;
+    const lazyNode = graph.add("lazy", { lazy: true, run: () => 7 });
+    const consumer = graph.add("consumer", {
+        dependencies: [lazyNode],
+        run: (_context, value) => value + 1,
     });
-    const second = graph.scope("b").add(write, "same.po", () => "written");
 
-    await assert.rejects(graph.run());
+    await graph.run();
 
-    assert.equal(first.status, "rejected");
-    assert.equal(second.status, "skipped");
+    assert.equal(consumer.value, 8);
+});
+
+test("demanding a node that depends on the demander is a cycle", async () => {
+    const graph = new Graph();
+    let caught: unknown;
+    const first = graph.add("first", {
+        run: async (context) => {
+            await delay(5);
+            try {
+                await context.demand(second);
+            } catch (error) {
+                caught = error;
+            }
+        },
+    });
+    const second: GraphNode<void> = graph.add("second", {
+        dependencies: [first],
+        run: () => undefined,
+    });
+
+    await graph.run();
+
+    assert.ok(caught instanceof CycleError);
+});
+
+test("a suspended demander releases its concurrency slot", async () => {
+    const graph = new Graph();
+    const inner = graph.add("inner", { lazy: true, run: () => "value" });
+    const outer = graph.add("outer", { run: (context) => context.demand(inner) });
+
+    // With one slot, inner can only run if the suspended outer yields its slot.
+    await graph.run({ concurrency: 1 });
+
+    assert.equal(outer.value, "value");
 });
 
 test("kind names are unique per graph", () => {
