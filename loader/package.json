@@ -64,8 +64,8 @@
         "test": "vp test"
     },
     "dependencies": {
-        "gettext-parser": "9.0.2",
-        "unplugin": "3.2.0"
+        "gettext-parser": "9.1.1",
+        "unplugin": "3.3.0"
     },
     "devDependencies": {
         "@types/gettext-parser": "9.0.0",

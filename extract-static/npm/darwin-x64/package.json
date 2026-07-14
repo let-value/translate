@@ -1,0 +1,19 @@
+{
+    "name": "@let-value/translate-extract-static-darwin-x64",
+    "version": "1.1.6-beta.1",
+    "description": "Standalone translate extractor for macOS x64",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/let-value/translate"
+    },
+    "files": [
+        "prebuilts"
+    ],
+    "os": [
+        "darwin"
+    ],
+    "cpu": [
+        "x64"
+    ],
+    "main": "prebuilts/extract-darwin-x64"
+}

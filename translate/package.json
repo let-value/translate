@@ -33,7 +33,7 @@
     },
     "devDependencies": {
         "@types/gettext-parser": "9.0.0",
-        "gettext-parser": "9.0.2",
+        "gettext-parser": "9.1.1",
         "typescript": "6.0.3",
         "vite-plus": "latest"
     }
