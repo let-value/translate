@@ -24,6 +24,24 @@ await test("fetchLocale loads translations", async () => {
     assert.equal(lt.message`Hello, ${name}!`, "Привет, World!");
 });
 
+await test("getLocale reads default-export translation modules", async () => {
+    const ru = gettextParser.po.parse(await fs.promises.readFile(ruUrl));
+    const t = new Translator({ en: empty, ru: { default: ru } });
+    const name = "World";
+    assert.equal(t.getLocale("ru").message`Hello, ${name}!`, "Привет, World!");
+});
+
+await test("fetchLocale loads promised default-export translation modules", async () => {
+    const ru = gettextParser.po.parse(await fs.promises.readFile(ruUrl));
+    const t = new Translator({
+        en: empty,
+        ru: Promise.resolve({ default: ru }),
+    });
+    const name = "World";
+    const lt = await t.fetchLocale("ru");
+    assert.equal(lt.message`Hello, ${name}!`, "Привет, World!");
+});
+
 await test("getLocale warns and returns untranslated fallback for async locales", async () => {
     const t = new Translator({
         en: empty,
