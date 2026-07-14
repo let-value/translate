@@ -1,41 +1,39 @@
 import { realpathSync } from "node:fs";
 import { resolve as resolvePath } from "node:path";
+import { Graph, type Scope } from "@let-value/graph";
 import glob from "fast-glob";
 import type { ResolvedConfig, ResolvedEntrypoint } from "./configuration.ts";
-import { Defer } from "./defer.ts";
 import { isExcluded } from "./exclude.ts";
 import type { Logger } from "./logger.ts";
 import type {
     Build,
+    CollectedHook,
     Context,
-    Filter,
-    LoadArgs,
+    FileTranslations,
+    ImportReference,
     LoadHook,
-    ProcessArgs,
+    OutputsHook,
     ProcessHook,
-    ResolveArgs,
-    ResolveHook,
 } from "./plugin.ts";
+import type { Translation } from "./plugins/core/queries/types.ts";
 import { resolveStaticPlugin } from "./plugins/static.ts";
 
-export type Task =
-    | {
-          type: "resolve";
-          args: ResolveArgs;
-      }
-    | {
-          type: "load";
-          args: LoadArgs;
-      }
-    | {
-          type: "process";
-          args: ProcessArgs;
-      };
+/** A pending write requested by an onCollected hook via output(). */
+type Contribution = { path: string; produce: () => unknown };
 
 async function getPaths(entrypoint: ResolvedEntrypoint) {
     const pattern = entrypoint.entrypoint.replace(/\\/g, "/");
     const paths = glob.isDynamicPattern(pattern) ? await glob(pattern, { onlyFiles: true }) : [entrypoint.entrypoint];
     return new Set(paths.map((path) => resolvePath(path)));
+}
+
+function toRealPath(path: string) {
+    const abs = resolvePath(path);
+    try {
+        return realpathSync(abs);
+    } catch {
+        return abs;
+    }
 }
 
 export async function run(
@@ -46,115 +44,135 @@ export async function run(
     const obsolete = entrypoint.obsolete ?? config.obsolete;
     const exclude = entrypoint.exclude ?? config.exclude;
     const walk = entrypoint.walk ?? config.walk;
-    const paths = new Set<string>();
-    const resolved = new Set<string>();
 
     const context: Context = {
         config: { ...config, destination, obsolete, exclude, walk },
         generatedAt: new Date(),
-        paths,
+        paths: new Set<string>(),
         logger,
     };
 
     logger?.info(entrypoint, "starting extraction");
 
-    const resolvers: { filter: Filter; hook: ResolveHook }[] = [];
-    const loaders: { filter: Filter; hook: LoadHook }[] = [];
-    const processors: { filter: Filter; hook: ProcessHook }[] = [];
-    const hooks = {
-        resolve: resolvers,
-        load: loaders,
-        process: processors,
-    };
+    const loaders: { filter: RegExp; hook: LoadHook }[] = [];
+    const processors: { filter: RegExp; hook: ProcessHook }[] = [];
+    const collectors: CollectedHook[] = [];
+    const finalizers: OutputsHook[] = [];
 
-    const pending = new Map<string, Defer>();
-    const queue: Task[] = [];
+    const graph = new Graph();
+    const source = graph.kind<string | undefined>("source");
+    // A collect node's value is what its hook asked to write; a root plan
+    // node fans contributions in per destination, so writers of the same
+    // output path become a single node instead of racing.
+    const collect = graph.kind<Contribution[]>("collect");
+    const plan = graph.kind<void>("plan");
+    const output = graph.kind<string>("output");
+    const finalize = graph.kind<void>("finalize");
 
-    function getDeferred(namespace: string) {
-        let defer = pending.get(namespace);
-        if (defer === undefined) {
-            defer = new Defer();
-            pending.set(namespace, defer);
+    // One worker per source file runs the processor hooks in registration
+    // order; a hook returning non-undefined stops the chain for that file.
+    // Whatever the hooks emit becomes the worker's value, which the
+    // per-entrypoint completion collects.
+    const processed = graph.each(source, "process", async (node, contents): Promise<FileTranslations | undefined> => {
+        if (contents === undefined) {
+            return undefined;
         }
-        return defer;
-    }
-
-    function defer(namespace: string) {
-        const defer = getDeferred(namespace);
-        return defer.promise;
-    }
-
-    function source(path: string) {
-        const abs = resolvePath(path);
-        let resolvedPath: string;
-        try {
-            resolvedPath = realpathSync(abs);
-        } catch {
-            resolvedPath = abs;
+        const path = node.key;
+        let emitted: FileTranslations | undefined;
+        const args = {
+            entrypoint: node.scope.name,
+            path,
+            contents,
+            emit(translations: Translation[]) {
+                emitted ??= { path, translations: [] };
+                emitted.translations.push(...translations);
+            },
+        };
+        for (const { filter, hook } of processors) {
+            if (!filter.test(path)) {
+                continue;
+            }
+            if ((await hook(args)) !== undefined) {
+                break;
+            }
         }
+        return emitted;
+    });
 
-        if (paths.has(resolvedPath)) {
+    function addSource(scope: Scope, path: string, importReference?: ImportReference) {
+        if (scope.get(source, path)) {
             return;
         }
-
-        logger?.debug({ entrypoint: entrypoint.entrypoint, path: resolvedPath }, "resolved path");
-
-        paths.add(resolvedPath);
-        resolve({ entrypoint: resolvedPath, path: resolvedPath, namespace: "source" });
-    }
-
-    function resolve(args: ResolveArgs) {
-        const { entrypoint, path, namespace } = args;
-        const key = `${entrypoint}:${namespace}:${path}`;
-
-        const visited = resolved.has(key);
-        const skipped = isExcluded(args, context.config.exclude);
-        logger?.debug({ entrypoint, path, namespace, skipped, visited }, "resolve");
-
-        if (namespace === "source" && visited) {
+        const args = { entrypoint: scope.name, path, namespace: "source", import: importReference };
+        if (isExcluded(args, context.config.exclude)) {
+            logger?.debug(args, "excluded");
             return;
         }
-        resolved.add(key);
+        logger?.debug({ entrypoint: scope.name, path }, "source");
+        scope.add(source, path, async () => {
+            for (const { filter, hook } of loaders) {
+                if (!filter.test(path)) {
+                    continue;
+                }
+                const contents = await hook({ entrypoint: scope.name, path });
+                if (contents !== undefined) {
+                    return contents;
+                }
+            }
+            return undefined;
+        });
+    }
 
-        if (skipped) {
+    // Each entrypoint (initial or promoted mid-run) gets its own scope: its
+    // walk, translation collection, and outputs are independent from other
+    // entrypoints in the same run.
+    function pipeline(path: string) {
+        if (context.paths.has(path)) {
             return;
         }
+        context.paths.add(path);
+        const scope = graph.scope(path);
+        addSource(scope, path);
 
-        queue.push({ type: "resolve", args });
-        getDeferred(namespace).enqueue();
-    }
-
-    function load(args: LoadArgs) {
-        const { entrypoint, path, namespace } = args;
-        logger?.debug({ entrypoint, path, namespace }, "load");
-
-        queue.push({ type: "load", args });
-        getDeferred(namespace).enqueue();
-    }
-
-    function process(args: ProcessArgs) {
-        const { entrypoint, path, namespace } = args;
-        logger?.debug({ entrypoint, path, namespace }, "process");
-
-        queue.push({ type: "process", args });
-        getDeferred(namespace).enqueue();
+        const collected = scope.completion(processed);
+        collectors.forEach((hook, index) => {
+            scope.add(collect, String(index), {
+                dependencies: [collected],
+                run: async (_node, files) => {
+                    const contributions: Contribution[] = [];
+                    await hook({
+                        entrypoint: path,
+                        files: files.filter((file) => file !== undefined),
+                        output: (outputPath, produce) => {
+                            contributions.push({ path: outputPath, produce });
+                        },
+                    });
+                    return contributions;
+                },
+            });
+        });
     }
 
     const build: Build = {
         context,
-        source,
-        resolve,
-        load,
-        process,
-        defer,
-        onResolve(filter, hook) {
-            resolvers.push({ filter, hook });
+        source({ entrypoint: sourceEntrypoint, path, import: importReference }) {
+            if (sourceEntrypoint === path) {
+                pipeline(toRealPath(path));
+                return;
+            }
+            addSource(graph.scope(sourceEntrypoint), path, importReference);
         },
         onLoad(filter, hook) {
             loaders.push({ filter, hook });
         },
         onProcess(filter, hook) {
             processors.push({ filter, hook });
+        },
+        onCollected(hook) {
+            collectors.push(hook);
+        },
+        onOutputs(hook) {
+            finalizers.push(hook);
         },
     };
 
@@ -164,51 +182,48 @@ export async function run(
         plugin.setup(build);
     }
 
+    // Once every entrypoint has collected, group contributions by destination
+    // and spawn one writer node per output path: same-file writes are ordered
+    // by structure, not by locks.
+    const contributed = graph.root.completion(collect);
+    graph.root.add(plan, "outputs", {
+        dependencies: [contributed],
+        run: (_node, collections) => {
+            const byPath = new Map<string, Contribution[]>();
+            for (const contribution of collections.flat()) {
+                const group = byPath.get(contribution.path) ?? [];
+                group.push(contribution);
+                byPath.set(contribution.path, group);
+            }
+            for (const [outputPath, contributions] of byPath) {
+                graph.root.add(output, outputPath, {
+                    dependencies: [contributed],
+                    run: async () => {
+                        for (const { produce } of contributions) {
+                            await produce();
+                        }
+                        return outputPath;
+                    },
+                });
+            }
+        },
+    });
+
+    // Finalizers see the outputs of every entrypoint of this run, so cleanup
+    // can reason about directories shared between entrypoints.
+    const outputs = graph.root.completion(output);
+    finalizers.forEach((hook, index) => {
+        graph.root.add(finalize, String(index), {
+            dependencies: [outputs],
+            run: (_node, produced) => hook({ outputs: produced }),
+        });
+    });
+
     for (const path of await getPaths(entrypoint)) {
-        source(path);
+        pipeline(toRealPath(path));
     }
 
-    async function processTask(task: Task) {
-        const { type } = task;
-        let args = task.args;
-        const { entrypoint, path, namespace } = args;
-        logger?.trace({ type, entrypoint, path, namespace }, "processing task");
-
-        for (const { filter, hook } of hooks[type]) {
-            if (filter.namespace !== namespace) continue;
-            if (filter.filter && !filter.filter.test(path)) continue;
-
-            const result = await hook(args as never);
-            if (result !== undefined) {
-                args = result as never;
-                break;
-            }
-        }
-
-        if (args !== undefined) {
-            if (type === "resolve") {
-                load(args as never);
-            } else if (type === "load") {
-                process(args as never);
-            }
-        }
-
-        getDeferred(namespace).dequeue();
-    }
-
-    while (queue.length || Array.from(pending.values()).some((d) => d.pending > 0)) {
-        while (queue.length) {
-            const task = queue.shift();
-            if (!task) {
-                break;
-            }
-
-            await processTask(task);
-        }
-
-        await Promise.all(Array.from(pending.values()).map((d) => d.promise));
-        await Promise.resolve();
-    }
+    await graph.run();
 
     logger?.info(entrypoint, "extraction completed");
 }
