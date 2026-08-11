@@ -36,5 +36,5 @@ jobs:
               with:
                   bun-version: ${{ env.BUN_VERSION }}
             - run: vp install
-            - run: bun run extract-static/scripts/compile.ts
+            - run: vp run @let-value/translate-extract-static#compile
             - run: ls -la extract-static/prebuilts

@@ -31,8 +31,7 @@ jobs:
               with:
                   bun-version: ${{ env.BUN_VERSION }}
             - run: vp install
-            - run: vp run @let-value/translate-extract#build
-            - run: bun run extract-static/scripts/compile.ts
+            - run: vp run @let-value/translate-extract-static#compile
             - name: Upload binary to release
               if: ${{ !env.ACT }}
               run: gh release upload ${{ github.event.release.tag_name }} extract-static/prebuilts/* --clobber

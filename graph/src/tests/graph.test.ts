@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { setTimeout as delay } from "node:timers/promises";
 import { test } from "vite-plus/test";
-import { CycleError, Graph, type GraphNode } from "../graph.ts";
+import { CycleError, Graph, type GraphNode, type NodeContext } from "../graph.ts";
 
 test("runs a single node and exposes its value", async () => {
     const graph = new Graph();
@@ -231,4 +231,87 @@ test("run can only be called once", async () => {
 
     await graph.run();
     await assert.rejects(graph.run(), /already running or has finished/);
+});
+
+test("a resuming demander waits for a slot instead of taking an extra one", async () => {
+    const graph = new Graph();
+    let active = 0;
+    let maxActive = 0;
+    const enter = () => {
+        active += 1;
+        maxActive = Math.max(maxActive, active);
+    };
+    const leave = () => {
+        active -= 1;
+    };
+
+    const target = graph.add("target", {
+        lazy: true,
+        run: async () => {
+            enter();
+            await delay(5);
+            leave();
+            return "value";
+        },
+    });
+    // Added before the blocker so it holds the only slot first, and has to
+    // give it up to let the target it demands run at all.
+    const demander = graph.add("demander", {
+        run: async (context) => {
+            const value = await context.demand(target);
+            enter();
+            await delay(20);
+            leave();
+            return value;
+        },
+    });
+    // Becomes ready exactly when the target settles, so it takes the free slot
+    // in the same turn the demander is woken.
+    graph.add("blocker", {
+        dependencies: [target],
+        run: async () => {
+            enter();
+            await delay(20);
+            leave();
+        },
+    });
+
+    await graph.run({ concurrency: 1 });
+
+    assert.equal(demander.value, "value");
+    assert.equal(maxActive, 1);
+});
+
+test("a node context stops working once its node settles", async () => {
+    const graph = new Graph();
+    const other = graph.add("other", { run: () => "value" });
+    let escaped: NodeContext | undefined;
+    graph.add("leaky", {
+        run: (context) => {
+            escaped = context;
+        },
+    });
+
+    await graph.run();
+
+    // Accounting for a settled node would corrupt the scheduler, so the
+    // stale context refuses rather than quietly breaking a later run.
+    await assert.rejects(() => (escaped as NodeContext).demand(other), /only usable for as long as its node runs/);
+});
+
+test("scales to a wide graph with a barrier over every node", async () => {
+    const graph = new Graph();
+    const width = 5_000;
+    const leaves: GraphNode<number>[] = [];
+    for (let index = 0; index < width; index += 1) {
+        leaves.push(graph.add(`leaf:${index}`, { run: () => index }));
+    }
+    const total = graph.add("total", {
+        dependencies: leaves,
+        run: (_context, ...values) => values.reduce((sum, value) => sum + value, 0),
+    });
+
+    await graph.run();
+
+    assert.equal(total.value, (width * (width - 1)) / 2);
 });

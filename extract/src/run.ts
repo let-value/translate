@@ -59,6 +59,27 @@ export async function run(
     const collectors: CollectedHook[] = [];
     const finalizers: OutputsHook[] = [];
 
+    // Failures are contained at the entrypoint boundary instead of rejecting
+    // the node that hit them: letting a rejection propagate would skip every
+    // downstream node in the run, so one unreadable file would leave every
+    // other entrypoint without output. A broken entrypoint still writes
+    // nothing — a .po merged from a partial source set would obsolete or drop
+    // the messages it failed to see — and the run rejects once at the end.
+    const failures: unknown[] = [];
+    const failed = new Set<string>();
+
+    /** Records a failure that leaves `scope`'s translations incomplete. */
+    function fail(scope: string, path: string, error: unknown) {
+        failed.add(scope);
+        record({ entrypoint: scope, path }, error);
+    }
+
+    /** Records a failure that no longer has an entrypoint to invalidate. */
+    function record(where: Record<string, string>, error: unknown) {
+        failures.push(error);
+        logger?.error({ ...where, error }, "extraction failed");
+    }
+
     const graph = new Graph();
     const source = graph.kind<string | undefined>("source");
     // A collect node's value is what its hook asked to write; a root plan
@@ -66,7 +87,7 @@ export async function run(
     // output path become a single node instead of racing.
     const collect = graph.kind<Contribution[]>("collect");
     const plan = graph.kind<void>("plan");
-    const output = graph.kind<string>("output");
+    const output = graph.kind<string | undefined>("output");
     const finalize = graph.kind<void>("finalize");
 
     // One worker per source file runs the processor hooks in registration
@@ -88,13 +109,18 @@ export async function run(
                 emitted.translations.push(...translations);
             },
         };
-        for (const { filter, hook } of processors) {
-            if (!filter.test(path)) {
-                continue;
+        try {
+            for (const { filter, hook } of processors) {
+                if (!filter.test(path)) {
+                    continue;
+                }
+                if ((await hook(args)) !== undefined) {
+                    break;
+                }
             }
-            if ((await hook(args)) !== undefined) {
-                break;
-            }
+        } catch (error) {
+            fail(node.scope.name, path, error);
+            return undefined;
         }
         return emitted;
     });
@@ -110,14 +136,18 @@ export async function run(
         }
         logger?.debug({ entrypoint: scope.name, path }, "source");
         scope.add(source, path, async () => {
-            for (const { filter, hook } of loaders) {
-                if (!filter.test(path)) {
-                    continue;
+            try {
+                for (const { filter, hook } of loaders) {
+                    if (!filter.test(path)) {
+                        continue;
+                    }
+                    const contents = await hook({ entrypoint: scope.name, path });
+                    if (contents !== undefined) {
+                        return contents;
+                    }
                 }
-                const contents = await hook({ entrypoint: scope.name, path });
-                if (contents !== undefined) {
-                    return contents;
-                }
+            } catch (error) {
+                fail(scope.name, path, error);
             }
             return undefined;
         });
@@ -139,14 +169,23 @@ export async function run(
             scope.add(collect, String(index), {
                 dependencies: [collected],
                 run: async (_node, files) => {
+                    if (failed.has(path)) {
+                        logger?.warn({ entrypoint: path }, "skipping outputs: entrypoint failed");
+                        return [];
+                    }
                     const contributions: Contribution[] = [];
-                    await hook({
-                        entrypoint: path,
-                        files: files.filter((file) => file !== undefined),
-                        output: (outputPath, produce) => {
-                            contributions.push({ path: outputPath, produce });
-                        },
-                    });
+                    try {
+                        await hook({
+                            entrypoint: path,
+                            files: files.filter((file) => file !== undefined),
+                            output: (outputPath, produce) => {
+                                contributions.push({ path: outputPath, produce });
+                            },
+                        });
+                    } catch (error) {
+                        fail(path, path, error);
+                        return [];
+                    }
                     return contributions;
                 },
             });
@@ -199,8 +238,15 @@ export async function run(
                 graph.root.add(output, outputPath, {
                     dependencies: [contributed],
                     run: async () => {
-                        for (const { produce } of contributions) {
-                            await produce();
+                        try {
+                            for (const { produce } of contributions) {
+                                await produce();
+                            }
+                        } catch (error) {
+                            // A half-written artifact is not reported as an
+                            // output, so finalizers never treat it as ours.
+                            record({ output: outputPath }, error);
+                            return undefined;
                         }
                         return outputPath;
                     },
@@ -215,7 +261,13 @@ export async function run(
     finalizers.forEach((hook, index) => {
         graph.root.add(finalize, String(index), {
             dependencies: [outputs],
-            run: (_node, produced) => hook({ outputs: produced }),
+            run: async (_node, produced) => {
+                try {
+                    await hook({ outputs: produced.filter((path) => path !== undefined) });
+                } catch (error) {
+                    record({ finalizer: String(index) }, error);
+                }
+            },
         });
     });
 
@@ -223,7 +275,15 @@ export async function run(
         pipeline(toRealPath(path));
     }
 
-    await graph.run();
+    // Nothing above rethrows, so a rejection here is the scheduler itself
+    // failing rather than a hook.
+    await graph.run().catch((error: unknown) => {
+        record({ graph: "run" }, error);
+    });
+
+    if (failures.length > 0) {
+        throw new AggregateError(failures, `Extraction of "${entrypoint.entrypoint}" failed`);
+    }
 
     logger?.info(entrypoint, "extraction completed");
 }

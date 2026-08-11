@@ -7,10 +7,20 @@ export interface NodeContext {
     readonly signal: AbortSignal;
     /**
      * Dynamic dependency: awaits another node's value, recording a real
-     * dependency edge. Demanding a lazy node schedules it; a suspended
-     * demander releases its concurrency slot. Rejects with the target's
-     * error (or SkippedError), and throws CycleError if the target already
-     * depends on the demander.
+     * dependency edge. Demanding a lazy node schedules it.
+     *
+     * A demander that has to wait releases its concurrency slot, and takes a
+     * slot again before it resumes — so the limit holds across suspension,
+     * and a resumed demander may wait for a slot even though its target is
+     * already done. Resuming demanders are served before nodes that have not
+     * started yet.
+     *
+     * Rejects with the target's error (or SkippedError), and throws
+     * CycleError if the target already depends on the demander.
+     *
+     * Only valid while the calling node is running: the context stops working
+     * once its node settles, and demand() throws rather than corrupting the
+     * scheduler's accounting.
      */
     demand<T>(node: GraphNode<T>): Promise<T>;
 }
@@ -69,6 +79,14 @@ class NodeState<T = unknown> implements GraphNode<T> {
     result: T | undefined;
     reason: unknown;
     lazy = false;
+    /**
+     * Dependencies that have not fulfilled yet. Readiness is maintained as
+     * edges are added and dependencies settle, so scheduling never has to
+     * rescan the pending set.
+     */
+    unresolved = 0;
+    /** Whether the node is already sitting in the ready queue. */
+    queued = false;
     /** Resumers of demanders suspended on this node, flushed on settle. */
     waiters: (() => void)[] | undefined;
     /** Ordered data dependencies, passed as run arguments. */
@@ -113,6 +131,10 @@ export class Graph {
     #root: Scope;
     #pending = new Set<NodeState>();
     #dormant = new Set<NodeState>();
+    /** Pending nodes whose dependencies have all fulfilled. */
+    #ready: NodeState[] = [];
+    /** Demanders that finished waiting and need a slot before resuming. */
+    #slotWaiters: (() => void)[] = [];
     #runningCount = 0;
     #suspendedCount = 0;
     #concurrency = Infinity;
@@ -224,8 +246,14 @@ export class Graph {
         const dependencies = (options.dependencies ?? []).map((dependency) => this.#resolve(dependency));
         const node = new NodeState(id, dependencies, options.run as NodeState["execute"]);
         node.lazy = options.lazy ?? false;
+        let doomed: NodeState | undefined;
         for (const dependency of dependencies) {
             dependency.dependents.add(node);
+            if (dependency.status === "rejected" || dependency.status === "skipped") {
+                doomed ??= dependency;
+            } else if (dependency.status !== "fulfilled") {
+                node.unresolved += 1;
+            }
         }
         this.#nodes.set(id, node);
         if (node.lazy) {
@@ -235,6 +263,11 @@ export class Graph {
             for (const dependency of dependencies) {
                 this.#wake(dependency);
             }
+        }
+        if (doomed) {
+            this.#settle(node, "skipped", undefined, new SkippedError(node.id));
+        } else if (!node.lazy) {
+            this.#enqueue(node);
         }
         if (this.#started) {
             queueMicrotask(() => this.#pump());
@@ -256,8 +289,18 @@ export class Graph {
         if (from === to || this.#reaches(to, from)) {
             throw new CycleError(from.id, to.id);
         }
+        if (to.dependencies.has(from)) {
+            return;
+        }
         to.dependencies.add(from);
         from.dependents.add(to);
+        if (from.status === "rejected" || from.status === "skipped") {
+            this.#settle(to, "skipped", undefined, new SkippedError(to.id));
+            return;
+        }
+        if (from.status !== "fulfilled") {
+            to.unresolved += 1;
+        }
         if (!this.#dormant.has(to)) {
             this.#wake(from);
         }
@@ -336,34 +379,43 @@ export class Graph {
         return false;
     }
 
+    /** Offers a pending node to the scheduler once its dependencies are in. */
+    #enqueue(node: NodeState): void {
+        if (node.queued || node.unresolved > 0 || node.status !== "pending" || this.#dormant.has(node)) {
+            return;
+        }
+        node.queued = true;
+        this.#ready.push(node);
+    }
+
     #pump(): void {
         if (!this.#started || this.#finished || !this.#finish) {
             return;
         }
-        let progressed = true;
-        while (progressed) {
-            progressed = false;
+        if (this.#controller?.signal.aborted) {
+            // Hand every waiting demander a slot so suspended work can unwind,
+            // then skip whatever never started.
+            while (this.#slotWaiters.length > 0) {
+                this.#runningCount += 1;
+                (this.#slotWaiters.shift() as () => void)();
+            }
             for (const node of [...this.#pending]) {
-                if (this.#controller?.signal.aborted) {
-                    this.#settle(node, "skipped", undefined, new SkippedError(node.id));
-                    progressed = true;
-                    continue;
-                }
-                let ready = true;
-                let doomed = false;
-                for (const dependency of node.dependencies) {
-                    if (dependency.status === "rejected" || dependency.status === "skipped") {
-                        doomed = true;
-                        break;
-                    }
-                    if (dependency.status !== "fulfilled") {
-                        ready = false;
-                    }
-                }
-                if (doomed) {
-                    this.#settle(node, "skipped", undefined, new SkippedError(node.id));
-                    progressed = true;
-                } else if (ready && this.#runningCount < this.#concurrency) {
+                this.#settle(node, "skipped", undefined, new SkippedError(node.id));
+            }
+        } else {
+            // Work already in flight comes first: a demander that has its
+            // answer should finish before new nodes take the last slots.
+            while (this.#slotWaiters.length > 0 && this.#runningCount < this.#concurrency) {
+                this.#runningCount += 1;
+                (this.#slotWaiters.shift() as () => void)();
+            }
+            while (this.#ready.length > 0 && this.#runningCount < this.#concurrency) {
+                const node = this.#ready.shift() as NodeState;
+                node.queued = false;
+                // A node can leave the queue between being offered and being
+                // picked: connect() may have given it a new dependency, or a
+                // failing dependency may have skipped it.
+                if (node.unresolved === 0 && node.status === "pending") {
                     this.#start(node);
                 }
             }
@@ -375,37 +427,65 @@ export class Graph {
 
     /** Moves a dormant lazy node (and its dormant dependencies) into scheduling. */
     #wake(node: NodeState): void {
-        if (!this.#dormant.delete(node)) {
-            return;
-        }
-        this.#pending.add(node);
-        for (const dependency of node.dependencies) {
-            this.#wake(dependency);
+        const stack = [node];
+        while (stack.length > 0) {
+            const current = stack.pop() as NodeState;
+            if (!this.#dormant.delete(current)) {
+                continue;
+            }
+            this.#pending.add(current);
+            this.#enqueue(current);
+            stack.push(...current.dependencies);
         }
     }
 
+    /**
+     * Takes a concurrency slot, waiting for one when the graph is at its
+     * limit. The slot is reserved by #pump at hand-off, so a granted slot
+     * cannot be taken by anything else in the meantime.
+     */
+    #acquire(): Promise<void> | undefined {
+        if (this.#runningCount < this.#concurrency) {
+            this.#runningCount += 1;
+            return undefined;
+        }
+        return new Promise<void>((resume) => {
+            this.#slotWaiters.push(resume);
+        });
+    }
+
     async #demand<T>(demander: NodeState, handle: GraphNode<T>): Promise<T> {
+        if (demander.status !== "running") {
+            throw new Error(
+                `Node "${demander.id}" called demand() while it is "${demander.status}": ` +
+                    "a node context is only usable for as long as its node runs",
+            );
+        }
         const target = this.#resolve(handle);
         if (target === demander || this.#reaches(demander, target)) {
             throw new CycleError(target.id, demander.id);
         }
-        demander.dependencies.add(target);
-        target.dependents.add(demander);
+        if (!demander.dependencies.has(target)) {
+            // Recorded for cycle detection and for dependsOn(); readiness is
+            // not tracked, the demander is past being scheduled.
+            demander.dependencies.add(target);
+            target.dependents.add(demander);
+        }
         this.#wake(target);
         if (target.status === "pending" || target.status === "running") {
             this.#pump();
         }
         if (target.status === "pending" || target.status === "running") {
-            // Suspend without holding a concurrency slot; the suspended
-            // demander still counts as live work.
+            // Suspend without holding a slot; the suspended demander still
+            // counts as live work, so the run cannot complete underneath it.
             this.#runningCount -= 1;
             this.#suspendedCount += 1;
             this.#pump();
             await new Promise<void>((resume) => {
                 (target.waiters ??= []).push(resume);
             });
+            await this.#acquire();
             this.#suspendedCount -= 1;
-            this.#runningCount += 1;
         }
         if (target.status === "fulfilled") {
             return target.result as T;
@@ -443,14 +523,50 @@ export class Graph {
             );
     }
 
+    /**
+     * Settles a node and propagates the consequences to its dependents: a
+     * fulfilled node makes them one dependency readier, a failed or skipped
+     * one skips them in turn. Iterative, so a long chain of skips cannot
+     * overflow the stack.
+     */
     #settle(node: NodeState, status: NodeStatus, value: unknown, reason: unknown): void {
-        this.#pending.delete(node);
-        node.status = status;
-        node.result = value;
-        node.reason = reason;
-        const waiters = node.waiters;
-        node.waiters = undefined;
-        waiters?.forEach((resume) => resume());
+        const stack: { node: NodeState; status: NodeStatus; value: unknown; reason: unknown }[] = [
+            { node, status, value, reason },
+        ];
+        while (stack.length > 0) {
+            const current = stack.pop() as (typeof stack)[number];
+            const settled = current.node;
+            if (settled.status !== "pending" && settled.status !== "running") {
+                continue;
+            }
+            this.#pending.delete(settled);
+            this.#dormant.delete(settled);
+            settled.status = current.status;
+            settled.result = current.value;
+            settled.reason = current.reason;
+            const waiters = settled.waiters;
+            settled.waiters = undefined;
+            waiters?.forEach((resume) => resume());
+
+            const doomed = current.status === "rejected" || current.status === "skipped";
+            for (const dependent of settled.dependents) {
+                if (doomed) {
+                    if (dependent.status === "pending") {
+                        stack.push({
+                            node: dependent,
+                            status: "skipped",
+                            value: undefined,
+                            reason: new SkippedError(dependent.id),
+                        });
+                    }
+                    continue;
+                }
+                if (dependent.unresolved > 0) {
+                    dependent.unresolved -= 1;
+                    this.#enqueue(dependent);
+                }
+            }
+        }
     }
 
     #complete(): void {
@@ -459,7 +575,6 @@ export class Graph {
             return;
         }
         for (const node of [...this.#dormant]) {
-            this.#dormant.delete(node);
             this.#settle(node, "skipped", undefined, new SkippedError(node.id));
         }
         this.#finished = true;

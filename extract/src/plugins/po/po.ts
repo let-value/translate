@@ -14,40 +14,47 @@ export function po(): Plugin {
         setup(build) {
             build.context.logger?.debug("po plugin initialized");
 
-            build.onCollected(({ entrypoint, files, output }) => {
-                const collections = new Map<string, { locale: string; translations: Translation[] }>();
+            // Several entrypoints can map to the same destination file, so
+            // collection spans the whole run rather than a single entrypoint:
+            // one .po is written from every translation that targets it, and a
+            // later entrypoint never re-merges the file against a subset of its
+            // own messages (which would obsolete or drop the others').
+            // Every onCollected hook runs before any writer does, so a writer
+            // registered by the first entrypoint still sees the complete set.
+            const collections = new Map<string, { locale: string; translations: Translation[] }>();
 
+            build.onCollected(({ entrypoint, files, output }) => {
                 for (const { path, translations } of files) {
                     for (const locale of build.context.config.locales) {
                         const destination = build.context.config.destination({ entrypoint, locale, path });
-                        let collection = collections.get(destination);
-                        if (!collection) {
-                            collection = { locale, translations: [] };
-                            collections.set(destination, collection);
+                        const collection = collections.get(destination);
+                        if (collection) {
+                            collection.translations.push(...translations);
+                            continue;
                         }
-                        collection.translations.push(...translations);
+
+                        const created = { locale, translations: [...translations] };
+                        collections.set(destination, created);
+
+                        output(destination, async () => {
+                            const contents = await fs.readFile(destination).catch(() => undefined);
+                            const existing = contents ? gettextParser.po.parse(contents) : undefined;
+
+                            const record = collect(created.translations, created.locale);
+                            const out = merge(
+                                [{ translations: record }],
+                                existing as never,
+                                build.context.config.obsolete,
+                                created.locale,
+                                build.context.generatedAt,
+                            );
+
+                            if (hasChanges(out, existing as never)) {
+                                await fs.mkdir(dirname(destination), { recursive: true });
+                                await fs.writeFile(destination, gettextParser.po.compile(out));
+                            }
+                        });
                     }
-                }
-
-                for (const [destination, { locale, translations }] of collections) {
-                    output(destination, async () => {
-                        const contents = await fs.readFile(destination).catch(() => undefined);
-                        const existing = contents ? gettextParser.po.parse(contents) : undefined;
-
-                        const record = collect(translations, locale);
-                        const out = merge(
-                            [{ translations: record }],
-                            existing as never,
-                            build.context.config.obsolete,
-                            locale,
-                            build.context.generatedAt,
-                        );
-
-                        if (hasChanges(out, existing as never)) {
-                            await fs.mkdir(dirname(destination), { recursive: true });
-                            await fs.writeFile(destination, gettextParser.po.compile(out));
-                        }
-                    });
                 }
             });
         },

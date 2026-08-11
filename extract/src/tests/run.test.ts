@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { existsSync } from "node:fs";
 import { mkdir, mkdtemp, readFile, realpath, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
@@ -473,4 +474,61 @@ test("keeps default path excludes when custom excludes are configured", async ()
     await run(config.entrypoints[0], { config });
 
     assert.equal(resolvedDependency, false);
+});
+
+test("merges entrypoints that share a destination into one catalog", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "shared-destination-"));
+    const destination = join(dir, "messages.en.po");
+
+    await writeFile(join(dir, "a.ts"), `message("from-a");\n`);
+    await writeFile(join(dir, "b.ts"), `message("from-b");\n`);
+
+    const config = defineConfig({
+        entrypoints: join(dir, "*.ts"),
+        locales: ["en"],
+        destination: () => destination,
+        obsolete: "remove",
+        plugins: ({ core, po }) => [core(), po()],
+    });
+
+    await run(config.entrypoints[0], { config });
+
+    const contents = await readFile(destination, "utf8");
+    assert.equal(contents.includes('msgid "from-a"'), true);
+    assert.equal(contents.includes('msgid "from-b"'), true);
+});
+
+test("a failing entrypoint does not withhold the outputs of healthy ones", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "entrypoint-failure-"));
+    await writeFile(join(dir, "good.ts"), `message("good");\n`);
+    await writeFile(join(dir, "bad.ts"), `message("bad");\n`);
+
+    const boom: Plugin = {
+        name: "boom",
+        setup(build) {
+            build.onProcess(/bad\.ts$/, () => {
+                throw new Error("kaboom");
+            });
+        },
+    };
+
+    const config = defineConfig({
+        entrypoints: join(dir, "*.ts"),
+        locales: ["en"],
+        plugins: ({ core, po }) => [boom, core(), po()],
+    });
+
+    let failure: unknown;
+    await run(config.entrypoints[0], { config }).catch((error: unknown) => {
+        failure = error;
+    });
+
+    assert.ok(failure instanceof AggregateError, "the run should reject once, with every failure");
+    assert.equal((failure.errors[0] as Error).message, "kaboom");
+
+    const good = await readFile(join(dir, "translations", "good.en.po"), "utf8");
+    assert.equal(good.includes('msgid "good"'), true);
+    // The broken entrypoint writes nothing: a catalog merged from a partial
+    // source set would obsolete the messages extraction never got to see.
+    assert.equal(existsSync(join(dir, "translations", "bad.en.po")), false);
 });

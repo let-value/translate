@@ -62,7 +62,12 @@ export interface CollectedArgs {
     entrypoint: string;
     /** Translations of every processed source file of this entrypoint, one entry per file. */
     files: FileTranslations[];
-    /** Schedules an output artifact. Outputs run in parallel; writes to the same path are serialized. */
+    /**
+     * Schedules an output artifact. Every entrypoint's onCollected hook has
+     * run by the time any producer does, so a producer may read state the
+     * hook keeps across entrypoints. Outputs run in parallel; writes to the
+     * same path are serialized.
+     */
     output(path: string, produce: () => MaybePromise<void>): void;
 }
 
