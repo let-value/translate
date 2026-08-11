@@ -5,6 +5,7 @@ import { afterAll, test } from "vite-plus/test";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import * as gettextParser from "gettext-parser";
 import ts from "typescript";
+import { message, Translator } from "../../../translate/src/index.ts";
 import { defineConfig, react, run } from "../../../extract/src/index.ts";
 
 const appPath = fileURLToPath(new URL("./app.tsx", import.meta.url));
@@ -46,6 +47,13 @@ async function loadRunApp() {
             def: string;
             greeting: string;
             items: string;
+        }>;
+        runLazyApp(
+            locale: string,
+            count: number,
+        ): Promise<{
+            html: string;
+            payload?: { k: string[]; l: string; c: gettextParser.GetTextTranslations };
         }>;
     };
 }
@@ -194,4 +202,38 @@ test("react app works end to end", async () => {
     assert.equal(result.def, "デフォルトメッセージ");
     assert.equal(result.greeting, "こんにちは、World！");
     assert.equal(result.items, "2 りんご");
+});
+
+test("server rendering inlines the catalog a lazy provider resolved", async () => {
+    await extract();
+    await update("sk", {
+        translated: "Odložená správa",
+        def: "Predvolená správa",
+        greeting: "Ahoj, ${name}!",
+        forms: ["jablko", "${count} jablká", "${count} jabĺk"],
+    });
+
+    const { runLazyApp } = await loadRunApp();
+    const { html, payload } = await runLazyApp("sk", 1);
+
+    // The fallback never makes it into the final markup: the provider resolved
+    // the catalog before rendering its children.
+    assert.ok(!html.includes("loading"));
+    assert.match(html, /<div id="translated">Odložená správa<\/div>/);
+
+    assert.ok(payload, "expected an inlined catalog");
+    assert.deepEqual(payload.k, ["sk"]);
+    assert.equal(payload.l, "sk");
+    assert.equal(payload.c.translations[""]["延期されたメッセージ"].msgstr[0], "Odložená správa");
+
+    // Priming a fresh translator from the payload resolves without a loader.
+    const translator = new Translator({
+        sk: () => {
+            throw new Error("loader must not run after hydration");
+        },
+    });
+    translator.prime("sk" as never, payload.c);
+    const locale = translator.fetchLocale("sk" as never);
+    assert.ok(!(locale instanceof Promise));
+    assert.equal(locale.translate(message`延期されたメッセージ`), "Odložená správa");
 });
