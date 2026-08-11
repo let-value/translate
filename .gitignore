@@ -2,3 +2,4 @@ node_modules/
 prebuilts
 dist
 tsconfig.tsbuildinfo
+*.bun-build

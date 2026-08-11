@@ -47,6 +47,7 @@
     },
     "dependencies": {
         "@keqingmoe/tree-sitter": "0.26.2",
+        "@let-value/graph": "workspace:*",
         "@let-value/translate": "workspace:*",
         "chalk": "5.6.2",
         "fast-glob": "3.3.3",

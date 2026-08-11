@@ -1,4 +1,5 @@
 packages:
+    - graph
     - loader
     - translate
     - extract

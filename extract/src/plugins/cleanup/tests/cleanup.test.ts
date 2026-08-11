@@ -19,36 +19,13 @@ test("removes empty stray translation files", async () => {
     const plugin: Plugin = {
         name: "mock",
         setup(build) {
-            build.onResolve({ filter: /.*/, namespace: "source" }, ({ entrypoint, path, namespace }) => ({
-                entrypoint,
-                path,
-                namespace,
-            }));
-            build.onLoad({ filter: /.*/, namespace: "source" }, ({ entrypoint, path, namespace }) => ({
-                entrypoint,
-                path,
-                namespace,
-                data: "",
-            }));
-            build.onProcess({ filter: /.*/, namespace: "source" }, async (args) => {
-                await fs.mkdir(dirname(generated), { recursive: true });
-                await fs.writeFile(generated, "");
-                build.resolve({
-                    entrypoint: args.entrypoint,
-                    path: generated,
-                    namespace: "translate",
+            build.onLoad(/.*/, () => "");
+            build.onCollected(({ output }) => {
+                output(generated, async () => {
+                    await fs.mkdir(dirname(generated), { recursive: true });
+                    await fs.writeFile(generated, "");
                 });
-                build.resolve({
-                    entrypoint: args.entrypoint,
-                    path: generated,
-                    namespace: "cleanup",
-                });
-                build.resolve({
-                    entrypoint: args.entrypoint,
-                    path: stray,
-                    namespace: "cleanup",
-                });
-                return undefined;
+                output(stray, () => {});
             });
         },
     };
