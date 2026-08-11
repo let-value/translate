@@ -144,3 +144,31 @@ await test("a dehydrated catalog primes an independent translator", async () => 
     const name = "World";
     assert.equal(lt.message`Hello, ${name}!`, "Привет, World!");
 });
+
+await test("dehydrate returns only the translator's own catalog, not the parent's", async () => {
+    const parentCatalog = gettextParser.po.parse(
+        Buffer.from(
+            'msgid ""\nmsgstr "Content-Type: text/plain; charset=utf-8\\n"\n\nmsgid "Shared"\nmsgstr "Общий"\n',
+        ),
+    );
+    const childCatalog = gettextParser.po.parse(
+        Buffer.from('msgid ""\nmsgstr "Content-Type: text/plain; charset=utf-8\\n"\n\nmsgid "Own"\nmsgstr "Свой"\n'),
+    );
+    const childBefore = structuredClone(childCatalog);
+    const parentBefore = structuredClone(parentCatalog);
+
+    const parent = new Translator({ ru: parentCatalog });
+    const child = new Translator({ ru: childCatalog }, parent);
+
+    // The merged view resolves messages from both.
+    const lt = child.getLocale("ru");
+    assert.equal(lt.message`Own`, "Свой");
+    assert.equal(lt.message`Shared`, "Общий");
+
+    // The dehydrated payload stays minimal: only what this provider contributes.
+    const own = child.dehydrate("ru")?.translations[""] ?? {};
+    assert.ok("Own" in own);
+    assert.ok(!("Shared" in own), "parent messages must not leak into the child catalog");
+    assert.deepEqual(child.dehydrate("ru"), childBefore);
+    assert.deepEqual(parentCatalog, parentBefore);
+});

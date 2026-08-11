@@ -218,6 +218,13 @@ describe("nested providers", () => {
         const html = await renderHtml(
             <NestedApp outer={makeOuter().translations} inner={makeTranslations().translations} />,
         );
+        // Each provider inlines only what it contributes — no parent messages
+        // leaking into the child's payload and inflating it.
+        const payloads = [...html.matchAll(/data-translations="[^"]*">(.*?)<\/script>/g)].map(([, json]) =>
+            Object.keys((JSON.parse(json) as { c: GetTextTranslations }).c.translations[""]).sort(),
+        );
+        expect(payloads).toEqual([["Shared"], ["Hello"]]);
+
         const container = mount(html);
         const serverNode = container.querySelector("#nested");
         expect(serverNode?.textContent).toBe("Hola/Compartido");

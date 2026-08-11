@@ -175,3 +175,98 @@ test("mergeTranslations handles overlapping keys by keeping primary", () => {
     // Should keep primary's translation
     assert.deepEqual(merged.translations[""].Hello, { msgid: "Hello", msgstr: ["Hello"] });
 });
+
+test("mergeTranslations leaves the primary catalog untouched", () => {
+    const primary: GetTextTranslations = {
+        charset: "utf-8",
+        headers: { Language: "es" },
+        translations: {
+            "": { Hello: { msgid: "Hello", msgstr: ["Hola"] } },
+        },
+        obsolete: {
+            "": { Gone: { msgid: "Gone", msgstr: ["Ido"] } },
+        },
+    };
+
+    const secondary: GetTextTranslations = {
+        charset: "utf-8",
+        headers: { Language: "es" },
+        translations: {
+            "": { Shared: { msgid: "Shared", msgstr: ["Compartido"] } },
+            verb: { Run: { msgid: "Run", msgstr: ["Correr"] } },
+        },
+        obsolete: {
+            "": { Dropped: { msgid: "Dropped", msgstr: ["Retirado"] } },
+        },
+    };
+
+    const before = structuredClone(primary);
+    const secondaryBefore = structuredClone(secondary);
+
+    const merged = mergeTranslations(primary, secondary);
+
+    // The merge result carries both catalogs...
+    assert.deepEqual(merged.translations[""].Hello, { msgid: "Hello", msgstr: ["Hola"] });
+    assert.deepEqual(merged.translations[""].Shared, { msgid: "Shared", msgstr: ["Compartido"] });
+    assert.deepEqual(merged.translations.verb.Run, { msgid: "Run", msgstr: ["Correr"] });
+    assert.deepEqual(merged.obsolete?.[""].Dropped, { msgid: "Dropped", msgstr: ["Retirado"] });
+
+    // ...without writing into either input. `.po` catalogs are imported modules
+    // shared across translators, so a mutation here leaks between providers.
+    assert.deepEqual(primary, before);
+    assert.deepEqual(secondary, secondaryBefore);
+    assert.notEqual(merged.translations[""], primary.translations[""]);
+});
+
+test("mergeTranslations does not alias a context record it copied wholesale", () => {
+    const primary: GetTextTranslations = {
+        charset: "utf-8",
+        headers: {},
+        translations: { "": { Hello: { msgid: "Hello", msgstr: ["Hola"] } } },
+    };
+
+    // `verb` exists only in the secondary, so it is taken as a whole.
+    const secondary: GetTextTranslations = {
+        charset: "utf-8",
+        headers: {},
+        translations: { verb: { Run: { msgid: "Run", msgstr: ["Correr"] } } },
+    };
+
+    const third: GetTextTranslations = {
+        charset: "utf-8",
+        headers: {},
+        translations: { verb: { Walk: { msgid: "Walk", msgstr: ["Caminar"] } } },
+    };
+
+    const merged = mergeTranslations(primary, secondary, third);
+
+    assert.deepEqual(Object.keys(merged.translations.verb).sort(), ["Run", "Walk"]);
+    assert.deepEqual(Object.keys(secondary.translations.verb), ["Run"]);
+});
+
+test("mergeTranslations copies the primary obsolete record", () => {
+    const primary: GetTextTranslations = {
+        charset: "utf-8",
+        headers: {},
+        translations: { "": {} },
+    };
+
+    const secondary: GetTextTranslations = {
+        charset: "utf-8",
+        headers: {},
+        translations: { "": {} },
+        obsolete: { "": { Gone: { msgid: "Gone", msgstr: ["Ido"] } } },
+    };
+
+    const third: GetTextTranslations = {
+        charset: "utf-8",
+        headers: {},
+        translations: { "": {} },
+        obsolete: { "": { Old: { msgid: "Old", msgstr: ["Viejo"] } } },
+    };
+
+    const merged = mergeTranslations(primary, secondary, third);
+
+    assert.deepEqual(Object.keys(merged.obsolete?.[""] ?? {}).sort(), ["Gone", "Old"]);
+    assert.deepEqual(Object.keys(secondary.obsolete?.[""] ?? {}), ["Gone"]);
+});
