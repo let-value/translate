@@ -1,7 +1,7 @@
-import type { Locale, TranslationEntry, Translator } from "@let-value/translate";
-import { createElement, Fragment, type ReactElement, type ReactNode, use, useId } from "react";
-import { localeContext, translatorContext } from "../context.ts";
-import { DEHYDRATION_ATTRIBUTE, dehydrate, hydrateFromDocument, isAsyncLocale } from "../dehydration.ts";
+import type { Locale, TranslationEntry } from "@let-value/translate";
+import { createElement, Fragment, type ReactElement, type ReactNode, Suspense, use, useId, useMemo } from "react";
+import { type DehydrationEntry, dehydrationContext, localeContext, translatorContext } from "../context.ts";
+import { DEHYDRATION_ATTRIBUTE, dehydrate, isAsyncLocale, localeKeys, readPayload } from "../dehydration.ts";
 import { getCachedTranslator, type TranslationsMap } from "../translatorCache.ts";
 
 export interface TranslationsProviderProps {
@@ -11,46 +11,41 @@ export interface TranslationsProviderProps {
 
 const EMPTY_TRANSLATIONS: TranslationsMap = {};
 
-interface DehydrationGateProps {
-    id: string;
-    translator: Translator;
-    translations: TranslationsMap;
+interface DehydrationScriptProps {
+    entry: DehydrationEntry;
     locale: Locale;
-    /** Payload read back from the document during hydration, if there was one. */
-    payload: string | undefined;
-    children?: ReactNode;
 }
 
 /**
- * Resolves the active locale before rendering `children`, then inlines the
- * resolved catalog next to them.
+ * Inlines the catalog for the active locale as a `<script type="application/json">`.
  *
- * Suspends into whatever boundary the app already put above the provider — this
- * component deliberately renders no `Suspense` of its own, so the app keeps full
- * control over which fallback shows. Awaiting here rather than in
- * `useTranslations` is what makes the payload usable: the script and the markup
- * it belongs to land in the same boundary, so the client cannot hydrate that
- * subtree before the catalog is in the DOM.
+ * Renders no children, which is the whole point: the provider wraps it in a
+ * Suspense boundary that contains nothing of the app's, so awaiting the catalog
+ * here can never intercept a fallback the app placed for its own content. The
+ * app's boundaries — inside the provider or outside it — behave exactly as
+ * written, and `useTranslations` still suspends where it always did.
  */
-function DehydrationGate({ id, translator, translations, locale, payload, children }: DehydrationGateProps) {
-    const resource = translator.fetchLocale(locale as never);
-    if (resource instanceof Promise) {
-        use(resource);
+function DehydrationScript({ entry, locale }: DehydrationScriptProps) {
+    // During hydration the payload is already in the document; re-render it
+    // verbatim rather than re-encoding an equivalent one, and never call the
+    // loader for a catalog the server already sent.
+    let text = readPayload(entry, locale);
+
+    if (!text) {
+        const resource = entry.translator.fetchLocale(locale as never);
+        if (resource instanceof Promise) {
+            use(resource);
+        }
+        text = dehydrate(entry.keys, locale, entry.translator.dehydrate(locale));
     }
 
-    // Prefer the payload the server sent, so a hydrating render reproduces it
-    // byte-for-byte instead of re-encoding an equivalent one.
-    const text = payload ?? dehydrate(translations, locale, translator.dehydrate(locale));
+    if (!text) return null;
 
-    const script = text
-        ? createElement("script", {
-              type: "application/json",
-              [DEHYDRATION_ATTRIBUTE]: id,
-              dangerouslySetInnerHTML: { __html: text },
-          })
-        : null;
-
-    return createElement(Fragment, null, script, children);
+    return createElement("script", {
+        type: "application/json",
+        [DEHYDRATION_ATTRIBUTE]: entry.id,
+        dangerouslySetInnerHTML: { __html: text },
+    });
 }
 
 export function TranslationsProvider({
@@ -59,18 +54,36 @@ export function TranslationsProvider({
 }: TranslationsProviderProps): ReactElement {
     const id = useId();
     const parent = use(translatorContext);
+    const parentEntry = use(dehydrationContext);
     const translator = getCachedTranslator(translations, parent);
     const locale = use(localeContext);
 
+    const entry = useMemo<DehydrationEntry>(
+        () => ({ id, translator, keys: localeKeys(translations), parent: parentEntry }),
+        [id, translator, translations, parentEntry],
+    );
+
+    const provide = (inner: ReactNode) =>
+        createElement(translatorContext.Provider, { value: translator }, inner) as ReactElement;
+
     if (!isAsyncLocale(translations, locale)) {
-        return createElement(translatorContext.Provider, { value: translator }, children);
+        return provide(children);
     }
 
-    const payload = hydrateFromDocument(id, translator, translations, locale);
-
-    return createElement(
-        translatorContext.Provider,
-        { value: translator },
-        createElement(DehydrationGate, { id, translator, translations, locale: locale as Locale, payload }, children),
+    return provide(
+        createElement(
+            dehydrationContext.Provider,
+            { value: entry },
+            createElement(
+                Fragment,
+                null,
+                createElement(
+                    Suspense,
+                    { fallback: null },
+                    createElement(DehydrationScript, { entry, locale: locale as Locale }),
+                ),
+                children,
+            ),
+        ),
     );
 }

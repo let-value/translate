@@ -3,11 +3,11 @@ import { act, Suspense } from "react";
 import { createRoot, hydrateRoot } from "react-dom/client";
 import { renderToReadableStream } from "react-dom/server";
 import { describe, expect, test } from "vite-plus/test";
+import { LocaleProvider, TranslationsProvider, useTranslations } from "../src/index.ts";
 
 declare global {
     var IS_REACT_ACT_ENVIRONMENT: boolean | undefined;
 }
-import { LocaleProvider, TranslationsProvider, useTranslations } from "../src/index.ts";
 
 const catalog: GetTextTranslations = {
     charset: "utf-8",
@@ -38,11 +38,27 @@ function Greeting() {
     return <span id="greeting">{t.message`Hello`}</span>;
 }
 
-function App({ translations }: { translations: Record<string, () => Promise<{ default: GetTextTranslations }>> }) {
-    // The boundary lives above the provider: TranslationsProvider adds none of
-    // its own, so this is the fallback that shows while a catalog loads.
+type Translations = Record<string, () => Promise<{ default: GetTextTranslations }>>;
+
+const fallback = <span id="fallback">loading</span>;
+
+/** The app puts its boundary between the provider and the consumer. */
+function BoundaryInside({ translations }: { translations: Translations }) {
     return (
-        <Suspense fallback={<span id="fallback">loading</span>}>
+        <LocaleProvider locale={"en" as never}>
+            <TranslationsProvider translations={translations as never}>
+                <Suspense fallback={fallback}>
+                    <Greeting />
+                </Suspense>
+            </TranslationsProvider>
+        </LocaleProvider>
+    );
+}
+
+/** The app puts its boundary above the provider. */
+function BoundaryOutside({ translations }: { translations: Translations }) {
+    return (
+        <Suspense fallback={fallback}>
             <LocaleProvider locale={"en" as never}>
                 <TranslationsProvider translations={translations as never}>
                     <Greeting />
@@ -51,6 +67,11 @@ function App({ translations }: { translations: Record<string, () => Promise<{ de
         </Suspense>
     );
 }
+
+const placements = [
+    ["boundary inside the provider", BoundaryInside],
+    ["boundary outside the provider", BoundaryOutside],
+] as const;
 
 async function renderHtml(element: React.ReactElement) {
     const stream = await renderToReadableStream(element);
@@ -67,14 +88,13 @@ function mount(html: string) {
 
 const flush = () => new Promise((resolve) => setTimeout(resolve, 50));
 
-describe("server rendering", () => {
-    test("inlines the catalog it resolved", async () => {
+describe.each(placements)("%s", (_name, App) => {
+    test("server rendering inlines the catalog it resolved", async () => {
         const { translations } = makeTranslations();
         const html = await renderHtml(<App translations={translations} />);
 
         expect(html).toContain("Hola");
         expect(html).toContain("data-translations");
-        expect(html).not.toContain("loading");
     });
 
     test("hydrates without discarding the server DOM", async () => {
@@ -122,11 +142,9 @@ describe("server rendering", () => {
         root.unmount();
         container.remove();
     });
-});
 
-describe("client rendering", () => {
-    test("still loads lazily when there is no server payload", async () => {
-        const { translations, calls } = makeTranslations();
+    test("client rendering shows the app's own fallback and loads lazily", async () => {
+        const { translations, calls } = makeTranslations(30);
         const container = mount("");
         const root = createRoot(container);
 
@@ -135,14 +153,88 @@ describe("client rendering", () => {
         await act(async () => {
             root.render(<App translations={translations} />);
         });
+
+        // The library wraps none of the app's content in a boundary of its own,
+        // so this is the app's fallback showing while the catalog loads.
+        expect(container.querySelector("#fallback")).not.toBeNull();
+
         await act(async () => {
             await flush();
         });
-
         globalThis.IS_REACT_ACT_ENVIRONMENT = false;
 
         expect(container.querySelector("#greeting")?.textContent).toBe("Hola");
         expect(calls.count).toBe(1);
+
+        root.unmount();
+        container.remove();
+    });
+});
+
+describe("nested providers", () => {
+    const outerCatalog: GetTextTranslations = {
+        charset: "utf-8",
+        headers: {},
+        translations: { "": { Shared: { msgid: "Shared", msgstr: ["Compartido"] } } },
+    };
+
+    function makeOuter() {
+        const calls = { count: 0 };
+        const translations = {
+            en: () => {
+                calls.count++;
+                return new Promise<{ default: GetTextTranslations }>((resolve) => {
+                    setTimeout(() => resolve({ default: outerCatalog }), 5);
+                });
+            },
+        };
+        return { translations, calls };
+    }
+
+    function Nested() {
+        const t = useTranslations();
+        return (
+            <span id="nested">
+                {t.message`Hello`}/{t.message`Shared`}
+            </span>
+        );
+    }
+
+    function NestedApp({ outer, inner }: { outer: Translations; inner: Translations }) {
+        return (
+            <LocaleProvider locale={"en" as never}>
+                <TranslationsProvider translations={outer as never}>
+                    <TranslationsProvider translations={inner as never}>
+                        <Suspense fallback={fallback}>
+                            <Nested />
+                        </Suspense>
+                    </TranslationsProvider>
+                </TranslationsProvider>
+            </LocaleProvider>
+        );
+    }
+
+    test("seeds the whole chain so the merged catalog survives hydration", async () => {
+        const html = await renderHtml(
+            <NestedApp outer={makeOuter().translations} inner={makeTranslations().translations} />,
+        );
+        const container = mount(html);
+        const serverNode = container.querySelector("#nested");
+        expect(serverNode?.textContent).toBe("Hola/Compartido");
+
+        const outer = makeOuter();
+        const inner = makeTranslations();
+        const errors: unknown[] = [];
+        const root = hydrateRoot(container, <NestedApp outer={outer.translations} inner={inner.translations} />, {
+            onRecoverableError: (error) => errors.push(error),
+        });
+        await flush();
+
+        expect(container.querySelector("#nested")).toBe(serverNode);
+        expect(container.querySelector("#nested")?.textContent).toBe("Hola/Compartido");
+        expect(errors).toEqual([]);
+        expect(outer.calls.count).toBe(0);
+        expect(inner.calls.count).toBe(0);
 
         root.unmount();
         container.remove();

@@ -1,5 +1,6 @@
 import type { Locale, Translator } from "@let-value/translate";
 import type { GetTextTranslations } from "gettext-parser";
+import type { DehydrationEntry } from "./context.ts";
 import type { TranslationsMap } from "./translatorCache.ts";
 
 /**
@@ -41,23 +42,30 @@ function encode(payload: DehydratedPayload): string {
 }
 
 export function dehydrate(
-    translations: TranslationsMap,
+    keys: string[],
     locale: Locale,
     catalog: GetTextTranslations | undefined,
 ): string | undefined {
     if (!catalog) return undefined;
-    return encode({ k: localeKeys(translations), l: locale, c: catalog });
+    return encode({ k: keys, l: locale, c: catalog });
 }
 
-function findScript(id: string): Element | null {
-    if (typeof document === "undefined") return null;
-    return document.querySelector(`script[${DEHYDRATION_ATTRIBUTE}="${id}"]`);
+/** Locales already seeded from the document, so a hit costs one DOM query. */
+const seeded = new WeakMap<Translator, Set<string>>();
+
+function markSeeded(translator: Translator, locale: Locale): void {
+    let locales = seeded.get(translator);
+    if (!locales) {
+        locales = new Set();
+        seeded.set(translator, locales);
+    }
+    locales.add(locale);
 }
 
 /**
- * Seed `translator` from the catalog the server inlined for this provider.
+ * Seed one provider's translator from the catalog the server inlined for it.
  *
- * Returns the raw payload text when one was found, so the provider can render an
+ * Returns the raw payload text when one was applied, so the emitter can render an
  * identical `<script>` back and keep hydration byte-for-byte stable.
  *
  * `useId` is stable across a server render and its hydration, but a provider
@@ -65,15 +73,11 @@ function findScript(id: string): Element | null {
  * an id from the server tree. The locale keys in the payload guard against that:
  * a mismatch is treated as a miss, never as a match.
  */
-export function hydrateFromDocument(
-    id: string,
-    translator: Translator,
-    translations: TranslationsMap,
-    locale: Locale | undefined,
-): string | undefined {
-    if (!locale) return undefined;
+export function readPayload(entry: DehydrationEntry, locale: Locale): string | undefined {
+    if (typeof document === "undefined") return undefined;
+    if (seeded.get(entry.translator)?.has(locale)) return undefined;
 
-    const script = findScript(id);
+    const script = document.querySelector(`script[${DEHYDRATION_ATTRIBUTE}="${entry.id}"]`);
     const text = script?.textContent;
     if (!text) return undefined;
 
@@ -85,12 +89,26 @@ export function hydrateFromDocument(
     }
 
     if (payload.l !== locale) return undefined;
-
-    const keys = localeKeys(translations);
-    if (payload.k.length !== keys.length || payload.k.some((key, index) => key !== keys[index])) {
+    if (payload.k.length !== entry.keys.length || payload.k.some((key, index) => key !== entry.keys[index])) {
         return undefined;
     }
 
-    translator.prime(locale, payload.c);
+    entry.translator.prime(locale, payload.c);
+    markSeeded(entry.translator, locale);
     return text;
+}
+
+/**
+ * Seed a whole provider chain, outermost first — a child's `getLocale` merges
+ * against its parent, so the parent has to be resolved by the time the child is.
+ *
+ * Called from `useTranslations` before it touches `fetchLocale`, which is what
+ * lets the app put its Suspense boundary anywhere: the consumer seeds itself at
+ * the exact moment it renders, whether that is with the provider or inside a
+ * boundary that hydrates much later.
+ */
+export function seedFromDocument(entry: DehydrationEntry | undefined, locale: Locale): void {
+    if (!entry) return;
+    seedFromDocument(entry.parent, locale);
+    readPayload(entry, locale);
 }

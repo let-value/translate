@@ -78,14 +78,16 @@ export async function runApp(locale: string, count: number) {
  * take the synchronous path.
  */
 export async function runLazyApp(locale: string, count: number) {
+    // The issue's original shape: the app's boundary sits between the provider
+    // and its consumers, and must keep working untouched.
     const element = (
-        <Suspense fallback={<div id="fallback">loading</div>}>
-            <LocaleProvider locale={locale as never}>
-                <TranslationsProvider translations={{ [locale]: () => loadCatalog(locale) } as never}>
+        <LocaleProvider locale={locale as never}>
+            <TranslationsProvider translations={{ [locale]: () => loadCatalog(locale) } as never}>
+                <Suspense fallback={<div id="fallback">loading</div>}>
                     <App count={count} />
-                </TranslationsProvider>
-            </LocaleProvider>
-        </Suspense>
+                </Suspense>
+            </TranslationsProvider>
+        </LocaleProvider>
     );
 
     const stream = renderToPipeableStream(element);
