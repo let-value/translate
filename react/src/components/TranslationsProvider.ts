@@ -1,7 +1,7 @@
-import type { Locale } from "@let-value/translate";
+import type { Locale, TranslationEntry } from "@let-value/translate";
 import { createElement, type ReactNode, use, type ReactElement } from "react";
 import { translatorContext } from "../context.ts";
-import { getCachedTranslator, type TranslationEntry, type TranslationsMap } from "../translatorCache.ts";
+import { getCachedTranslator, type TranslationsMap } from "../translatorCache.ts";
 
 export interface TranslationsProviderProps {
     translations?: Partial<Record<Locale, TranslationEntry>>;

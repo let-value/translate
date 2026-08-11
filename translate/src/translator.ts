@@ -13,12 +13,12 @@ import {
 } from "./messages.ts";
 import { mergeTranslations, normalizeTranslations, pluralFunc, type StrictStaticString, substitute } from "./utils.ts";
 
-type TranslationModule = GetTextTranslations | { default: GetTextTranslations };
-type TranslationLoader = () => Promise<TranslationModule>;
-type TranslationEntry = TranslationModule | Promise<TranslationModule> | TranslationLoader;
-type TranslationRecord = Partial<Record<Locale, TranslationEntry>>;
+export type TranslationModule = GetTextTranslations | { default: GetTextTranslations };
+export type TranslationLoader = () => Promise<TranslationModule>;
+export type TranslationEntry = TranslationModule | Promise<TranslationModule> | TranslationLoader;
+export type TranslationRecord = Partial<Record<Locale, TranslationEntry>>;
 type SyncLocaleKeys<T> = {
-    [K in keyof T]: T[K] extends GetTextTranslations ? K : never;
+    [K in keyof T]: T[K] extends TranslationModule ? K : never;
 }[keyof T];
 
 function selectValues(message: Message | undefined, fallback?: Message): unknown[] | undefined {

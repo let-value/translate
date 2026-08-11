@@ -1,9 +1,6 @@
-import type { Locale } from "@let-value/translate";
+import type { Locale, TranslationEntry } from "@let-value/translate";
 import { Translator } from "@let-value/translate";
-import type { GetTextTranslations } from "gettext-parser";
 
-type TranslationLoader = () => Promise<GetTextTranslations>;
-export type TranslationEntry = GetTextTranslations | TranslationLoader;
 export type TranslationsMap = Partial<Record<Locale, TranslationEntry>>;
 
 // Fast path: WeakMap keyed on the translations object reference.
@@ -58,10 +55,13 @@ function findStructural(sortedEntries: SortedEntry[], parent: Translator | undef
     return undefined;
 }
 
-export function getCachedTranslator(translations: TranslationsMap, parent: Translator | undefined): Translator {
+export function getCachedTranslator<T extends TranslationsMap>(
+    translations: T,
+    parent: Translator | undefined,
+): Translator<T> {
     // Fast path: same object reference
     const cached = getFromWeakMap(translations, parent);
-    if (cached) return cached;
+    if (cached) return cached as Translator<T>;
 
     // Slow path: same locale keys and value references, different wrapper object
     const sortedEntries = toSortedEntries(translations);
@@ -69,7 +69,7 @@ export function getCachedTranslator(translations: TranslationsMap, parent: Trans
     if (structural) {
         // Backfill WeakMap so subsequent renders with the same new-object are O(1)
         setInWeakMap(translations, parent, structural);
-        return structural;
+        return structural as Translator<T>;
     }
 
     const translator = new Translator(translations, parent);

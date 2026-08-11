@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
 import { test } from "vite-plus/test";
-import { Translator } from "@let-value/translate";
+import { Translator, type TranslationEntry } from "@let-value/translate";
 import type { GetTextTranslations } from "gettext-parser";
-import { _structuralCacheSize, getCachedTranslator } from "../src/translatorCache.ts";
+import { _structuralCacheSize, getCachedTranslator, type TranslationsMap } from "../src/translatorCache.ts";
 
 // Each factory call produces a fresh object so tests don't share structural cache entries.
 const makeTranslations = (): GetTextTranslations => ({ charset: "utf-8", headers: {}, translations: { "": {} } });
@@ -62,6 +62,24 @@ test("same content and same parent returns same Translator (with parent)", () =>
     const t1 = getCachedTranslator({ en: data }, parent);
     const t2 = getCachedTranslator({ en: data }, parent);
     assert.strictEqual(t1, t2);
+});
+
+test("entries accept translation modules, promises, and loaders", async () => {
+    const data = makeTranslations();
+    const moduleEntry = { default: data } satisfies TranslationEntry;
+    const promiseEntry = Promise.resolve({ default: data }) satisfies TranslationEntry;
+    const loaderEntry = (async () => ({ default: data })) satisfies TranslationEntry;
+    const translations = {
+        en: moduleEntry,
+        fr: promiseEntry,
+        ru: loaderEntry,
+    } satisfies TranslationsMap;
+
+    const translator = getCachedTranslator(translations, undefined);
+
+    assert.deepEqual(translator.getLocale("en").translations?.translations, data.translations);
+    assert.deepEqual((await translator.fetchLocale("fr")).translations?.translations, data.translations);
+    assert.deepEqual((await translator.fetchLocale("ru")).translations?.translations, data.translations);
 });
 
 test("structural cache is bounded: high-churn scenario does not grow cache unboundedly", () => {
