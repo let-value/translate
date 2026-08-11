@@ -39,14 +39,16 @@ function Greeting() {
 }
 
 function App({ translations }: { translations: Record<string, () => Promise<{ default: GetTextTranslations }>> }) {
+    // The boundary lives above the provider: TranslationsProvider adds none of
+    // its own, so this is the fallback that shows while a catalog loads.
     return (
-        <LocaleProvider locale={"en" as never}>
-            <TranslationsProvider translations={translations as never}>
-                <Suspense fallback={<span id="fallback">loading</span>}>
+        <Suspense fallback={<span id="fallback">loading</span>}>
+            <LocaleProvider locale={"en" as never}>
+                <TranslationsProvider translations={translations as never}>
                     <Greeting />
-                </Suspense>
-            </TranslationsProvider>
-        </LocaleProvider>
+                </TranslationsProvider>
+            </LocaleProvider>
+        </Suspense>
     );
 }
 

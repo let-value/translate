@@ -79,13 +79,13 @@ export async function runApp(locale: string, count: number) {
  */
 export async function runLazyApp(locale: string, count: number) {
     const element = (
-        <LocaleProvider locale={locale as never}>
-            <TranslationsProvider translations={{ [locale]: () => loadCatalog(locale) } as never}>
-                <Suspense fallback={<div id="fallback">loading</div>}>
+        <Suspense fallback={<div id="fallback">loading</div>}>
+            <LocaleProvider locale={locale as never}>
+                <TranslationsProvider translations={{ [locale]: () => loadCatalog(locale) } as never}>
                     <App count={count} />
-                </Suspense>
-            </TranslationsProvider>
-        </LocaleProvider>
+                </TranslationsProvider>
+            </LocaleProvider>
+        </Suspense>
     );
 
     const stream = renderToPipeableStream(element);
