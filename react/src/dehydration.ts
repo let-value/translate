@@ -62,6 +62,28 @@ function markSeeded(translator: Translator, locale: Locale): void {
     locales.add(locale);
 }
 
+const warned = new Set<string>();
+
+/**
+ * Two React roots on one page share the `useId` sequence unless they were given
+ * distinct `identifierPrefix` values, so their providers can emit scripts under
+ * the same id. There is no way to tell from render which one belongs to the tree
+ * currently hydrating, so refuse to guess: seeding is skipped and the catalog
+ * loads lazily, exactly as it did before this mechanism existed.
+ */
+function isAmbiguous(id: string, count: number): boolean {
+    if (count <= 1) return false;
+    if (!warned.has(id)) {
+        warned.add(id);
+        console.warn(
+            `Found ${count} inlined translation catalogs for id "${id}". ` +
+                "Give each React root a distinct `identifierPrefix` so their ids cannot collide. " +
+                "Falling back to loading the catalog.",
+        );
+    }
+    return true;
+}
+
 /**
  * Seed one provider's translator from the catalog the server inlined for it.
  *
@@ -77,8 +99,10 @@ export function readPayload(entry: DehydrationEntry, locale: Locale): string | u
     if (typeof document === "undefined") return undefined;
     if (seeded.get(entry.translator)?.has(locale)) return undefined;
 
-    const script = document.querySelector(`script[${DEHYDRATION_ATTRIBUTE}="${entry.id}"]`);
-    const text = script?.textContent;
+    const scripts = document.querySelectorAll(`script[${DEHYDRATION_ATTRIBUTE}="${entry.id}"]`);
+    if (isAmbiguous(entry.id, scripts.length)) return undefined;
+
+    const text = scripts[0]?.textContent;
     if (!text) return undefined;
 
     let payload: DehydratedPayload;

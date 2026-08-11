@@ -247,3 +247,60 @@ describe("nested providers", () => {
         container.remove();
     });
 });
+
+describe("multiple React roots", () => {
+    function makeApp(word: string) {
+        const calls = { count: 0 };
+        const own: GetTextTranslations = {
+            charset: "utf-8",
+            headers: {},
+            translations: { "": { Hello: { msgid: "Hello", msgstr: [word] } } },
+        };
+        const translations = {
+            en: () => {
+                calls.count++;
+                return new Promise<{ default: GetTextTranslations }>((resolve) => {
+                    setTimeout(() => resolve({ default: own }), 5);
+                });
+            },
+        };
+        return { translations, calls };
+    }
+
+    test("never seeds a root from another root's payload", async () => {
+        // Both roots use the default identifierPrefix, so their providers land on
+        // the same useId and emit scripts under the same attribute value.
+        const first = makeApp("Hola");
+        const second = makeApp("Bonjour");
+
+        const firstHtml = await renderHtml(<BoundaryInside translations={first.translations} />);
+        const secondHtml = await renderHtml(<BoundaryInside translations={second.translations} />);
+        expect(firstHtml).toContain("Hola");
+        expect(secondHtml).toContain("Bonjour");
+
+        const firstContainer = mount(firstHtml);
+        const secondContainer = mount(secondHtml);
+
+        const warnings: unknown[] = [];
+        const originalWarn = console.warn;
+        console.warn = (...args: unknown[]) => warnings.push(args);
+
+        const roots = [
+            hydrateRoot(firstContainer, <BoundaryInside translations={makeApp("Hola").translations} />),
+            hydrateRoot(secondContainer, <BoundaryInside translations={makeApp("Bonjour").translations} />),
+        ];
+        await flush();
+        console.warn = originalWarn;
+
+        // Ambiguity is refused rather than guessed: each root ends up showing its
+        // own translation, never the other's.
+        expect(firstContainer.querySelector("#greeting")?.textContent).toBe("Hola");
+        expect(secondContainer.querySelector("#greeting")?.textContent).toBe("Bonjour");
+        expect(warnings.length).toBeGreaterThan(0);
+        expect(String(warnings[0])).toContain("identifierPrefix");
+
+        for (const root of roots) root.unmount();
+        firstContainer.remove();
+        secondContainer.remove();
+    });
+});
