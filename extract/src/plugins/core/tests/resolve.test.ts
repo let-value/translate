@@ -60,6 +60,20 @@ describe("resolveImports - app", () => {
         assert.equal(resolveImport(appEntryPath, "node:path/posix"), undefined);
         assert.deepEqual(resolveImportResults(appEntryPath, ["node:path", "fs"]).unresolved, []);
     });
+
+    test("reports bundler-virtual specifiers as external instead of unresolved", () => {
+        const specs = ["virtual:pwa-register", "\0virtual:pwa-register", "https://esm.sh/preact"];
+        const result = resolveImportResults(appEntryPath, specs);
+
+        assert.deepEqual(result.unresolved, []);
+        assert.deepEqual(result.resolved, []);
+        assert.deepEqual(result.external, specs);
+        assert.equal(resolveImport(appEntryPath, "virtual:pwa-register"), undefined);
+    });
+
+    test("does not treat a Windows drive letter as a scheme", () => {
+        assert.deepEqual(resolveImportResults(appEntryPath, ["C:/missing/module.ts"]).external, []);
+    });
 });
 
 const libCases: Record<string, string> = {

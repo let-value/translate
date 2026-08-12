@@ -2,6 +2,7 @@ import type { GetTextTranslationRecord } from "gettext-parser";
 import { getNPlurals } from "plural-forms";
 
 import type { Translation } from "../core/queries/types.ts";
+import { sortReferences } from "./references.ts";
 
 export function collect(source: Translation[], locale?: string): GetTextTranslationRecord {
     const translations: GetTextTranslationRecord = { "": {} };
@@ -39,7 +40,7 @@ export function collect(source: Translation[], locale?: string): GetTextTranslat
             comments: {
                 ...existing?.comments,
                 ...comments,
-                reference: refs.size ? Array.from(refs).join("\n") : undefined,
+                reference: refs.size ? sortReferences(refs).join("\n") : undefined,
             },
             obsolete: existing?.obsolete ?? obsolete,
         };

@@ -77,7 +77,11 @@ export interface UserConfig {
      */
     walk?: boolean;
     /**
-     * Paths or patterns to exclude from extraction, applied to all entrypoints
+     * Paths or patterns to exclude from extraction, applied to all entrypoints.
+     * Also matched against the specifier of an import that could not be
+     * resolved, so it doubles as an ignore list for such imports — a matching
+     * specifier is skipped without a warning. Bundler-virtual specifiers
+     * (`virtual:…`, `\0…`, URL schemes) are skipped without configuration.
      * @default [/node_modules/, /dist/, /build/]
      * @see Can be overridden per entrypoint via `exclude` in {@link EntrypointConfig}.
      */

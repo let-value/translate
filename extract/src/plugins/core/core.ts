@@ -13,6 +13,18 @@ export function core(): Plugin {
         setup(build) {
             build.context.logger?.debug("core plugin initialized");
 
+            // A module shared by several entrypoints is processed once per
+            // entrypoint, so without this the same warning is repeated as many
+            // times as there are entrypoints reaching it.
+            const reported = new Set<string>();
+            const warnOnce = (message: string) => {
+                if (reported.has(message)) {
+                    return;
+                }
+                reported.add(message);
+                build.context.logger?.warn(message);
+            };
+
             build.onLoad(filter, ({ path }) => readFile(path, "utf8"));
 
             build.onProcess(filter, ({ entrypoint, path, contents, emit }) => {
@@ -28,7 +40,10 @@ export function core(): Plugin {
                 const { translations, imports, warnings } = result;
 
                 if (build.context.config.walk) {
-                    const { resolved, unresolved } = resolveImportResults(path, imports);
+                    const { resolved, unresolved, external } = resolveImportResults(path, imports);
+                    for (const spec of external) {
+                        build.context.logger?.debug({ path, spec }, "skipping external import");
+                    }
                     for (const result of resolved) {
                         if (build.context.paths.has(result.path)) {
                             continue;
@@ -47,14 +62,12 @@ export function core(): Plugin {
                         ) {
                             continue;
                         }
-                        build.context.logger?.warn(
-                            `Unable to resolve import "${spec}" from ${path}${error ? `: ${error}` : ""}`,
-                        );
+                        warnOnce(`Unable to resolve import "${spec}" from ${path}${error ? `: ${error}` : ""}`);
                     }
                 }
 
                 for (const warning of warnings) {
-                    build.context.logger?.warn(`${warning.error} at ${warning.reference}`);
+                    warnOnce(`${warning.error} at ${warning.reference}`);
                 }
 
                 emit(translations);
