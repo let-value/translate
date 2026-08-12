@@ -1,6 +1,7 @@
 {
     "name": "@let-value/graph",
-    "version": "1.1.6-beta.3",
+    "version": "1.1.7-beta.3",
+    "private": true,
     "description": "A dynamic, asynchronous DAG of computations: scoped node kinds, phase barriers over work discovered while running, and demand-driven evaluation.",
     "keywords": [
         "concurrency",

@@ -1,7 +1,8 @@
 import type { Locale, LocaleTranslator } from "@let-value/translate";
 import { use } from "react";
 
-import { localeContext, translatorContext } from "../context.ts";
+import { dehydrationContext, localeContext, translatorContext } from "../context.ts";
+import { seedFromDocument } from "../dehydration.ts";
 
 /** @deprecated replace with `use` from react */
 function getPromiseState(promise: any) {
@@ -30,9 +31,15 @@ function getPromiseState(promise: any) {
 export function useTranslations(locale?: Locale): LocaleTranslator {
     const requestedLocale = locale ?? use(localeContext) ?? ("unknown" as never);
     const translator = use(translatorContext);
+    const dehydrated = use(dehydrationContext);
     if (!translator) {
         throw new Error("TranslationsProvider is missing");
     }
+
+    // Seed before `fetchLocale`, so a catalog the server already inlined never
+    // starts its loader — the chunk is not fetched and this render does not
+    // suspend, which is what lets React keep the server markup.
+    seedFromDocument(dehydrated, requestedLocale);
 
     const resource = translator.fetchLocale(requestedLocale);
     if (!(resource instanceof Promise)) {

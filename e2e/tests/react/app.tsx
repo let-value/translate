@@ -1,4 +1,5 @@
 import fs from "node:fs/promises";
+import { Suspense } from "react";
 import * as gettextParser from "gettext-parser";
 import { renderToPipeableStream } from "react-dom/server";
 import {
@@ -33,15 +34,19 @@ function App({ count }: { count: number }) {
     );
 }
 
-export async function runApp(locale: string, count: number) {
-    let translations: gettextParser.GetTextTranslations | undefined;
+async function loadCatalog(locale: string) {
     try {
         const url = new URL(`./translations/app.${locale}.po`, import.meta.url);
         const content = await fs.readFile(url);
-        translations = gettextParser.po.parse(content);
+        return gettextParser.po.parse(content);
     } catch {
         // No translations available
+        return undefined;
     }
+}
+
+export async function runApp(locale: string, count: number) {
+    const translations = await loadCatalog(locale);
 
     const element = (
         <LocaleProvider locale={locale as never}>
@@ -64,5 +69,36 @@ export async function runApp(locale: string, count: number) {
         def: match("def"),
         greeting: match("greeting"),
         items: match("items"),
+    };
+}
+
+/**
+ * Same app, but the catalog is loaded lazily — the shape that suspends on the
+ * client. The server render must inline the catalog it resolved so hydration can
+ * take the synchronous path.
+ */
+export async function runLazyApp(locale: string, count: number) {
+    // The issue's original shape: the app's boundary sits between the provider
+    // and its consumers, and must keep working untouched.
+    const element = (
+        <LocaleProvider locale={locale as never}>
+            <TranslationsProvider translations={{ [locale]: () => loadCatalog(locale) } as never}>
+                <Suspense fallback={<div id="fallback">loading</div>}>
+                    <App count={count} />
+                </Suspense>
+            </TranslationsProvider>
+        </LocaleProvider>
+    );
+
+    const stream = renderToPipeableStream(element);
+    const html = await renderStream(stream);
+
+    const payload = html.match(/<script type="application\/json" data-translations="[^"]*">(.*?)<\/script>/s)?.[1];
+
+    return {
+        html,
+        payload: payload
+            ? (JSON.parse(payload) as { k: string[]; l: string; c: gettextParser.GetTextTranslations })
+            : undefined,
     };
 }

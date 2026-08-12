@@ -103,15 +103,27 @@ export function mergeTranslations(
     primary: GetTextTranslations,
     ...others: (GetTextTranslations | undefined)[]
 ): GetTextTranslations {
+    // Copy every per-context record, not just the outer map. Catalogs come from
+    // imported `.po` modules and are shared across translators, so writing into a
+    // record we did not create would leak one catalog's messages into another.
+    function copyRecords(source: GetTextTranslationRecord): GetTextTranslationRecord {
+        const copy: GetTextTranslationRecord = {};
+        for (const ctx in source) {
+            copy[ctx] = { ...source[ctx] };
+        }
+        return copy;
+    }
+
     function mergeRecords(target: GetTextTranslationRecord, source: GetTextTranslationRecord): void {
         for (const ctx in source) {
-            if (!target[ctx]) {
-                target[ctx] = source[ctx];
+            const sourceContext = source[ctx];
+            const targetContext = target[ctx];
+
+            if (!targetContext) {
+                target[ctx] = { ...sourceContext };
                 continue;
             }
 
-            const targetContext = target[ctx];
-            const sourceContext = source[ctx];
             for (const id in sourceContext) {
                 if (!targetContext[id]) {
                     targetContext[id] = sourceContext[id];
@@ -123,8 +135,8 @@ export function mergeTranslations(
     const result: GetTextTranslations = {
         charset: primary.charset,
         headers: { ...primary.headers },
-        translations: { ...primary.translations },
-        obsolete: primary.obsolete ? { ...primary.obsolete } : undefined,
+        translations: copyRecords(primary.translations),
+        obsolete: primary.obsolete ? copyRecords(primary.obsolete) : undefined,
     };
 
     for (const other of others) {
@@ -134,7 +146,7 @@ export function mergeTranslations(
 
         if (other?.obsolete) {
             if (!result.obsolete) {
-                result.obsolete = other.obsolete;
+                result.obsolete = copyRecords(other.obsolete);
             } else {
                 mergeRecords(result.obsolete, other.obsolete);
             }

@@ -150,6 +150,11 @@ export class Translator<T extends TranslationRecord = TranslationRecord> {
     translations: Partial<Record<Locale, GetTextTranslations>> = {};
     pending: Partial<Record<Locale, Promise<LocaleTranslator>>> = {};
     translators: Partial<Record<Locale, LocaleTranslator>> = {};
+    /**
+     * Raw catalogs as resolved, kept around after {@link getLocale} consumes
+     * `translations` so they can still be serialized by {@link dehydrate}.
+     */
+    catalogs: Partial<Record<Locale, GetTextTranslations>> = {};
 
     constructor(translations: T, parent?: Translator) {
         this.parent = parent;
@@ -161,9 +166,35 @@ export class Translator<T extends TranslationRecord = TranslationRecord> {
                 this.loaders[locale] = () => value;
             } else {
                 this.translations[locale] = resolveTranslationModule(value);
+                this.catalogs[locale] = this.translations[locale];
             }
         }
     }
+
+    /**
+     * Seed an already-resolved catalog so {@link getLocale} and {@link fetchLocale}
+     * can answer synchronously, without invoking the locale's loader.
+     *
+     * Used to hydrate a translator from a server-rendered payload before the first
+     * client render, so the tree never suspends during hydration. Priming a locale
+     * that is already resolved is a no-op.
+     */
+    prime = (locale: Locale, module: TranslationModule): void => {
+        if (this.translators[locale] || this.translations[locale]) {
+            return;
+        }
+        const resolved = resolveTranslationModule(module);
+        this.translations[locale] = resolved;
+        this.catalogs[locale] = resolved;
+        delete this.loaders[locale];
+        delete this.pending[locale];
+    };
+
+    /**
+     * The raw catalog for a resolved locale, or `undefined` when it has not been
+     * loaded yet. The counterpart of {@link prime}.
+     */
+    dehydrate = (locale: Locale): GetTextTranslations | undefined => this.catalogs[locale];
 
     loadLocale = async (locale: Locale, loader?: TranslationLoader): Promise<LocaleTranslator> => {
         this.loaders[locale] = loader ?? this.loaders[locale];
@@ -213,6 +244,7 @@ export class Translator<T extends TranslationRecord = TranslationRecord> {
         if (loader) {
             const promise = loader().then((translations) => {
                 this.translations[key] ??= resolveTranslationModule(translations);
+                this.catalogs[key] ??= this.translations[key];
                 delete this.pending[key];
 
                 return this.getLocale(key as never);

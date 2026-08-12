@@ -1,6 +1,6 @@
 {
     "name": "@let-value/translate-extract",
-    "version": "1.1.6-beta.3",
+    "version": "1.1.7-beta.3",
     "repository": {
         "type": "git",
         "url": "https://github.com/let-value/translate"
@@ -47,7 +47,6 @@
     },
     "dependencies": {
         "@keqingmoe/tree-sitter": "0.26.2",
-        "@let-value/graph": "workspace:*",
         "@let-value/translate": "workspace:*",
         "chalk": "5.6.2",
         "fast-glob": "3.3.3",
@@ -61,6 +60,7 @@
         "tree-sitter-typescript": "0.23.2"
     },
     "devDependencies": {
+        "@let-value/graph": "workspace:*",
         "@types/gettext-parser": "9.0.0",
         "typescript": "6.0.3",
         "vite-plus": "latest"
