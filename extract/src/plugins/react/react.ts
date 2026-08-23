@@ -9,11 +9,20 @@ export function react(): Plugin {
         setup(build) {
             build.context.logger?.debug("react plugin initialized");
 
+            // A file reached from several entrypoints is processed once per
+            // entrypoint; its warnings are about the file, not the walk.
+            const reported = new Set<string>();
+
             build.onProcess(filter, ({ path, contents, emit }) => {
                 const { translations, warnings } = parseSource(contents, path);
 
                 for (const warning of warnings) {
-                    build.context.logger?.warn(`${warning.error} at ${warning.reference}`);
+                    const message = `${warning.error} at ${warning.reference}`;
+                    if (reported.has(message)) {
+                        continue;
+                    }
+                    reported.add(message);
+                    build.context.logger?.warn(message);
                 }
 
                 emit(translations);

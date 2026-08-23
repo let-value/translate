@@ -12,6 +12,8 @@ export interface UnresolvedImport {
 export interface ResolveImportsResult {
     resolved: Array<{ path: string; import: ImportReference }>;
     unresolved: UnresolvedImport[];
+    /** Specifiers only a bundler plugin pipeline can resolve; skipped without a warning. */
+    external: string[];
 }
 
 function findTsconfig(dir: string): string | undefined {
@@ -42,6 +44,20 @@ function isBuiltin(spec: string) {
     return subpath !== undefined && builtins.has(base);
 }
 
+// Two or more characters, so a Windows drive letter ("C:/app/main.ts") is not
+// mistaken for a URI scheme.
+const schemePattern = /^[a-z][a-z\d+\-.]+:/i;
+
+/**
+ * Specifiers that exist only inside a bundler's plugin pipeline — Vite virtual
+ * modules (`virtual:pwa-register`), their resolved `\0` form, and URL schemes.
+ * Extraction runs without that pipeline, so they can never resolve on disk and
+ * reporting them as unresolved is noise.
+ */
+export function isExternal(spec: string) {
+    return spec.startsWith("\0") || schemePattern.test(spec);
+}
+
 function getResolver(dir: string) {
     const tsconfig = findTsconfig(dir);
     const key = tsconfig ?? "__default__";
@@ -64,7 +80,7 @@ function resolveFromDir(dir: string, spec: string): string | undefined {
 }
 
 export function resolveImport(file: string, spec: string): string | undefined {
-    if (isBuiltin(spec)) {
+    if (isBuiltin(spec) || isExternal(spec)) {
         return undefined;
     }
 
@@ -92,11 +108,16 @@ export function resolveImportResults(file: string, imports: Array<string | Impor
     const resolver = getResolver(dir);
     const resolved: Array<{ path: string; import: ImportReference }> = [];
     const unresolved: UnresolvedImport[] = [];
+    const external: string[] = [];
 
     for (const imp of imports) {
         const ref = normalizeImportReference(imp);
         const { spec } = ref;
         if (isBuiltin(spec)) {
+            continue;
+        }
+        if (isExternal(spec)) {
+            external.push(spec);
             continue;
         }
 
@@ -115,5 +136,5 @@ export function resolveImportResults(file: string, imports: Array<string | Impor
         }
     }
 
-    return { resolved, unresolved };
+    return { resolved, unresolved, external };
 }

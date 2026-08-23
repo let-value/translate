@@ -1,25 +1,9 @@
 import { defineConfig } from "vite-plus";
-import { playwright } from "vite-plus/test/browser-playwright";
+import { reactProjects } from "./vite.projects.ts";
 
 export default defineConfig({
     test: {
-        projects: [
-            {
-                test: {
-                    include: ["test/**/*.test.ts"],
-                },
-            },
-            {
-                test: {
-                    include: ["test/**/*.test.tsx"],
-                    browser: {
-                        enabled: true,
-                        provider: playwright(),
-                        instances: [{ browser: "chromium" }],
-                    },
-                },
-            },
-        ],
+        projects: reactProjects(import.meta.dirname),
     },
     pack: {
         entry: "src/index.ts",

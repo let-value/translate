@@ -2,6 +2,7 @@ import type { GetTextTranslationRecord, GetTextTranslations } from "gettext-pars
 import { getFormula, getNPlurals } from "plural-forms";
 
 import type { ObsoleteStrategy } from "../../configuration.ts";
+import { sortKeys, sortReferences } from "./references.ts";
 
 export interface Collected {
     translations: GetTextTranslationRecord;
@@ -68,16 +69,22 @@ export function merge(
                     comments: {
                         ...existing?.comments,
                         ...entry.comments,
-                        reference: refs.size ? Array.from(refs).join("\n") : undefined,
+                        reference: refs.size ? sortReferences(refs).join("\n") : undefined,
                     },
                 };
             }
         }
     }
 
-    for (const [ctx, msgs] of Object.entries(collected)) {
+    // Canonical key order, so that messages an existing catalog does not have
+    // yet are appended in a stable order instead of the order the module graph
+    // happened to be walked in. Keys the catalog already has keep their place:
+    // assigning to an existing key does not move it.
+    for (const ctx of sortKeys(Object.keys(collected))) {
+        const msgs = collected[ctx];
         if (!translations[ctx]) translations[ctx] = {};
-        for (const [id, entry] of Object.entries(msgs)) {
+        for (const id of sortKeys(Object.keys(msgs))) {
+            const entry = msgs[id];
             const existingEntry = translations[ctx][id] ?? obsoleteTranslations[ctx]?.[id];
             if (existingEntry) {
                 entry.msgstr = existingEntry.msgstr;
