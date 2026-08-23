@@ -498,6 +498,31 @@ test("merges entrypoints that share a destination into one catalog", async () =>
     assert.equal(contents.includes('msgid "from-b"'), true);
 });
 
+test("seeds the default-locale catalog's msgstr from the source message, leaving other locales empty", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "default-locale-seed-"));
+
+    await writeFile(
+        join(dir, "entry.ts"),
+        `message({ id: "library.exercise.foo.instructions", message: "Set your stance." });\n`,
+    );
+
+    const config = defineConfig({
+        entrypoints: join(dir, "*.ts"),
+        defaultLocale: "en",
+        locales: ["en", "fr"],
+        plugins: ({ core, po }) => [core(), po()],
+    });
+
+    await run(config.entrypoints[0], { config });
+
+    const enPo = await readFile(join(dir, "translations", "entry.en.po"), "utf8");
+    const frPo = await readFile(join(dir, "translations", "entry.fr.po"), "utf8");
+
+    assert.equal(enPo.includes('msgstr "Set your stance."'), true);
+    assert.equal(frPo.includes('msgid "library.exercise.foo.instructions"'), true);
+    assert.equal(frPo.includes('msgstr "Set your stance."'), false);
+});
+
 test("a failing entrypoint does not withhold the outputs of healthy ones", async () => {
     const dir = await mkdtemp(join(tmpdir(), "entrypoint-failure-"));
     await writeFile(join(dir, "good.ts"), `message("good");\n`);

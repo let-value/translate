@@ -40,7 +40,11 @@ export function po(): Plugin {
                             const contents = await fs.readFile(destination).catch(() => undefined);
                             const existing = contents ? gettextParser.po.parse(contents) : undefined;
 
-                            const record = collect(created.translations, created.locale);
+                            const record = collect(
+                                created.translations,
+                                created.locale,
+                                build.context.config.defaultLocale,
+                            );
                             const out = merge(
                                 [{ translations: record }],
                                 existing as never,
