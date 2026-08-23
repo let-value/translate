@@ -29,7 +29,7 @@ export function Plural({ number, forms, context }: PluralProps) {
     // oxlint-disable-next-line no-control-regex -- using null separators
     const parts = translated.split(/\u0000(\d+)-(\d+)\u0000/);
     const result: ReactNode[] = [];
-    for (let i = 0; i < parts.length; ) {
+    for (let i = 0; i < parts.length;) {
         result.push(parts[i]);
         if (i + 2 < parts.length) {
             const formIndex = Number(parts[i + 1]);
