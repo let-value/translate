@@ -4,9 +4,10 @@ import { getNPlurals } from "plural-forms";
 import type { Translation } from "../core/queries/types.ts";
 import { sortReferences } from "./references.ts";
 
-export function collect(source: Translation[], locale?: string): GetTextTranslationRecord {
+export function collect(source: Translation[], locale?: string, defaultLocale?: string): GetTextTranslationRecord {
     const translations: GetTextTranslationRecord = { "": {} };
     const nplurals = locale ? Number(getNPlurals(locale)) : undefined;
+    const isDefaultLocale = locale !== undefined && locale === defaultLocale;
 
     for (const { context, id, message, comments, obsolete, plural } of source) {
         const ctx = context || "";
@@ -29,7 +30,9 @@ export function collect(source: Translation[], locale?: string): GetTextTranslat
             });
         }
 
-        const msgstr = existing?.msgstr ? existing.msgstr.slice(0, length) : Array.from({ length }, () => "");
+        const msgstr = existing?.msgstr
+            ? existing.msgstr.slice(0, length)
+            : Array.from({ length }, (_, i) => (isDefaultLocale ? (message[i] ?? "") : ""));
         while (msgstr.length < length) msgstr.push("");
 
         translations[ctx][id] = {
